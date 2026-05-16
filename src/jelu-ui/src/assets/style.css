@@ -5,16 +5,20 @@
 }
 
 @import '@oruga-ui/theme-oruga/dist/oruga.css';
-@theme{
 
-  --jelu_background: #262429;
-  --jelu_background_accent: #262429;
-  --jelu_background_contrast: #f7f5d1;
+/* ═══════════════════════════════════════════════════════════
+   SHADCN-INSPIRED THEME FOR JELU
+   Zinc-based dark palette · Soft rounded corners · Cohesive
+   ═══════════════════════════════════════════════════════════ */
 
-  --jelu_text_primary : #ffffff;
-  --jelu_text_secondary : #aaaaaa;
-  --jelu_text_accent : #69ea7d;
+@theme {
+  --jelu_background: #09090b;
+  --jelu_background_accent: #18181b;
+  --jelu_background_contrast: #fafafa;
 
+  --jelu_text_primary: #fafafa;
+  --jelu_text_secondary: #a1a1aa;
+  --jelu_text_accent: #e4e4e7;
 }
 
 @plugin "daisyui/theme" {
@@ -22,53 +26,70 @@
   default: false;
   prefersdark: false;
   color-scheme: "dark";
-  --color-base-100: oklch(0.26 0.0096 303.83);
-  --color-base-200: oklch(0.26 0.0096 303.83);
-  --color-base-300: oklch(0.26 0.0096 303.83);
-  --color-base-content: oklch(1 0 0);
-  --color-primary: oklch(0.96 0.0469 104.63);
-  --color-primary-content: oklch(0.37 0 0);
-  --color-secondary: oklch(0.74 0 0);
-  --color-secondary-content: oklch(94% 0.028 342.258);
-  --color-accent: oklch(0.59 0.0497 77.61);
-  --color-accent-content: oklch(38% 0.063 188.416);
-  --color-neutral: oklch(0.37 0 0);
-  --color-neutral-content: oklch(92% 0.004 286.32);
-  --color-info: #6191c2;
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(0.76 0.1395 94.78);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(0.81 0.1483 68.18);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(0.71 0.1649 22.15);
-  --color-error-content: oklch(27% 0.105 12.094);
-  --radius-selector: 0rem;
-  --radius-field: 0rem;
-  --radius-box: 0rem;
+
+  /* ── Base surfaces ── */
+  --color-base-100: oklch(0.145 0.005 286);
+  --color-base-200: oklch(0.21 0.006 286);
+  --color-base-300: oklch(0.274 0.006 286);
+  --color-base-content: oklch(0.985 0 0);
+
+  /* ── Primary: clean white-on-dark (shadcn default) ── */
+  --color-primary: oklch(0.985 0 0);
+  --color-primary-content: oklch(0.145 0.005 286);
+
+  /* ── Secondary: muted zinc ── */
+  --color-secondary: oklch(0.274 0.006 286);
+  --color-secondary-content: oklch(0.985 0 0);
+
+  /* ── Accent: soft indigo ── */
+  --color-accent: oklch(0.585 0.233 277);
+  --color-accent-content: oklch(0.985 0 0);
+
+  /* ── Neutral ── */
+  --color-neutral: oklch(0.37 0.013 286);
+  --color-neutral-content: oklch(0.92 0.004 286);
+
+  /* ── Semantic colors (muted, shadcn-style) ── */
+  --color-info: oklch(0.623 0.214 259);
+  --color-info-content: oklch(0.985 0 0);
+  --color-success: oklch(0.627 0.194 149);
+  --color-success-content: oklch(0.985 0 0);
+  --color-warning: oklch(0.769 0.188 70);
+  --color-warning-content: oklch(0.145 0.005 286);
+  --color-error: oklch(0.637 0.237 25);
+  --color-error-content: oklch(0.985 0 0);
+
+  /* ── Rounded corners (the shadcn signature) ── */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.75rem;
+
+  /* ── Sizing ── */
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
-  --border: 0.5px;
-  --depth: 1;
+  --border: 1px;
+  --depth: 0;
   --noise: 0;
 }
 
 :root {
-  --jelu_background: #262429;
-  --jelu_background_accent: #262429;
-  --jelu_background_contrast: #f7f5d1;
+  --jelu_background: #09090b;
+  --jelu_background_accent: #18181b;
+  --jelu_background_contrast: #fafafa;
 
-  --jelu_text_primary : #ffffff;
-  --jelu_text_secondary : #aaaaaa;
-  --jelu_text_accent : #69ea7d;
+  --jelu_text_primary: #fafafa;
+  --jelu_text_secondary: #a1a1aa;
+  --jelu_text_accent: #e4e4e7;
 
-  --jelu_test : #69ea7d;
+  --jelu_test: #e4e4e7;
 
-  --oruga-checkbox-border-color: var(--color-primary);
+  /* ── Oruga component overrides ── */
+  --oruga-checkbox-border-color: var(--color-neutral);
   --oruga-checkbox-active-background-color: var(--color-primary);
-  --oruga-checkbox-background-color: var(--color-base-100);
+  --oruga-checkbox-background-color: transparent;
 
   --oruga-pagination-button-color: var(--color-neutral);
-  --oruga-pagination-button-border-color: var(--color-transparent);
+  --oruga-pagination-button-border-color: transparent;
 
   --oruga-variant-primary: var(--color-primary);
   --oruga-variant-success: var(--color-success);
@@ -76,61 +97,56 @@
   --oruga-variant-warning: var(--color-warning);
   --oruga-variant-info: var(--color-info);
 
-  --oruga-datepicker-item-selected-background-color: var(--color-primary);
+  --oruga-datepicker-item-selected-background-color: var(--color-accent);
 
-  --oruga-slider-tick-background: var(--color-primary);
-
-  --oruga-slider-fill-background: var(--color-primary);
-
+  --oruga-slider-tick-background: var(--color-accent);
+  --oruga-slider-fill-background: var(--color-accent);
   --oruga-slider-thumb-radius: 100%;
-
   --oruga-slider-thumb-background: var(--color-primary);
-  --oruga-slider-thumb-border: 0px solid transparent;
-  --oruga-tooltip-background-color: var(--color-primary);
-  --oruga-tooltip-color: var(--color-primary-content);
+  --oruga-slider-thumb-border: 2px solid var(--color-accent);
 
-  --oruga-switch-active-background-color: var(--color-primary);
-  --oruga-switch-checked-background: var(--color-primary);
+  --oruga-tooltip-background-color: var(--color-base-300);
+  --oruga-tooltip-color: var(--color-base-content);
 
-  --oruga-modal-content-background-color: var(--color-base-100);
+  --oruga-switch-active-background-color: var(--color-accent);
+  --oruga-switch-checked-background: var(--color-accent);
 
+  --oruga-modal-content-background-color: var(--color-base-200);
   --oruga-modal-content-max-height: calc(100vh - 75px);
 
   --oruga-steps-marker-color: var(--color-base-content);
+  --oruga-steps-marker-background: var(--color-base-200);
 
-  --oruga-steps-marker-background: var(--color-base-100);
+  --oruga-loading-overlay: rgba(9, 9, 11, 0.6);
 
-  --oruga-loading-overlay: var(--color-jelu_overlay);
-
-  --oruga-input-background-color: var(--color-base-100);
+  --oruga-input-background-color: var(--color-base-200);
   --oruga-input-color: var(--color-base-content);
 
-  --oruga-taginput-border-color: var(--color-base-100);
+  --oruga-taginput-border-color: var(--color-base-300);
 
-  --oruga-autocomplete-item-color: var(--color-primary-content);
-  --oruga-autocomplete-item-hover-background-color: var(--color-primary-content);
+  --oruga-autocomplete-item-color: var(--color-base-content);
+  --oruga-autocomplete-item-hover-background-color: var(--color-base-300);
 
-
-  --vdp-bg-color: var(--color-base-100);
+  --vdp-bg-color: var(--color-base-200);
   --vdp-text-color: var(--color-base-content);
-
 }
 
 @layer components {
 
-
-/* oruga customization with daisyui */
+/* ══════════════════════════════════════
+   ORUGA × DAISYUI OVERRIDES
+   ══════════════════════════════════════ */
 
 .o-sidebar__content.o-sidebar__content--left {
-  @apply bg-base-100 w-fit overflow-y-auto;
+  @apply bg-base-200 w-fit overflow-y-auto rounded-r-lg;
 }
 
 .o-pagination .o-pagination__button {
-  @apply btn;
+  @apply btn btn-sm rounded-md;
 }
 
 li.o-pagination__item button.o-pagination__button.o-pagination__button--current {
-  @apply btn-active btn-accent;
+  @apply btn-active bg-accent text-accent-content rounded-md;
 }
 
 .o-pagination__ellipsis {
@@ -138,55 +154,52 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
 }
 
 .o-ctrl-sel {
-  @apply bg-white;
+  @apply bg-base-200 rounded-md;
 }
 
 .o-input.o-inputit__input {
-  @apply w-fit sm:w-full bg-base-100 text-base-content focus:input-accent;
+  @apply w-fit sm:w-full bg-base-200 text-base-content rounded-md;
 }
 
-/* left icon color in autocomplete and taginput */
-.o-icon.o-input__icon-left {
-    @apply text-accent-content;
-}
-
+/* icon color in autocomplete and taginput */
+.o-icon.o-input__icon-left,
 .o-icon.o-input__icon-right {
-    @apply text-accent-content;
+  @apply text-base-content/40;
 }
 
 .o-steps__step-label {
-  @apply bg-base-100 text-base-content!;
+  @apply bg-base-200 text-base-content!;
 }
 
 .o-steps__title {
-  @apply bg-base-100 text-base-content!;
+  @apply bg-base-200 text-base-content!;
 }
 
 .o-icon.o-icon--spin.o-icon--medium.o-load__icon {
-    @apply text-gray-700;
+  @apply text-accent;
 }
 
 .o-dropdown__menu {
-    @apply w-full grow;
+  @apply w-full grow rounded-lg;
 }
 
 .o-datepicker .o-input {
-  @apply w-full border-0 focus:border-0;
+  @apply w-full border-0 focus:border-0 rounded-md;
 }
 
 .o-datepicker__table__cell {
-  @apply hover:bg-accent;
+  @apply hover:bg-accent/20 rounded-md;
 }
 
 .o-taginput .o-taginput__container {
-    @apply w-full sm:w-full items-center h-fit;
+  @apply w-full sm:w-full items-center h-fit rounded-md;
 }
 
 .jl-sidebar .label-text {
   @apply ml-2;
 }
 
-/* end oruga customization with daisyui */
+/* end oruga customization */
 
 .providers-ids .o-field__horizontal-body {
   @apply sm:grid sm:grid-cols-3;
@@ -196,30 +209,37 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
   @apply w-full;
 }
 
+/* ══════════════════════════════════════
+   SWEETALERT2
+   ══════════════════════════════════════ */
+
 .swal2-container {
-    @apply flex justify-center;
+  @apply flex justify-center;
 }
 
 .swal2-container .swal2-popup.swal2-modal {
-  @apply bg-base-300 text-base-content text-lg font-semibold!;
+  @apply bg-base-200 text-base-content text-lg font-semibold rounded-xl!;
 }
+
+/* ══════════════════════════════════════
+   GLOBAL ELEMENTS
+   ══════════════════════════════════════ */
 
 .bar {
-    background-color: var(--jelu_background_accent);
-    height: 5px;
-    width: 100%;
-    margin-top: 3px;
-    margin-bottom: 10px;
+  background: linear-gradient(90deg, var(--color-accent) 0%, transparent 100%);
+  height: 2px;
+  width: 100%;
+  margin-top: 3px;
+  margin-bottom: 10px;
+  opacity: 0.3;
 }
 
-
 @font-face {
-    font-family: 'AnotherTypewriter';
-    font-style: normal;
-    font-display: swap;
-    src: url('./atwriter.ttf') format('truetype');
-
-  }
+  font-family: 'AnotherTypewriter';
+  font-style: normal;
+  font-display: swap;
+  src: url('./atwriter.ttf') format('truetype');
+}
 
 @font-face {
   font-family: 'cormorant';
@@ -236,44 +256,49 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
 }
 
 .typewriter {
-    /* // font-family: $typewriter-font; */
-    font-family: AnotherTypewriter, -apple-system, system-ui, serif;
+  font-family: AnotherTypewriter, -apple-system, system-ui, serif;
 }
 
 .cormorant {
-    font-family: 'cormorant', -apple-system, system-ui, serif;
+  font-family: 'cormorant', -apple-system, system-ui, serif;
 }
 
+/* ══════════════════════════════════════
+   MODALS
+   ══════════════════════════════════════ */
+
 .edit-modal {
-    margin: 30px;
-    width: min(900px, 88vw);
+  margin: 30px;
+  width: min(900px, 88vw);
+  @apply rounded-xl;
 }
 
 .event-modal {
   margin: 30px;
   height: min(600px, 70vh);
   width: min(350px, 90vw);
+  @apply rounded-xl;
 }
 
 .author-modal {
-  @apply m-2 sm:p-5;
+  @apply m-2 sm:p-5 rounded-xl;
   width: min(600px, 90vw);
 }
 
 .quote-modal {
-  @apply m-5 sm:p-5;
+  @apply m-5 sm:p-5 rounded-xl;
   height: min(700px, 75vh);
   width: min(900px, 85vw);
 }
 
 .review-modal {
-  @apply m-5 sm:p-5;
+  @apply m-5 sm:p-5 rounded-xl;
   height: min(700px, 75vh);
   width: min(900px, 85vw);
 }
 
 .metadata-modal {
-  @apply m-5 sm:p-5;
+  @apply m-5 sm:p-5 rounded-xl;
   height: min(400px, 75vh);
   width: min(400px, 85vw);
 }
@@ -284,8 +309,8 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
 }
 
 .small-cover {
-    @apply w-28;
-  }
+  @apply w-28;
+}
 
 .small-cover img {
   @apply w-28 relative;
@@ -301,118 +326,135 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
   @apply text-lg;
 }
 
-/* // book detail */
+/* ══════════════════════════════════════
+   BOOK DETAIL
+   ══════════════════════════════════════ */
 
 .jelu-bordered {
-  @apply border-2 rounded-none border-accent;
-  -webkit-box-shadow: 10px 10px 10px 0px var(--jelu_background);
-  box-shadow: 10px 10px 10px 0px var(--jelu_background);
+  @apply border border-base-300 rounded-xl;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
 }
 
-
-/* dashboard sidebar customizing */
+/* ══════════════════════════════════════
+   SIDEBAR
+   ══════════════════════════════════════ */
 
 .sidebar {
   @apply h-fit!;
 }
 
 .sidebar-header {
-  @apply bg-base-100 text-base-content!;
+  @apply bg-base-200 text-base-content!;
 }
 
 .sidebar-content {
-   @apply bg-base-100!;
+  @apply bg-base-200!;
 }
 
 .sidebar-content ul li a {
-  @apply bg-base-100 rounded-lg text-base-content hover:bg-accent/50!;
+  @apply bg-base-200 rounded-lg text-base-content hover:bg-accent/15 transition-colors duration-150!;
 }
 
 .sidebar-content ul li span {
   @apply capitalize truncate;
 }
-/* end dashboard sidebar */
+
+/* ══════════════════════════════════════
+   TAG INPUTS
+   ══════════════════════════════════════ */
 
 .jelu-authorinput .o-taginput__item {
-  @apply bg-success rounded-sm mx-1;
+  @apply bg-accent/20 text-accent-content rounded-md mx-1;
 }
 
 .jelu-taginput .o-taginput__item {
-  @apply bg-warning rounded-sm text-warning-content mx-1;
+  @apply bg-warning/15 rounded-md text-warning mx-1;
 }
 
 .jl-taginput-empty {
   @apply cursor-pointer;
 }
 
+/* ══════════════════════════════════════
+   CARDS
+   ══════════════════════════════════════ */
+
 [data-theme="jelu"] .card {
-  @apply bg-base-100 border-0;
+  @apply bg-base-200 border border-base-300 rounded-xl;
 }
 
 [data-theme="jelu"] .jl-card {
-  @apply bg-base-100 border-0;
+  @apply bg-base-200 border border-base-300 rounded-xl;
 }
 
 [data-theme="jelu"] .alert .btn {
-    @apply bg-base-100;
+  @apply bg-base-200 rounded-lg;
 }
 
 [data-theme="jelu"] .card-body .btn {
-    @apply bg-base-100;
+  @apply bg-base-200 rounded-lg;
 }
 
 [data-theme="jelu"] .o-taginput__item {
-    @apply text-accent-content;
+  @apply text-accent-content;
 }
 
 [data-theme="jelu"] .card.card-sm {
-  @apply rounded-none;
+  @apply rounded-xl;
 }
 
 .card.card-sm {
-  @apply rounded;
+  @apply rounded-xl;
 }
 
 [data-theme="jelu"] .timeline-item {
-  @apply bg-neutral rounded-none;
+  @apply bg-base-300 rounded-lg;
 }
 
 .timeline-item {
-  @apply bg-accent rounded;
+  @apply bg-accent/10 rounded-lg;
 }
 
-/* title search input on search page, make it fill column */
+/* title search input on search page */
 .title-input .o-ctrl-input {
   @apply w-full;
 }
 
-/* loader from https://loading.io/css/ */
+/* ══════════════════════════════════════
+   LOADER
+   ══════════════════════════════════════ */
+
 .lds-facebook {
   display: inline-block;
   position: relative;
   width: 80px;
   height: 80px;
 }
+
 .lds-facebook div {
   display: inline-block;
   position: absolute;
   left: 8px;
   width: 16px;
-  /* background: var(--color-accent); */
+  border-radius: 4px;
   animation: lds-facebook 1.2s cubic-bezier(0, 0.5, 0.5, 1) infinite;
 }
+
 .lds-facebook div:nth-child(1) {
   left: 8px;
   animation-delay: -0.24s;
 }
+
 .lds-facebook div:nth-child(2) {
   left: 32px;
   animation-delay: -0.12s;
 }
+
 .lds-facebook div:nth-child(3) {
   left: 56px;
   animation-delay: 0;
 }
+
 @keyframes lds-facebook {
   0% {
     top: 8px;
@@ -423,31 +465,109 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
     height: 32px;
   }
 }
-/* end loader from https://loading.io/css/ */
 
-/* clear button positioning from https://github.com/icehaunter/vue3-datepicker  */
+/* ══════════════════════════════════════
+   DATEPICKER & MARKDOWN EDITOR
+   ══════════════════════════════════════ */
+
 .v3dp__clearable {
   left: -25px!;
   top: 5px!;
 }
-/* end clear button */
 
-/* vue markdown editor textarea color */
-.v-md-textarea-editor pre, .v-md-textarea-editor textarea {
-  @apply text-accent-content;
+.v-md-textarea-editor pre,
+.v-md-textarea-editor textarea {
+  @apply text-base-content;
 }
 
-.v-md-editor-preview  {
+.v-md-editor-preview {
   @apply text-base-content;
 }
 
 .card-body .v-md-editor-preview {
   @apply text-base-content;
 }
-/* end vue markdown editor */
 
 .jelu-cursor-text {
   @apply cursor-text!;
+}
+
+/* ══════════════════════════════════════
+   GLOBAL POLISH — SHADCN FEEL
+   ══════════════════════════════════════ */
+
+/* Rounded buttons everywhere */
+[data-theme="jelu"] .btn {
+  @apply rounded-lg;
+}
+
+/* Input fields */
+[data-theme="jelu"] .input {
+  @apply rounded-lg bg-base-200 border border-base-300;
+}
+
+/* Select dropdowns */
+[data-theme="jelu"] .select {
+  @apply rounded-lg bg-base-200 border border-base-300;
+}
+
+/* Badges → pill shape */
+[data-theme="jelu"] .badge {
+  @apply rounded-full px-2.5 py-0.5 text-xs font-medium border-0;
+}
+
+/* Checkboxes */
+[data-theme="jelu"] .checkbox {
+  @apply rounded-md border-base-300;
+}
+
+/* Dropdown menus */
+[data-theme="jelu"] .dropdown-content {
+  @apply rounded-xl border border-base-300 shadow-xl bg-base-200;
+}
+
+/* Menu items */
+[data-theme="jelu"] .menu li a {
+  @apply rounded-lg hover:bg-base-300 transition-colors duration-150;
+}
+
+/* Modal boxes */
+[data-theme="jelu"] .modal-box {
+  @apply rounded-xl border border-base-300 bg-base-200;
+}
+
+/* Join groups (search bar) */
+[data-theme="jelu"] .join .input {
+  @apply rounded-l-lg;
+}
+
+[data-theme="jelu"] .join .btn:last-child {
+  @apply rounded-r-lg;
+}
+
+/* Divider — subtle */
+[data-theme="jelu"] .divider {
+  @apply before:bg-base-300/50 after:bg-base-300/50;
+}
+
+/* Smooth transitions */
+[data-theme="jelu"] .btn,
+[data-theme="jelu"] .input,
+[data-theme="jelu"] .card,
+[data-theme="jelu"] a {
+  transition: all 0.15s ease;
+}
+
+/* Card hover — subtle lift */
+[data-theme="jelu"] .card.card-sm:hover {
+  @apply border-base-300/80;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Navbar glass effect */
+[data-theme="jelu"] .navbar {
+  @apply bg-base-100/80 backdrop-blur-md;
 }
 
 }
