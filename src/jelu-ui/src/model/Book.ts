@@ -57,6 +57,8 @@ export interface UserBookBulkUpdate {
     owned?: boolean,
     removeTags?: Array<string>,
     addTags?: Array<string>,
+    lastReadingEvent?: ReadingEventType,
+
 }
 export interface UserBookUpdate {
   id?: string,
