@@ -120,4 +120,5 @@ data class UserBookBulkUpdateDto(
     val owned: Boolean?,
     val removeTags: List<UUID>?,
     val addTags: List<UUID>?,
+    val lastReadingEvent: ReadingEventType?,
 )
