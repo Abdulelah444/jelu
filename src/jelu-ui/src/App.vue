@@ -658,10 +658,12 @@ function scanModalClosed() {
 <style lang="css">
 
 #app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
+  font-family: Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
+  letter-spacing: -0.01em;
+
 }
 
 .v-enter-active,
