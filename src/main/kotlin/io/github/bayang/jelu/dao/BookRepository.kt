@@ -1674,7 +1674,7 @@ class BookRepository(
             }
         }
         // otherwise : Can't prepare UPDATE statement without fields to update
-        if (userBookBulkUpdateDto.owned == null && userBookBulkUpdateDto.toRead == null) {
+        if (userBookBulkUpdateDto.owned == null && userBookBulkUpdateDto.toRead == null && userBookBulkUpdateDto.lastReadingEvent == null) {
             return tagAdded
         }
         // SQLite doesn't support LIMIT in DELETE clause., dialect: sqlite.
@@ -1693,6 +1693,11 @@ class BookRepository(
                     }
                     if (userBookBulkUpdateDto.owned != null) {
                         it[UserBookTable.owned] = userBookBulkUpdateDto.owned
+                        modified = true
+                    }
+                    if (userBookBulkUpdateDto.lastReadingEvent != null) {
+                        it[UserBookTable.lastReadingEvent] = userBookBulkUpdateDto.lastReadingEvent
+                        it[UserBookTable.lastReadingEventDate] = java.time.OffsetDateTime.now()
                         modified = true
                     }
                     if (modified) {
