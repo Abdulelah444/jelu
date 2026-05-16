@@ -108,7 +108,7 @@ const currentTimestamp = ObjectUtils.timestamp()
 
 <template>
   <div
-    class="card card-sm bg-base-100 shadow-2xl shadow-base-300"
+    class="card card-sm bg-base-200 border border-base-300 shadow-md"
   >
     <div>
       <router-link
