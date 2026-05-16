@@ -359,6 +359,7 @@
         "add_or_remove" : "Add or remove tag",
         "add" : "Add",
         "remove" : "Remove",
+        "remove_tag" : "remove tag",
         "choose_tag" : "Choose the tag you want to add or remove",
         "add_tag" : "add tag",
         "remove_tag" : "remove tag"
