@@ -1563,6 +1563,7 @@ class DataService {
         removeTags: bulkUpdateDto.removeTags,
         owned: bulkUpdateDto.owned,
         toRead: bulkUpdateDto.toRead,
+        lastReadingEvent: bulkUpdateDto.lastReadingEvent,
       })
       return resp.data
     } catch (error) {
