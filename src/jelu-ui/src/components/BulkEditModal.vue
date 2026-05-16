@@ -3,6 +3,7 @@ import { Ref, ref, watch } from "vue";
 import dataService from "../services/DataService";
 import { useI18n } from 'vue-i18n'
 import { Tag } from "../model/Tag";
+import { ReadingEventType } from "../model/ReadingEvent";
 import { ObjectUtils } from "../utils/ObjectUtils";
 import { useOruga } from "@oruga-ui/oruga-next";
 import { Wrapper } from "../model/autocomplete-wrapper";
@@ -25,6 +26,7 @@ const emit = defineEmits<{
 
 const toRead: Ref<boolean|null> = ref(null)
 const owned: Ref<boolean|null> = ref(null)
+const readingStatus: Ref<ReadingEventType|null> = ref(null)
 const add: Ref<boolean> = ref(true)
 
 const filteredTags: Ref<Array<Wrapper>> = ref([]);
@@ -73,11 +75,12 @@ const addTags: Ref<Array<Tag>> = ref([])
 const removeTags: Ref<Array<Tag>> = ref([])
 
 const submit = () => {
-  if (owned.value != null || toRead.value != null || removeTags.value.length > 0 || addTags.value.length > 0) {
+  if (owned.value != null || toRead.value != null || readingStatus.value != null || removeTags.value.length > 0 || addTags.value.length > 0) {
     dataService.bulkEditUserBooks({
       ids: props.ids,
       owned: owned.value != null ? owned.value : undefined,
       toRead: toRead.value != null ? toRead.value : undefined,
+      lastReadingEvent: readingStatus.value != null ? readingStatus.value : undefined,
       addTags: addTags.value.map(tag => tag.id) as string[],
       removeTags: removeTags.value.map(tag => tag.id) as string[]
     }).then(res => {
@@ -157,6 +160,41 @@ const { typographyClasses } = useTypography()
             <label>{{ t('labels.do_nothing') }}</label>
             <input
               v-model="toRead"
+              type="radio"
+              :value="null"
+              class="radio radio-accent"
+            >
+          </div>
+        </div>
+        <div class="field my-2">
+          <label class="label">
+            <span class="label-text font-semibold first-letter:capitalize">{{ t('bulk.reading_status') }} :</span>
+          </label>
+          <div class="flex gap-2 flex-wrap">
+            <label>{{ t('bulk.finished') }}</label>
+            <input
+              v-model="readingStatus"
+              type="radio"
+              value="FINISHED"
+              class="radio radio-accent"
+            >
+            <label>{{ t('bulk.currently_reading') }}</label>
+            <input
+              v-model="readingStatus"
+              type="radio"
+              value="CURRENTLY_READING"
+              class="radio radio-accent"
+            >
+            <label>{{ t('bulk.dropped') }}</label>
+            <input
+              v-model="readingStatus"
+              type="radio"
+              value="DROPPED"
+              class="radio radio-accent"
+            >
+            <label>{{ t('labels.do_nothing') }}</label>
+            <input
+              v-model="readingStatus"
               type="radio"
               :value="null"
               class="radio radio-accent"
