@@ -497,7 +497,7 @@ const { typographyClasses } = useTypography()
             v-for="res in searchResult.pages"
             :key="res.id"
             v-tooltip="t('labels.click_to_import')"
-            class="card card-side mb-2 shadow-lg shadow-base-300 hover:shadow-2xl hover:border-2 hover:border-accent"
+            class="card card-side mb-2 border border-base-300 shadow-md hover:shadow-lg hover:border-accent"
             @click="fillFormWithEntry(res)"
           >
             <figure
