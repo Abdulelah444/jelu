@@ -362,6 +362,10 @@
         "choose_tag" : "Choose the tag you want to add or remove",
         "add_tag" : "add tag",
         "remove_tag" : "remove tag"
+        "reading_status" : "Reading status",
+        "finished" : "Finished",
+        "currently_reading" : "Currently reading",
+        "dropped" : "Dropped"
     },
     "reviews" : {
         "create_review" : "Create review",
