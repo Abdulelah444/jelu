@@ -145,7 +145,7 @@ getList()
   </h2>
   <div
     v-if="books.length > 0"
-    class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-0 my-3 shrink-0 grow-0 mt-2"
+    class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-0 my-3 shrink-0 grow-0 mt-2"
   >
     <div
       v-for="book in convertedBooks"
