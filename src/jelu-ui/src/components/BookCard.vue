@@ -176,7 +176,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-1 hover:link""
+          class="card-title text-sm line-clamp-2 hover:link""
         >
           {{ book.book.title }}
         </h2>
@@ -188,7 +188,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-1 hover:link""
+          class="card-title text-sm line-clamp-2 hover:link""
         >
           {{ book.book.title }}
         </h2>
