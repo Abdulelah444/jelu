@@ -2,6 +2,7 @@
 import { computed, Ref, ref, watch } from "vue";
 import { useI18n } from 'vue-i18n';
 import { UserBookUpdate } from "../model/Book";
+import { ReadingEventType } from "../model/ReadingEvent";
 import dataService from "../services/DataService";
 import { ObjectUtils } from "../utils/ObjectUtils";
 import useTypography from "../composables/typography";
@@ -68,6 +69,18 @@ const update = async () => {
       currentPageNumber: currentPageNumber.value,
     }
     await dataService.updateUserBook(userBookUpdate)
+
+    // Record a reading event for this progress update
+    try {
+      await dataService.createReadingEvent({
+        eventType: ReadingEventType.CURRENTLY_READING,
+        bookId: props.bookId,
+        eventDate: new Date(),
+      })
+    } catch (e) {
+      console.log("event creation failed, progress still saved: " + e)
+    }
+
     progress.value = false
     emit('close')
   } catch (e) {
