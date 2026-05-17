@@ -1,15 +1,12 @@
 package io.github.bayang.jelu.service
 
+import io.github.bayang.jelu.dto.AssignBookToShelfDto
 import io.github.bayang.jelu.dto.BookCreateDto
 import io.github.bayang.jelu.dto.CreatePhysicalBookcaseDto
 import io.github.bayang.jelu.dto.CreatePhysicalLocationDto
 import io.github.bayang.jelu.dto.CreateUserBookDto
 import io.github.bayang.jelu.dto.CreateUserDto
-import io.github.bayang.jelu.dto.AssignBookToShelfDto
-import io.github.bayang.jelu.dto.BulkAssignBooksToShelfDto
 import io.github.bayang.jelu.dto.UpdatePhysicalLocationDto
-import io.github.bayang.jelu.dto.UpdatePhysicalBookcaseDto
-import io.github.bayang.jelu.dto.UpdatePhysicalShelfDto
 import io.github.bayang.jelu.dto.UserDto
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.BeforeEach
@@ -18,7 +15,6 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.data.domain.Pageable
 import org.springframework.transaction.annotation.Transactional
-import java.util.UUID
 
 @SpringBootTest
 class PhysicalLibraryServiceTest(
@@ -26,7 +22,6 @@ class PhysicalLibraryServiceTest(
     @Autowired private val bookService: BookService,
     @Autowired private val userService: UserService,
 ) {
-
     private lateinit var testUser: UserDto
 
     @BeforeEach
@@ -35,7 +30,7 @@ class PhysicalLibraryServiceTest(
             physicalLibraryService.deleteLocation(it.id!!)
         }
         try {
-	    val found = userService.findByLogin("testphyslib")
+            val found = userService.findByLogin("testphyslib")
             testUser = found.first()
         } catch (e: Exception) {
             testUser = userService.save(CreateUserDto(login = "testphyslib", password = "1234", isAdmin = false))
@@ -78,10 +73,11 @@ class PhysicalLibraryServiceTest(
     @Transactional
     fun testCreateBookcaseAutoCreatesShelves() {
         val location = physicalLibraryService.createLocation(CreatePhysicalLocationDto("Living Room"))
-        val bookcase = physicalLibraryService.createBookcase(
-            location.id!!,
-            CreatePhysicalBookcaseDto(name = "Tall Bookcase", shelfCount = 5)
-        )
+        val bookcase =
+            physicalLibraryService.createBookcase(
+                location.id!!,
+                CreatePhysicalBookcaseDto(name = "Tall Bookcase", shelfCount = 5),
+            )
         Assertions.assertNotNull(bookcase.id)
         Assertions.assertEquals("Tall Bookcase", bookcase.name)
         Assertions.assertEquals(5, bookcase.shelfCount)
@@ -94,28 +90,30 @@ class PhysicalLibraryServiceTest(
     @Transactional
     fun testAssignAndResolveLocation() {
         val location = physicalLibraryService.createLocation(CreatePhysicalLocationDto("Office"))
-        val bookcase = physicalLibraryService.createBookcase(
-            location.id!!,
-            CreatePhysicalBookcaseDto(name = "Bookcase A", shelfCount = 3)
-        )
+        val bookcase =
+            physicalLibraryService.createBookcase(
+                location.id!!,
+                CreatePhysicalBookcaseDto(name = "Bookcase A", shelfCount = 3),
+            )
         val shelf = bookcase.shelves!![2]
 
-        val userBook = bookService.save(
-            CreateUserBookDto(
-                book = BookCreateDto(title = "Located Book"),
-                lastReadingEvent = null,
-                lastReadingEventDate = null,
-                personalNotes = null,
-                owned = true,
-                toRead = false,
-                percentRead = null,
-                currentPageNumber = null,
-                borrowed = null,
-                price = null,
-            ),
-            testUser,
-            null,
-        )
+        val userBook =
+            bookService.save(
+                CreateUserBookDto(
+                    book = BookCreateDto(title = "Located Book"),
+                    lastReadingEvent = null,
+                    lastReadingEventDate = null,
+                    personalNotes = null,
+                    owned = true,
+                    toRead = false,
+                    percentRead = null,
+                    currentPageNumber = null,
+                    borrowed = null,
+                    price = null,
+                ),
+                testUser,
+                null,
+            )
 
         physicalLibraryService.assignBookToShelf(shelf.id!!, AssignBookToShelfDto(userBookId = userBook.id!!))
 
@@ -132,29 +130,31 @@ class PhysicalLibraryServiceTest(
     @Transactional
     fun testOneBookOneShelfRule() {
         val location = physicalLibraryService.createLocation(CreatePhysicalLocationDto("Home"))
-        val bookcase = physicalLibraryService.createBookcase(
-            location.id!!,
-            CreatePhysicalBookcaseDto(name = "BC", shelfCount = 2)
-        )
+        val bookcase =
+            physicalLibraryService.createBookcase(
+                location.id!!,
+                CreatePhysicalBookcaseDto(name = "BC", shelfCount = 2),
+            )
         val shelf1 = bookcase.shelves!![0]
         val shelf2 = bookcase.shelves!![1]
 
-        val userBook = bookService.save(
-            CreateUserBookDto(
-                book = BookCreateDto(title = "Movable Book"),
-                lastReadingEvent = null,
-                lastReadingEventDate = null,
-                personalNotes = null,
-                owned = true,
-                toRead = false,
-                percentRead = null,
-                currentPageNumber = null,
-                borrowed = null,
-                price = null,
-            ),
-            testUser,
-            null,
-        )
+        val userBook =
+            bookService.save(
+                CreateUserBookDto(
+                    book = BookCreateDto(title = "Movable Book"),
+                    lastReadingEvent = null,
+                    lastReadingEventDate = null,
+                    personalNotes = null,
+                    owned = true,
+                    toRead = false,
+                    percentRead = null,
+                    currentPageNumber = null,
+                    borrowed = null,
+                    price = null,
+                ),
+                testUser,
+                null,
+            )
 
         physicalLibraryService.assignBookToShelf(shelf1.id!!, AssignBookToShelfDto(userBookId = userBook.id!!))
         var booksOnShelf1 = physicalLibraryService.findBooksOnShelf(shelf1.id!!)
@@ -171,31 +171,48 @@ class PhysicalLibraryServiceTest(
     @Transactional
     fun testUnassignedBooks() {
         val location = physicalLibraryService.createLocation(CreatePhysicalLocationDto("Room"))
-        val bookcase = physicalLibraryService.createBookcase(
-            location.id!!,
-            CreatePhysicalBookcaseDto(name = "BC", shelfCount = 1)
-        )
+        val bookcase =
+            physicalLibraryService.createBookcase(
+                location.id!!,
+                CreatePhysicalBookcaseDto(name = "BC", shelfCount = 1),
+            )
         val shelf = bookcase.shelves!!.first()
 
-        val assignedBook = bookService.save(
-            CreateUserBookDto(
-                book = BookCreateDto(title = "Assigned Book"),
-                lastReadingEvent = null, lastReadingEventDate = null,
-                personalNotes = null, owned = true, toRead = false,
-                percentRead = null, currentPageNumber = null, borrowed = null, price = null,
-            ),
-            testUser, null,
-        )
+        val assignedBook =
+            bookService.save(
+                CreateUserBookDto(
+                    book = BookCreateDto(title = "Assigned Book"),
+                    lastReadingEvent = null,
+                    lastReadingEventDate = null,
+                    personalNotes = null,
+                    owned = true,
+                    toRead = false,
+                    percentRead = null,
+                    currentPageNumber = null,
+                    borrowed = null,
+                    price = null,
+                ),
+                testUser,
+                null,
+            )
 
-        val unassignedBook = bookService.save(
-            CreateUserBookDto(
-                book = BookCreateDto(title = "Floating Book"),
-                lastReadingEvent = null, lastReadingEventDate = null,
-                personalNotes = null, owned = true, toRead = false,
-                percentRead = null, currentPageNumber = null, borrowed = null, price = null,
-            ),
-            testUser, null,
-        )
+        val unassignedBook =
+            bookService.save(
+                CreateUserBookDto(
+                    book = BookCreateDto(title = "Floating Book"),
+                    lastReadingEvent = null,
+                    lastReadingEventDate = null,
+                    personalNotes = null,
+                    owned = true,
+                    toRead = false,
+                    percentRead = null,
+                    currentPageNumber = null,
+                    borrowed = null,
+                    price = null,
+                ),
+                testUser,
+                null,
+            )
 
         physicalLibraryService.assignBookToShelf(shelf.id!!, AssignBookToShelfDto(userBookId = assignedBook.id!!))
 
@@ -208,21 +225,30 @@ class PhysicalLibraryServiceTest(
     @Transactional
     fun testDeleteLocationCascades() {
         val location = physicalLibraryService.createLocation(CreatePhysicalLocationDto("Temp Room"))
-        val bookcase = physicalLibraryService.createBookcase(
-            location.id!!,
-            CreatePhysicalBookcaseDto(name = "Temp BC", shelfCount = 2)
-        )
+        val bookcase =
+            physicalLibraryService.createBookcase(
+                location.id!!,
+                CreatePhysicalBookcaseDto(name = "Temp BC", shelfCount = 2),
+            )
         val shelf = bookcase.shelves!!.first()
 
-        val userBook = bookService.save(
-            CreateUserBookDto(
-                book = BookCreateDto(title = "Cascade Test Book"),
-                lastReadingEvent = null, lastReadingEventDate = null,
-                personalNotes = null, owned = true, toRead = false,
-                percentRead = null, currentPageNumber = null, borrowed = null, price = null,
-            ),
-            testUser, null,
-        )
+        val userBook =
+            bookService.save(
+                CreateUserBookDto(
+                    book = BookCreateDto(title = "Cascade Test Book"),
+                    lastReadingEvent = null,
+                    lastReadingEventDate = null,
+                    personalNotes = null,
+                    owned = true,
+                    toRead = false,
+                    percentRead = null,
+                    currentPageNumber = null,
+                    borrowed = null,
+                    price = null,
+                ),
+                testUser,
+                null,
+            )
         physicalLibraryService.assignBookToShelf(shelf.id!!, AssignBookToShelfDto(userBookId = userBook.id!!))
 
         physicalLibraryService.deleteLocation(location.id!!)

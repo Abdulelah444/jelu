@@ -31,26 +31,23 @@ class PhysicalLibraryService(
     private val shelfRepository: PhysicalShelfRepository,
     private val shelfBookRepository: PhysicalShelfBookRepository,
 ) {
+    @Transactional
+    fun findAllLocations(): List<PhysicalLocationDto> = locationRepository.findAll().map { it.toDto() }
 
     @Transactional
-    fun findAllLocations(): List<PhysicalLocationDto> =
-        locationRepository.findAll().map { it.toDto() }
+    fun findLocationById(id: UUID): PhysicalLocationDto = locationRepository.findById(id).toDto()
 
     @Transactional
-    fun findLocationById(id: UUID): PhysicalLocationDto =
-        locationRepository.findById(id).toDto()
+    fun createLocation(dto: CreatePhysicalLocationDto): PhysicalLocationDto = locationRepository.save(dto).toDto()
 
     @Transactional
-    fun createLocation(dto: CreatePhysicalLocationDto): PhysicalLocationDto =
-        locationRepository.save(dto).toDto()
+    fun updateLocation(
+        id: UUID,
+        dto: UpdatePhysicalLocationDto,
+    ): PhysicalLocationDto = locationRepository.update(id, dto).toDto()
 
     @Transactional
-    fun updateLocation(id: UUID, dto: UpdatePhysicalLocationDto): PhysicalLocationDto =
-        locationRepository.update(id, dto).toDto()
-
-    @Transactional
-    fun deleteLocation(id: UUID) =
-        locationRepository.delete(id)
+    fun deleteLocation(id: UUID) = locationRepository.delete(id)
 
     @Transactional
     fun findBookcasesByLocation(locationId: UUID): List<PhysicalBookcaseDto> =
@@ -64,14 +61,20 @@ class PhysicalLibraryService(
     }
 
     @Transactional
-    fun createBookcase(locationId: UUID, dto: CreatePhysicalBookcaseDto): PhysicalBookcaseDto {
+    fun createBookcase(
+        locationId: UUID,
+        dto: CreatePhysicalBookcaseDto,
+    ): PhysicalBookcaseDto {
         val bookcase = bookcaseRepository.save(locationId, dto)
         val shelves = shelfRepository.createShelvesForBookcase(bookcase.id.value, dto.shelfCount)
         return bookcase.toDto().copy(shelves = shelves.map { it.toDto() })
     }
 
     @Transactional
-    fun updateBookcase(id: UUID, dto: UpdatePhysicalBookcaseDto): PhysicalBookcaseDto {
+    fun updateBookcase(
+        id: UUID,
+        dto: UpdatePhysicalBookcaseDto,
+    ): PhysicalBookcaseDto {
         val existing = bookcaseRepository.findById(id)
         val oldCount = existing.shelfCount
         val updated = bookcaseRepository.update(id, dto)
@@ -83,36 +86,45 @@ class PhysicalLibraryService(
     }
 
     @Transactional
-    fun deleteBookcase(id: UUID) =
-        bookcaseRepository.delete(id)
+    fun deleteBookcase(id: UUID) = bookcaseRepository.delete(id)
 
     @Transactional
-    fun findShelvesByBookcase(bookcaseId: UUID): List<PhysicalShelfDto> =
-        shelfRepository.findByBookcase(bookcaseId).map { it.toDto() }
+    fun findShelvesByBookcase(bookcaseId: UUID): List<PhysicalShelfDto> = shelfRepository.findByBookcase(bookcaseId).map { it.toDto() }
 
     @Transactional
-    fun updateShelf(id: UUID, dto: UpdatePhysicalShelfDto): PhysicalShelfDto =
-        shelfRepository.update(id, dto).toDto()
+    fun updateShelf(
+        id: UUID,
+        dto: UpdatePhysicalShelfDto,
+    ): PhysicalShelfDto = shelfRepository.update(id, dto).toDto()
 
     @Transactional
-    fun findBooksOnShelf(shelfId: UUID): List<PhysicalShelfBookDto> =
-        shelfBookRepository.findByShelf(shelfId).map { it.toDto() }
+    fun findBooksOnShelf(shelfId: UUID): List<PhysicalShelfBookDto> = shelfBookRepository.findByShelf(shelfId).map { it.toDto() }
 
     @Transactional
-    fun assignBookToShelf(shelfId: UUID, dto: AssignBookToShelfDto): PhysicalShelfBookDto =
-        shelfBookRepository.assign(shelfId, dto.userBookId, dto.position).toDto()
+    fun assignBookToShelf(
+        shelfId: UUID,
+        dto: AssignBookToShelfDto,
+    ): PhysicalShelfBookDto = shelfBookRepository.assign(shelfId, dto.userBookId, dto.position).toDto()
 
     @Transactional
-    fun bulkAssignBooksToShelf(shelfId: UUID, dto: BulkAssignBooksToShelfDto): List<PhysicalShelfBookDto> =
-        shelfBookRepository.bulkAssign(shelfId, dto.userBookIds).map { it.toDto() }
+    fun bulkAssignBooksToShelf(
+        shelfId: UUID,
+        dto: BulkAssignBooksToShelfDto,
+    ): List<PhysicalShelfBookDto> = shelfBookRepository.bulkAssign(shelfId, dto.userBookIds).map { it.toDto() }
 
     @Transactional
-    fun removeBookFromShelf(shelfId: UUID, userBookId: UUID) {
+    fun removeBookFromShelf(
+        shelfId: UUID,
+        userBookId: UUID,
+    ) {
         shelfBookRepository.remove(shelfId, userBookId)
     }
 
     @Transactional
-    fun reorderBooksOnShelf(shelfId: UUID, dto: ReorderShelfBooksDto) {
+    fun reorderBooksOnShelf(
+        shelfId: UUID,
+        dto: ReorderShelfBooksDto,
+    ) {
         shelfBookRepository.reorder(shelfId, dto.userBookIds)
     }
 
@@ -121,6 +133,5 @@ class PhysicalLibraryService(
         shelfBookRepository.findUnassigned(pageable).map { it.toUserBookLightDto() }
 
     @Transactional
-    fun resolveLocation(userBookId: UUID): ShelfLocationDto? =
-        shelfBookRepository.resolveLocation(userBookId)
+    fun resolveLocation(userBookId: UUID): ShelfLocationDto? = shelfBookRepository.resolveLocation(userBookId)
 }

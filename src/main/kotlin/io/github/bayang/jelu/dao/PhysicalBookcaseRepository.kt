@@ -14,7 +14,6 @@ private val logger = KotlinLogging.logger {}
 
 @Repository
 class PhysicalBookcaseRepository {
-
     fun findByLocation(locationId: UUID): List<PhysicalBookcase> =
         PhysicalBookcaseTable
             .selectAll()
@@ -30,7 +29,10 @@ class PhysicalBookcaseRepository {
 
     fun findById(id: UUID): PhysicalBookcase = PhysicalBookcase[id]
 
-    fun save(locationId: UUID, dto: CreatePhysicalBookcaseDto): PhysicalBookcase {
+    fun save(
+        locationId: UUID,
+        dto: CreatePhysicalBookcaseDto,
+    ): PhysicalBookcase {
         val instant = nowInstant()
         return PhysicalBookcase.new {
             this.name = dto.name
@@ -43,7 +45,10 @@ class PhysicalBookcaseRepository {
         }
     }
 
-    fun update(id: UUID, dto: UpdatePhysicalBookcaseDto): PhysicalBookcase =
+    fun update(
+        id: UUID,
+        dto: UpdatePhysicalBookcaseDto,
+    ): PhysicalBookcase =
         PhysicalBookcase[id].apply {
             dto.name?.let { this.name = it }
             dto.shelfCount?.let { this.shelfCount = it }

@@ -119,7 +119,6 @@ class GoogleBooksIMetaDataProvider(
             mutableSetOf()
         }
 
-
     private fun extractImage(node: JsonNode): String? {
         val imageLinks = node.get("imageLinks") ?: return null
         // Try largest image first, fall back to smaller ones
@@ -134,7 +133,6 @@ class GoogleBooksIMetaDataProvider(
         }
         return null
     }
-        
 
     private fun summary(node: JsonNode): String? {
         if (node.get("searchInfo") != null && node.get("searchInfo").get("textSnippet") != null) {

@@ -21,7 +21,6 @@ private val logger = KotlinLogging.logger {}
 
 @Repository
 class PhysicalShelfBookRepository {
-
     fun findByShelf(shelfId: UUID): List<PhysicalShelfBook> =
         PhysicalShelfBookTable
             .selectAll()
@@ -36,7 +35,11 @@ class PhysicalShelfBookRepository {
             .map { PhysicalShelfBook.wrapRow(it) }
             .firstOrNull()
 
-    fun assign(shelfId: UUID, userBookId: UUID, position: Int?): PhysicalShelfBook {
+    fun assign(
+        shelfId: UUID,
+        userBookId: UUID,
+        position: Int?,
+    ): PhysicalShelfBook {
         PhysicalShelfBookTable.deleteWhere {
             PhysicalShelfBookTable.userBook eq userBookId
         }
@@ -48,28 +51,38 @@ class PhysicalShelfBookRepository {
         }
     }
 
-    fun bulkAssign(shelfId: UUID, userBookIds: List<UUID>): List<PhysicalShelfBook> {
+    fun bulkAssign(
+        shelfId: UUID,
+        userBookIds: List<UUID>,
+    ): List<PhysicalShelfBook> {
         var pos = nextPosition(shelfId)
         return userBookIds.map { userBookId ->
             PhysicalShelfBookTable.deleteWhere {
                 PhysicalShelfBookTable.userBook eq userBookId
             }
-            val assignment = PhysicalShelfBook.new {
-                this.shelf = PhysicalShelf[shelfId]
-                this.userBook = UserBook[userBookId]
-                this.position = pos
-            }
+            val assignment =
+                PhysicalShelfBook.new {
+                    this.shelf = PhysicalShelf[shelfId]
+                    this.userBook = UserBook[userBookId]
+                    this.position = pos
+                }
             pos++
             assignment
         }
     }
 
-    fun remove(shelfId: UUID, userBookId: UUID): Int =
+    fun remove(
+        shelfId: UUID,
+        userBookId: UUID,
+    ): Int =
         PhysicalShelfBookTable.deleteWhere {
             (PhysicalShelfBookTable.shelf eq shelfId) and (PhysicalShelfBookTable.userBook eq userBookId)
         }
 
-    fun reorder(shelfId: UUID, userBookIds: List<UUID>) {
+    fun reorder(
+        shelfId: UUID,
+        userBookIds: List<UUID>,
+    ) {
         userBookIds.forEachIndexed { index, userBookId ->
             PhysicalShelfBookTable.update(
                 where = {
@@ -105,24 +118,26 @@ class PhysicalShelfBookRepository {
     }
 
     fun resolveLocation(userBookId: UUID): ShelfLocationDto? {
-        val row = PhysicalShelfBookTable
-            .join(PhysicalShelfTable, JoinType.INNER, PhysicalShelfBookTable.shelf, PhysicalShelfTable.id)
-            .join(PhysicalBookcaseTable, JoinType.INNER, PhysicalShelfTable.bookcase, PhysicalBookcaseTable.id)
-            .join(PhysicalLocationTable, JoinType.INNER, PhysicalBookcaseTable.location, PhysicalLocationTable.id)
-            .selectAll()
-            .andWhere { PhysicalShelfBookTable.userBook eq userBookId }
-            .firstOrNull() ?: return null
+        val row =
+            PhysicalShelfBookTable
+                .join(PhysicalShelfTable, JoinType.INNER, PhysicalShelfBookTable.shelf, PhysicalShelfTable.id)
+                .join(PhysicalBookcaseTable, JoinType.INNER, PhysicalShelfTable.bookcase, PhysicalBookcaseTable.id)
+                .join(PhysicalLocationTable, JoinType.INNER, PhysicalBookcaseTable.location, PhysicalLocationTable.id)
+                .selectAll()
+                .andWhere { PhysicalShelfBookTable.userBook eq userBookId }
+                .firstOrNull() ?: return null
 
         val locationName = row[PhysicalLocationTable.name]
         val bookcaseName = row[PhysicalBookcaseTable.name]
         val shelfPosition = row[PhysicalShelfTable.position]
         val shelfLabel = row[PhysicalShelfTable.label]
 
-        val shelfDisplay = if (!shelfLabel.isNullOrBlank()) {
-            "$shelfLabel (Shelf $shelfPosition)"
-        } else {
-            "Shelf $shelfPosition"
-        }
+        val shelfDisplay =
+            if (!shelfLabel.isNullOrBlank()) {
+                "$shelfLabel (Shelf $shelfPosition)"
+            } else {
+                "Shelf $shelfPosition"
+            }
 
         return ShelfLocationDto(
             locationName = locationName,
@@ -134,13 +149,13 @@ class PhysicalShelfBookRepository {
     }
 
     private fun nextPosition(shelfId: UUID): Int {
-        val maxPos = PhysicalShelfBookTable
-            .select(PhysicalShelfBookTable.position.max())
-            .andWhere { PhysicalShelfBookTable.shelf eq shelfId }
-            .firstOrNull()
-            ?.get(PhysicalShelfBookTable.position.max())
+        val maxPos =
+            PhysicalShelfBookTable
+                .select(PhysicalShelfBookTable.position.max())
+                .andWhere { PhysicalShelfBookTable.shelf eq shelfId }
+                .firstOrNull()
+                ?.get(PhysicalShelfBookTable.position.max())
         val base: Int = (maxPos as? Int) ?: -1
         return base + 1
     }
 }
-

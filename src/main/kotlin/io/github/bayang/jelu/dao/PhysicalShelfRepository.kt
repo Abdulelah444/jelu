@@ -13,7 +13,6 @@ private val logger = KotlinLogging.logger {}
 
 @Repository
 class PhysicalShelfRepository {
-
     fun findByBookcase(bookcaseId: UUID): List<PhysicalShelf> =
         PhysicalShelfTable
             .selectAll()
@@ -23,7 +22,10 @@ class PhysicalShelfRepository {
 
     fun findById(id: UUID): PhysicalShelf = PhysicalShelf[id]
 
-    fun update(id: UUID, dto: UpdatePhysicalShelfDto): PhysicalShelf =
+    fun update(
+        id: UUID,
+        dto: UpdatePhysicalShelfDto,
+    ): PhysicalShelf =
         PhysicalShelf[id].apply {
             dto.label?.let { this.label = it }
             if (dto.tagId != null) {
@@ -32,7 +34,10 @@ class PhysicalShelfRepository {
             this.modificationDate = nowInstant()
         }
 
-    fun createShelvesForBookcase(bookcaseId: UUID, shelfCount: Int): List<PhysicalShelf> {
+    fun createShelvesForBookcase(
+        bookcaseId: UUID,
+        shelfCount: Int,
+    ): List<PhysicalShelf> {
         val instant = nowInstant()
         val bookcase = PhysicalBookcase[bookcaseId]
         return (1..shelfCount).map { position ->
@@ -47,7 +52,11 @@ class PhysicalShelfRepository {
         }
     }
 
-    fun adjustShelvesForBookcase(bookcaseId: UUID, oldCount: Int, newCount: Int) {
+    fun adjustShelvesForBookcase(
+        bookcaseId: UUID,
+        oldCount: Int,
+        newCount: Int,
+    ) {
         if (newCount > oldCount) {
             val instant = nowInstant()
             val bookcase = PhysicalBookcase[bookcaseId]

@@ -13,7 +13,6 @@ private val logger = KotlinLogging.logger {}
 
 @Repository
 class PhysicalLocationRepository {
-
     fun findAll(): List<PhysicalLocation> =
         PhysicalLocationTable
             .selectAll()
@@ -31,7 +30,10 @@ class PhysicalLocationRepository {
         }
     }
 
-    fun update(id: UUID, dto: UpdatePhysicalLocationDto): PhysicalLocation =
+    fun update(
+        id: UUID,
+        dto: UpdatePhysicalLocationDto,
+    ): PhysicalLocation =
         PhysicalLocation[id].apply {
             this.name = dto.name
             this.modificationDate = nowInstant()

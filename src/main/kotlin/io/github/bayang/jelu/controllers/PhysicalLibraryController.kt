@@ -39,10 +39,8 @@ import java.util.UUID
 class PhysicalLibraryController(
     private val physicalLibraryService: PhysicalLibraryService,
 ) {
-
     @GetMapping(path = ["/physical-locations"])
-    fun getAllLocations(principal: Authentication): List<PhysicalLocationDto> =
-        physicalLibraryService.findAllLocations()
+    fun getAllLocations(principal: Authentication): List<PhysicalLocationDto> = physicalLibraryService.findAllLocations()
 
     @GetMapping(path = ["/physical-locations/{id}"])
     fun getLocationById(
@@ -165,7 +163,8 @@ class PhysicalLibraryController(
 
     @GetMapping(path = ["/userbooks/unassigned"])
     fun getUnassignedBooks(
-        @PageableDefault(page = 0, size = 20, direction = Sort.Direction.DESC, sort = ["modificationDate"]) @ParameterObject pageable: Pageable,
+        @PageableDefault(page = 0, size = 20, direction = Sort.Direction.DESC, sort = ["modificationDate"]) @ParameterObject pageable:
+            Pageable,
         principal: Authentication,
     ): Page<UserBookLightDto> = physicalLibraryService.findUnassignedBooks(pageable)
 
