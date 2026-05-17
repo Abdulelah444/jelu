@@ -143,7 +143,9 @@
         "physical_location" : "Physical Location",
         "assign_to_shelf" : "Assign to shelf",
         "move_book" : "Move",
-        "no_location" : "Not assigned to a shelf"
+        "no_location" : "Not assigned to a shelf",
+        "rediscover" : "Rediscover",
+        "from_your_library" : "From your library"
     },
     "settings" : {
         "pick_language" : "Pick your language",
