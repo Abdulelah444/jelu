@@ -184,7 +184,7 @@ getYears()
             </i18n-d>
           </h2>
         </div>
-        <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-2 justify-center justify-items-center justify-self-center">
+        <div class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-2 justify-center justify-items-center justify-self-center">
           <div
             v-for="event in ev"
             :key="event.id"
