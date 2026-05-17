@@ -171,36 +171,43 @@ const { typographyClasses } = useTypography()
             <span class="label-text font-semibold first-letter:capitalize">{{ t('bulk.reading_status') }} :</span>
           </label>
           <div class="flex gap-2 flex-wrap">
-            <label>{{ t('bulk.finished') }}</label>
-            <input
-              v-model="readingStatus"
-              type="radio"
-              value="FINISHED"
-              class="radio radio-accent"
-            >
-            <label>{{ t('bulk.currently_reading') }}</label>
-            <input
-              v-model="readingStatus"
-              type="radio"
-              value="CURRENTLY_READING"
-              class="radio radio-accent"
-            >
-            <label>{{ t('bulk.dropped') }}</label>
-            <input
-              v-model="readingStatus"
-              type="radio"
-              value="DROPPED"
-              class="radio radio-accent"
-            >
-            <label>{{ t('labels.do_nothing') }}</label>
-            <input
-              v-model="readingStatus"
-              type="radio"
-              :value="null"
-              class="radio radio-accent"
-            >
-          </div>
-        </div>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="readingStatus"
+                type="radio"
+                value="FINISHED"
+                class="radio radio-accent"
+              >
+              {{ t('bulk.finished') }}
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="readingStatus"
+                type="radio"
+                value="CURRENTLY_READING"
+                class="radio radio-accent"
+              >
+              {{ t('bulk.currently_reading') }}
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="readingStatus"
+                type="radio"
+                value="DROPPED"
+                class="radio radio-accent"
+              >
+              {{ t('bulk.dropped') }}
+            </label>
+            <label class="flex items-center gap-2">
+              <input
+                v-model="readingStatus"
+                type="radio"
+                :value="null"
+                class="radio radio-accent"
+              >
+              {{ t('labels.do_nothing') }}
+            </label>
+          </div>         
         <div class="field my-2">
           <label class="label">
             <span
