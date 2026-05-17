@@ -437,7 +437,7 @@ getBooks()
     :per-page="perPage"
     @change="updatePage"
   />
-  <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-2 justify-center justify-items-center justify-self-center mt-2">
+  <div class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-2 justify-center justify-items-center justify-self-center mt-2">
     <div
       v-for="book in convertedBooks"
       :key="book.book.id"
