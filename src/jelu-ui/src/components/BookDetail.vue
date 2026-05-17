@@ -846,19 +846,17 @@ getBook()
           <span class="font-semibold uppercase">{{ t('book.isbn13') }} :</span>
           {{ book.book.isbn13 }}
         </p>
-        <p v-if="book?.book?.pageCount || book?.currentPageNumber">
-          <span v-if="book?.book?.pageCount">
-            <span class="font-semibold capitalize">{{ t('book.page', 2) }} :</span>
-            {{ book.book.pageCount }}
-          </span>
-          <span v-if="book?.currentPageNumber">&nbsp;(<span class="font-semibold capitalize">{{ t('labels.current') }}</span> : {{ book.currentPageNumber }})</span>
-        </p>
-        <p
-          v-if="book?.book.pageCount == null && book?.currentPageNumber == null && book?.percentRead != null"
-          class="capitalize"
-        >
-          {{ t('book.percent_read') }} {{ book.percentRead }} %
-        </p>
+        <div v-if="book?.percentRead != null || book?.currentPageNumber || book?.book?.pageCount" class="my-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold capitalize text-sm">{{ t('book.percent_read') }}</span>
+            <span class="text-sm font-bold">{{ Math.round(book?.percentRead ?? 0) }}%</span>
+          </div>
+          <progress class="progress progress-primary w-full" :value="Math.round(book?.percentRead ?? 0)" max="100"></progress>
+          <div v-if="book?.book?.pageCount || book?.currentPageNumber" class="flex justify-between text-xs opacity-70 mt-1">
+            <span v-if="book?.currentPageNumber">Page {{ book.currentPageNumber }}<span v-if="book?.book?.pageCount"> / {{ book.book.pageCount }}</span></span>
+            <span v-else-if="book?.book?.pageCount">{{ book.book.pageCount }} pages</span>
+          </div>
+        </div>
         <p v-if="book?.book?.publishedDate">
           <span class="font-semibold capitalize">{{ t('book.published_date') }} :</span>
           {{ d(stringToDate(book.book.publishedDate)!!, 'short') }}
