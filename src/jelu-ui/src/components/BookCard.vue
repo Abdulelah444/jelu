@@ -176,7 +176,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-base max-h-11 line-clamp-2 hover:link"
+          class="card-title text-sm line-clamp-1 hover:link""
         >
           {{ book.book.title }}
         </h2>
@@ -188,19 +188,19 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-base max-h-11 line-clamp-2 hover:link"
+          class="card-title text-sm line-clamp-1 hover:link""
         >
           {{ book.book.title }}
         </h2>
       </router-link>
       <div v-if="book.book.authors != null && book.book.authors.length > 0">
         <span
-          v-for="author in book.book.authors.slice(0,3)"
+          v-for="author in book.book.authors.slice(0,2)"
           :key="author.id"
         >
           <router-link
             v-if="!public"
-            class="link hover:underline hover:decoration-4 hover:decoration-secondary line-clamp-2 inline-block"
+            class="link hover:underline hover:decoration-2 hover:decoration-secondary line-clamp-1 inline-block text-xs opacity-70"
             :to="{ name: 'author-detail', params: { authorId: author.id } }"
           >
             {{ author.name }}
