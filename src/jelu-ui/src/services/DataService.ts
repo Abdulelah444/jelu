@@ -29,6 +29,7 @@ import urls from "../urls";
 import { OAuth2ClientDto } from "../model/oauth-client-dto";
 import { CustomList, CustomListRemoveDto } from "../model/custom-list";
 import { AdminApiToken, ApiToken, ApiTokenCreated, CreateApiToken, TokenScope, UpdateApiToken } from "../model/ApiToken";
+import { PhysicalLocation, CreatePhysicalLocation, PhysicalBookcase, CreatePhysicalBookcase, UpdatePhysicalBookcase, PhysicalShelf, UpdatePhysicalShelf, PhysicalShelfBook, AssignBookToShelf, BulkAssignBooksToShelf, ShelfLocation } from "../model/PhysicalLibrary";
 
 class DataService {
 
@@ -2213,6 +2214,188 @@ class DataService {
     }
   }
 
+// =====================
+  // Physical Library
+  // =====================
+
+  private API_PHYSICAL_LOCATIONS = '/physical-locations';
+  private API_PHYSICAL_BOOKCASES = '/physical-bookcases';
+  private API_PHYSICAL_SHELVES = '/physical-shelves';
+
+  getPhysicalLocations = async () => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalLocation>>(this.API_PHYSICAL_LOCATIONS);
+      return response.data;
+    } catch (error) {
+      console.log("error physical locations " + (error as AxiosError).code)
+      throw new Error("error physical locations " + error)
+    }
+  }
+
+  createPhysicalLocation = async (location: CreatePhysicalLocation) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalLocation>(this.API_PHYSICAL_LOCATIONS, location)
+      return resp.data
+    } catch (error) {
+      console.log("error creating physical location " + (error as AxiosError).code)
+      throw new Error("error creating physical location " + error)
+    }
+  }
+
+  updatePhysicalLocation = async (id: string, location: CreatePhysicalLocation) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalLocation>(`${this.API_PHYSICAL_LOCATIONS}/${id}`, location)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical location " + (error as AxiosError).code)
+      throw new Error("error updating physical location " + error)
+    }
+  }
+
+  deletePhysicalLocation = async (id: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_LOCATIONS}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error deleting physical location " + (error as AxiosError).code)
+      throw new Error("error deleting physical location " + error)
+    }
+  }
+
+  getPhysicalBookcases = async (locationId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalBookcase>>(`${this.API_PHYSICAL_LOCATIONS}/${locationId}/bookcases`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical bookcases " + (error as AxiosError).code)
+      throw new Error("error physical bookcases " + error)
+    }
+  }
+
+  getPhysicalBookcaseById = async (id: string) => {
+    try {
+      const response = await this.apiClient.get<PhysicalBookcase>(`${this.API_PHYSICAL_BOOKCASES}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical bookcase " + (error as AxiosError).code)
+      throw new Error("error physical bookcase " + error)
+    }
+  }
+
+  createPhysicalBookcase = async (locationId: string, bookcase: CreatePhysicalBookcase) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalBookcase>(`${this.API_PHYSICAL_LOCATIONS}/${locationId}/bookcases`, bookcase)
+      return resp.data
+    } catch (error) {
+      console.log("error creating physical bookcase " + (error as AxiosError).code)
+      throw new Error("error creating physical bookcase " + error)
+    }
+  }
+
+  updatePhysicalBookcase = async (id: string, bookcase: UpdatePhysicalBookcase) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalBookcase>(`${this.API_PHYSICAL_BOOKCASES}/${id}`, bookcase)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical bookcase " + (error as AxiosError).code)
+      throw new Error("error updating physical bookcase " + error)
+    }
+  }
+
+  deletePhysicalBookcase = async (id: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_BOOKCASES}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error deleting physical bookcase " + (error as AxiosError).code)
+      throw new Error("error deleting physical bookcase " + error)
+    }
+  }
+
+  getPhysicalShelves = async (bookcaseId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalShelf>>(`${this.API_PHYSICAL_BOOKCASES}/${bookcaseId}/shelves`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical shelves " + (error as AxiosError).code)
+      throw new Error("error physical shelves " + error)
+    }
+  }
+
+  updatePhysicalShelf = async (id: string, shelf: UpdatePhysicalShelf) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalShelf>(`${this.API_PHYSICAL_SHELVES}/${id}`, shelf)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical shelf " + (error as AxiosError).code)
+      throw new Error("error updating physical shelf " + error)
+    }
+  }
+
+  getBooksOnShelf = async (shelfId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalShelfBook>>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books`);
+      return response.data;
+    } catch (error) {
+      console.log("error books on shelf " + (error as AxiosError).code)
+      throw new Error("error books on shelf " + error)
+    }
+  }
+
+  assignBookToShelf = async (shelfId: string, assignment: AssignBookToShelf) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalShelfBook>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books`, assignment)
+      return resp.data
+    } catch (error) {
+      console.log("error assigning book to shelf " + (error as AxiosError).code)
+      throw new Error("error assigning book to shelf " + error)
+    }
+  }
+
+  bulkAssignBooksToShelf = async (shelfId: string, bulk: BulkAssignBooksToShelf) => {
+    try {
+      const resp = await this.apiClient.post<Array<PhysicalShelfBook>>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books/bulk`, bulk)
+      return resp.data
+    } catch (error) {
+      console.log("error bulk assigning books " + (error as AxiosError).code)
+      throw new Error("error bulk assigning books " + error)
+    }
+  }
+
+  removeBookFromShelf = async (shelfId: string, userBookId: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books/${userBookId}`);
+      return response.data;
+    } catch (error) {
+      console.log("error removing book from shelf " + (error as AxiosError).code)
+      throw new Error("error removing book from shelf " + error)
+    }
+  }
+
+  getUnassignedBooks = async (page?: number, size?: number) => {
+    try {
+      const response = await this.apiClient.get<Page<UserBook>>('/userbooks/unassigned', {
+        params: { page: page, size: size }
+      });
+      return response.data;
+    } catch (error) {
+      console.log("error unassigned books " + (error as AxiosError).code)
+      throw new Error("error unassigned books " + error)
+    }
+  }
+
+  getBookPhysicalLocation = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get<ShelfLocation>(`/userbooks/${userBookId}/physical-location`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response && error.response.status === 204) {
+        return null;
+      }
+      console.log("error book physical location " + (error as AxiosError).code)
+      throw new Error("error book physical location " + error)
+    }
+  }
 }
 
 export default new DataService()

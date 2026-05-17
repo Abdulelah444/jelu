@@ -131,6 +131,20 @@
       "filter_pattern" : "filter pattern",
       "other_owners" : "Other users who also have this book in their library"
     },
+    "library_map" : {
+        "title" : "Library Map",
+        "add_location" : "Add Location",
+        "location_name" : "Location name",
+        "no_locations" : "No locations yet. Add a room or area to get started.",
+        "add_bookcase" : "Add Bookcase",
+        "bookcase_name" : "Bookcase name",
+        "shelf_count" : "Number of shelves",
+        "unassigned_books" : "Unassigned Books",
+        "physical_location" : "Physical Location",
+        "assign_to_shelf" : "Assign to shelf",
+        "move_book" : "Move",
+        "no_location" : "Not assigned to a shelf"
+    },
     "settings" : {
         "pick_language" : "Pick your language",
         "pick_theme" : "Choose a theme",

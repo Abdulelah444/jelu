@@ -226,6 +226,15 @@ function scanModalClosed() {
                 {{ t('nav.my_books') }}
               </router-link>
             </li>
+	    <li @click="collapseDropdown()">
+              <router-link
+                v-if="isLogged"
+                :to="{ name: 'library-map' }"
+                class="font-sans text-base capitalize"
+              >
+                {{ t('library_map.title') }}
+              </router-link>
+            </li>
             <li @click="collapseDropdown()">
               <router-link
                 v-if="isLogged"
@@ -419,6 +428,15 @@ function scanModalClosed() {
               class="font-sans text-xl capitalize"
             >
               {{ t('nav.add_book') }}
+            </router-link>
+          </li>
+	  <li>
+            <router-link
+              v-if="isLogged"
+              :to="{ name: 'library-map' }"
+              class="font-sans text-xl capitalize"
+            >
+              {{ t('library_map.title') }}
             </router-link>
           </li>
           <li>

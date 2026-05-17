@@ -56,6 +56,12 @@ const router = createRouter({
             component: () => import(/* webpackChunkName: "recommend" */ './components/Login.vue'),
             name: 'login'
         },
+	{
+            path: '/library-map',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/LibraryMap.vue'),
+            name: 'library-map',
+            beforeEnter: [isLogged],
+        },
         {
             path: '/add-book',
             component: () => import(/* webpackChunkName: "recommend" */ './components/AddBook.vue'),
