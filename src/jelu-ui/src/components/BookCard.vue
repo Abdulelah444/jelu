@@ -121,13 +121,13 @@ const currentTimestamp = ObjectUtils.timestamp()
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
             alt="cover image"
             class="object-contain"
-            :class="props.size === 'xl' ? 'h-80' : 'h-56'"
+            :class="props.size === 'xl' ? 'h-44' : 'h-32'"
           >
           <img
             v-else
             src="../assets/placeholder_asset.jpg"
             alt="cover placeholder"
-            class="h-56 object-contain"
+            class="h-44 object-contain"
           >
         </figure>
       </router-link>
