@@ -707,4 +707,79 @@
             <column name="user_id" />
         </createIndex>
     </changeSet>
+<changeSet id="create_physical_library" author="byng">
+        <createTable tableName="physical_location">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="varchar(1000)" remarks="Location name">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createTable tableName="physical_bookcase">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="varchar(1000)" remarks="Bookcase name">
+                <constraints nullable="false" />
+            </column>
+            <column name="location" type="binary(16)" remarks="FK to physical_location">
+                <constraints foreignKeyName="fk_phys_bookcase_location" references="physical_location(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="shelf_count" type="int" remarks="Number of shelves">
+                <constraints nullable="false" />
+            </column>
+            <column name="description" type="varchar(5000)" remarks="Optional notes">
+            </column>
+            <column name="sort_order" type="int" remarks="Display ordering" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createTable tableName="physical_shelf">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="bookcase" type="binary(16)" remarks="FK to physical_bookcase">
+                <constraints foreignKeyName="fk_phys_shelf_bookcase" references="physical_bookcase(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="position" type="int" remarks="Shelf number, 1 = top">
+                <constraints nullable="false" />
+            </column>
+            <column name="label" type="varchar(1000)" remarks="Optional label">
+            </column>
+            <column name="tag" type="binary(16)" remarks="Optional FK to tag">
+                <constraints foreignKeyName="fk_phys_shelf_tag" references="tag(id)" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            CREATE TABLE physical_shelf_book (
+                id BLOB(16) NOT NULL PRIMARY KEY,
+                shelf BLOB(16) NOT NULL,
+                user_book BLOB(16) NOT NULL,
+                position INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (shelf) REFERENCES physical_shelf(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_book) REFERENCES user_book(id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX uq_phys_shelf_book_user_book ON physical_shelf_book(user_book);
+            CREATE INDEX idx_phys_shelf_book_shelf ON physical_shelf_book(shelf);
+        </sql>
+    </changeSet>
 </databaseChangeLog>
