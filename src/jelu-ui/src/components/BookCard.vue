@@ -4,6 +4,8 @@ import { useI18n } from 'vue-i18n';
 import { UserBook } from "../model/Book";
 import { ReadingEventType } from "../model/ReadingEvent";
 import { ObjectUtils } from "../utils/ObjectUtils";
+import dataService from "../services/DataService";
+import { ShelfLocation } from "../model/PhysicalLibrary";
 
 const { t } = useI18n({
       inheritLocale: true,
@@ -25,6 +27,16 @@ const emit = defineEmits<{
 }>()
 
 const checked: Ref<boolean> = ref(false)
+
+const shelfLocation: Ref<ShelfLocation | null> = ref(null)
+const fetchLocation = async () => {
+  if (props.book.id) {
+    try {
+      shelfLocation.value = await dataService.getBookPhysicalLocation(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+}
+fetchLocation()
 
 watch(() => props.forceSelect, (newVal, oldVal) => {
   checked.value = props.forceSelect
@@ -265,6 +277,13 @@ const currentTimestamp = ObjectUtils.timestamp()
             class="icon text-error"
           >
             <i class="mdi mdi-plus-circle mdi-18px" />
+          </span>
+	  <span
+            v-if="shelfLocation"
+            v-tooltip="shelfLocation.displayString"
+            class="icon text-info"
+          >
+            <i class="mdi mdi-map-marker mdi-18px" />
           </span>
           <slot name="icon" />
           <slot name="date" />
