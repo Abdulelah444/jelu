@@ -120,14 +120,14 @@ const currentTimestamp = ObjectUtils.timestamp()
             v-if="book.book.image"
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
             alt="cover image"
-            class="object-fill"
-            :class="props.size === 'xl' ? 'h-96' : 'h-72'"
+            class="object-cover w-full"
+            :class="props.size === 'xl' ? 'h-80' : 'h-56'"
           >
           <img
             v-else
             src="../assets/placeholder_asset.jpg"
             alt="cover placeholder"
-            class="h-72 object-fill"
+            class="h-56 object-cover w-full"
           >
         </figure>
       </router-link>
@@ -140,14 +140,14 @@ const currentTimestamp = ObjectUtils.timestamp()
             v-if="book.book.image"
             :src="'/files/' + book.book.image"
             alt="cover image"
-            class="object-fill"
-            :class="props.size === 'xl' ? 'h-96' : 'h-72'"
+            class="object-cover w-full"
+            :class="props.size === 'xl' ? 'h-80' : 'h-56'"
           >
           <img
             v-else
             src="../assets/placeholder_asset.jpg"
             alt="cover placeholder"
-            class="h-72 object-fill"
+            class="h-56 object-cover w-full"
           >
         </figure>
       </router-link>
