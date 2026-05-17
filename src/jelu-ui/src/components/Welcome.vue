@@ -27,6 +27,16 @@ const { t } = useI18n({
     })
 const { eventClass, eventLabel } = useEvents()
 
+const bannerClass = (type: string) => {
+  if (type === 'FINISHED') {
+    return "bg-success text-success-content";
+  } else if (type === 'DROPPED') {
+    return "bg-error text-error-content";
+  } else if (type === 'CURRENTLY_READING') {
+    return "bg-info text-info-content";
+  } else return "bg-base-300";
+}
+
 const isLogged = computed(() => {
     return store != null && store != undefined && store.getters.getLogged
   })
@@ -168,13 +178,10 @@ const { typographyClasses } = useTypography()
 <template>
   <div v-if="isLogged">
     <div v-if="hasBooks">
-      <h2
-        class="text-3xl pb-3"
-        :class="typographyClasses"
-      >
-        {{ t('home.currently_reading') }} :
+      <h2 class="text-2xl font-bold pb-4">
+        {{ t('home.currently_reading') }}
       </h2>
-      <div class="flex flex-row flex-wrap justify-center gap-3">
+      <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3">	
         <div
           v-for="book in books"
           :key="book.id"
@@ -240,9 +247,8 @@ const { typographyClasses } = useTypography()
     <div v-else>
       <h2
         class="text-3xl"
-        :class="typographyClasses"
       >
-        {{ t('home.not_reading') }}
+        {{ t('home.not_reading') }}	
       </h2>
       <span class="icon">
         <i class="mdi mdi-book-open-page-variant-outline mdi-48px" />
@@ -250,27 +256,23 @@ const { typographyClasses } = useTypography()
     </div>
     <h2
       v-if="events.length > 0"
-      class="text-3xl py-4"
-      :class="typographyClasses"
+      class="text-2xl font-bold py-4"
     >
-      {{ t('home.recent_events') }} :
+      {{ t('home.recent_events') }}
     </h2>
     <div
       v-if="events.length > 0"
-      class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-1"
+      class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
     >
       <div
         v-for="event in events"
         :key="event.id"
-        class="m-1 pb-6"
       >
-        <div class="h-full">
-          <p>
-            <span
-              class="badge mb-1"
-              :class="eventClass(event.eventType)"
-            >{{ eventLabel(event.eventType) }}</span>
-          </p>
+        <div class="h-full relative">
+          <div
+            class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
+	    :class="bannerClass(event.eventType)"
+          >{{ eventLabel(event.eventType) }}</div>
           <book-card
             :book="event.userBook"
             :public="false"
@@ -304,8 +306,7 @@ const { typographyClasses } = useTypography()
     </div>
     <h2
       v-if="userReviews.length > 0"
-      class="text-3xl py-4 capitalize"
-      :class="typographyClasses"
+      class="text-2xl font-bold py-4 capitalize"	
     >
       {{ t('reviews.review', 2) }}
     </h2>

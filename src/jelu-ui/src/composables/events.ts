@@ -8,7 +8,7 @@ export default function useEvents() {
     useScope: 'global'
   })
 
-  const eventClass = (type: ReadingEventType) => {
+const eventClass = (type: ReadingEventType) => {
     if (type === ReadingEventType.FINISHED) {
       return "badge-info";
     } else if (type === ReadingEventType.DROPPED) {
@@ -19,6 +19,7 @@ export default function useEvents() {
       return "badge-success";
     } else return "";
 };
+
 
 const eventLabel = (type: ReadingEventType) => {
     if (type === ReadingEventType.FINISHED) {
