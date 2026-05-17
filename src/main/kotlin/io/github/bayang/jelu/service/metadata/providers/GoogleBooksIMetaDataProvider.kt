@@ -119,12 +119,22 @@ class GoogleBooksIMetaDataProvider(
             mutableSetOf()
         }
 
+
     private fun extractImage(node: JsonNode): String? {
-        if (node.get("imageLinks") != null && node.get("imageLinks").get("thumbnail") != null) {
-            return node.get("imageLinks").get("thumbnail").asText()
+        val imageLinks = node.get("imageLinks") ?: return null
+        // Try largest image first, fall back to smaller ones
+        val sizes = listOf("extraLarge", "large", "medium", "small", "thumbnail", "smallThumbnail")
+        for (size in sizes) {
+            val url = imageLinks.get(size)?.asText()
+            if (!url.isNullOrBlank()) {
+                return url
+                    .replace("http://", "https://")
+                    .replace("&edge=curl", "")
+            }
         }
         return null
     }
+        
 
     private fun summary(node: JsonNode): String? {
         if (node.get("searchInfo") != null && node.get("searchInfo").get("textSnippet") != null) {
