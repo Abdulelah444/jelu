@@ -20,8 +20,10 @@ const locations: Ref<Array<PhysicalLocation>> = ref([])
 const bookcasesByLocation: Ref<Map<string, Array<PhysicalBookcase>>> = ref(new Map())
 const expandedLocations: Ref<Set<string>> = ref(new Set())
 const expandedBookcases: Ref<Set<string>> = ref(new Set())
+const shelvesByBookcase: Ref<Map<string, Array<PhysicalShelf>>> = ref(new Map())
 const shelfBooks: Ref<Map<string, Array<PhysicalShelfBook>>> = ref(new Map())
 const bookDetailsCache: Ref<Map<string, UserBook>> = ref(new Map())
+const bookcaseBookCount: Ref<Map<string, number>> = ref(new Map())
 const unassignedBooks: Ref<Page<UserBook> | null> = ref(null)
 const checkedUnassigned: Ref<Array<string>> = ref([])
 const selectAllUnassigned: Ref<boolean> = ref(false)
@@ -65,11 +67,14 @@ const toggleBookcase = async (bookcaseId: string) => {
   try {
     const bookcase = await dataService.getPhysicalBookcaseById(bookcaseId)
     if (bookcase.shelves) {
+      shelvesByBookcase.value.set(bookcaseId, bookcase.shelves)
+      let totalBooks = 0
       const allUserBookIds: Array<string> = []
       for (const shelf of bookcase.shelves) {
         if (shelf.id) {
           const books = await dataService.getBooksOnShelf(shelf.id)
           shelfBooks.value.set(shelf.id, books)
+          totalBooks += books.length
           for (const sb of books) {
             if (!bookDetailsCache.value.has(sb.userBookId)) {
               allUserBookIds.push(sb.userBookId)
@@ -77,6 +82,7 @@ const toggleBookcase = async (bookcaseId: string) => {
           }
         }
       }
+      bookcaseBookCount.value.set(bookcaseId, totalBooks)
       const batchSize = 5
       for (let i = 0; i < allUserBookIds.length; i += batchSize) {
         const batch = allUserBookIds.slice(i, i + batchSize)
@@ -159,11 +165,19 @@ const deleteBookcase = async (locationId: string, bookcaseId: string) => {
   }
 }
 
-const removeFromShelf = async (shelfId: string, userBookId: string) => {
+const removeFromShelf = async (shelfId: string, userBookId: string, bookcaseId: string) => {
   try {
     await dataService.removeBookFromShelf(shelfId, userBookId)
     const books = await dataService.getBooksOnShelf(shelfId)
     shelfBooks.value.set(shelfId, books)
+    let total = 0
+    const shelves = shelvesByBookcase.value.get(bookcaseId) || []
+    for (const s of shelves) {
+      if (s.id && shelfBooks.value.has(s.id)) {
+        total += shelfBooks.value.get(s.id)!.length
+      }
+    }
+    bookcaseBookCount.value.set(bookcaseId, total)
     await loadUnassigned()
     ObjectUtils.toast(oruga, "success", "Book removed", 2000)
   } catch (error) {
@@ -267,7 +281,10 @@ onMounted(() => {
                 {{ bookcase.name }}
               </h3>
               <div class="flex items-center gap-1">
-                <span class="badge badge-sm">{{ bookcase.shelfCount }}</span>
+                <span class="badge badge-sm">{{ bookcase.shelfCount }} shelves</span>
+                <span v-if="bookcaseBookCount.has(bookcase.id!)" class="badge badge-primary badge-sm">
+                  {{ bookcaseBookCount.get(bookcase.id!) }} books
+                </span>
                 <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteBookcase(location.id!, bookcase.id!)">
                   <i class="mdi mdi-delete mdi-14px" />
                 </button>
@@ -278,8 +295,8 @@ onMounted(() => {
               <span class="loading loading-spinner loading-md"></span>
             </div>
 
-            <div v-else-if="expandedBookcases.has(bookcase.id!) && bookcase.shelves" class="mt-2 space-y-1">
-              <div v-for="shelf in bookcase.shelves" :key="shelf.id!"
+            <div v-else-if="expandedBookcases.has(bookcase.id!) && shelvesByBookcase.has(bookcase.id!)" class="mt-2 space-y-1">
+              <div v-for="shelf in shelvesByBookcase.get(bookcase.id!)" :key="shelf.id!"
                    class="bg-base-100 rounded px-2 py-1 border-l-4 border-secondary">
                 <div class="text-xs font-mono opacity-70 mb-1">
                   Shelf {{ shelf.position }}
@@ -293,7 +310,7 @@ onMounted(() => {
                                  class="text-xs link link-hover truncate flex-1">
                       {{ getBookTitle(sb.userBookId) }}
                     </router-link>
-                    <button class="btn btn-ghost btn-xs p-0 text-error" @click="removeFromShelf(shelf.id!, sb.userBookId)">
+                    <button class="btn btn-ghost btn-xs p-0 text-error" @click="removeFromShelf(shelf.id!, sb.userBookId, bookcase.id!)">
                       <i class="mdi mdi-close mdi-14px" />
                     </button>
                   </div>
