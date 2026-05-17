@@ -15,6 +15,7 @@ import { Review } from '../model/Review'
 import { Series } from '../model/Series'
 import { User } from '../model/User'
 import dataService from "../services/DataService"
+import { ShelfLocation } from "../model/PhysicalLibrary"
 import { key } from '../store'
 import { ObjectUtils } from '../utils/ObjectUtils'
 import AutoImportFormModalVue from "./AutoImportFormModal.vue"
@@ -67,6 +68,7 @@ const userReviews: Ref<Array<Review>> = ref([])
 
 const bookQuotes: Ref<Array<BookQuote>> = ref([])
 const users: Ref<Array<User>> = ref([])
+const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 
 const getBook = async () => {
   try {
@@ -78,11 +80,22 @@ const getBook = async () => {
     getBookQuotesForBook()
     getAllSeriesInfo()
     getBookUsers()
+    getShelfLocation()
   } catch (error) {
     console.log("failed get book : " + error);
     getBookIsLoading.value = false
   }
 };
+
+const getShelfLocation = async () => {
+  try {
+    if (book.value?.id) {
+      shelfLocation.value = await dataService.getBookPhysicalLocation(book.value.id)
+    }
+  } catch (error) {
+    console.log("failed get shelf location : " + error)
+  }
+}
 
 const getBookUsers = async () => {
   await until(book.value).not.toBeNull()
@@ -892,6 +905,19 @@ getBook()
             v-if="book?.borrowed"
             class="badge badge-info"
           >{{ t('book.borrowed') }}</span>
+        </div>
+        <div v-if="shelfLocation" class="mt-2">
+          <span class="font-semibold capitalize">{{ t('library_map.physical_location') }} :</span>
+          <span class="ml-1">{{ shelfLocation.displayString }}</span>
+          <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-2">
+            <i class="mdi mdi-map-marker mdi-18px" />
+          </router-link>
+        </div>
+        <div v-else class="mt-2">
+          <span class="text-sm opacity-50 italic">{{ t('library_map.no_location') }}</span>
+          <button class="btn btn-ghost btn-xs ml-1" @click="$router.push({ name: 'library-map' })">
+            {{ t('library_map.assign_to_shelf') }}
+          </button>
         </div>
       </div>
     </div>

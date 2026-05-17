@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { useOruga } from "@oruga-ui/oruga-next"
 import { useTitle } from '@vueuse/core'
-import { computed, onMounted, Ref, ref } from 'vue'
+import { onMounted, Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { PhysicalLocation, PhysicalBookcase, PhysicalShelf, CreatePhysicalBookcase } from "../model/PhysicalLibrary"
+import { PhysicalLocation, PhysicalBookcase, PhysicalShelfBook } from "../model/PhysicalLibrary"
 import { UserBook } from "../model/Book"
+import { Page } from "../model/Page"
 import dataService from "../services/DataService"
 import { ObjectUtils } from "../utils/ObjectUtils"
-import { Page } from "../model/Page"
+import ShelfAssignmentModal from "./ShelfAssignmentModal.vue"
 import useTypography from "../composables/typography"
 
 const { t } = useI18n({ inheritLocale: true, useScope: 'global' })
@@ -20,7 +21,8 @@ const locations: Ref<Array<PhysicalLocation>> = ref([])
 const bookcasesByLocation: Ref<Map<string, Array<PhysicalBookcase>>> = ref(new Map())
 const expandedLocations: Ref<Set<string>> = ref(new Set())
 const expandedBookcases: Ref<Set<string>> = ref(new Set())
-const shelfBooks: Ref<Map<string, Array<any>>> = ref(new Map())
+const shelfBooks: Ref<Map<string, Array<PhysicalShelfBook>>> = ref(new Map())
+const shelfBookDetails: Ref<Map<string, UserBook>> = ref(new Map())
 const unassignedBooks: Ref<Page<UserBook> | null> = ref(null)
 
 const newLocationName: Ref<string> = ref("")
@@ -65,6 +67,14 @@ const toggleBookcase = async (bookcaseId: string) => {
           if (shelf.id) {
             const books = await dataService.getBooksOnShelf(shelf.id)
             shelfBooks.value.set(shelf.id, books)
+            for (const sb of books) {
+              if (!shelfBookDetails.value.has(sb.userBookId)) {
+                try {
+                  const ub = await dataService.getUserBookById(sb.userBookId)
+                  shelfBookDetails.value.set(sb.userBookId, ub)
+                } catch (e) { /* ignore */ }
+              }
+            }
           }
         }
       }
@@ -133,12 +143,51 @@ const deleteBookcase = async (locationId: string, bookcaseId: string) => {
   }
 }
 
+const removeFromShelf = async (shelfId: string, userBookId: string) => {
+  try {
+    await dataService.removeBookFromShelf(shelfId, userBookId)
+    const books = await dataService.getBooksOnShelf(shelfId)
+    shelfBooks.value.set(shelfId, books)
+    await loadUnassigned()
+    ObjectUtils.toast(oruga, "success", "Book removed from shelf", 2000)
+  } catch (error) {
+    ObjectUtils.toast(oruga, "danger", "Error removing book", 4000)
+  }
+}
+
 const loadUnassigned = async () => {
   try {
-    unassignedBooks.value = await dataService.getUnassignedBooks(0, 20)
+    unassignedBooks.value = await dataService.getUnassignedBooks(0, 50)
   } catch (error) {
     ObjectUtils.toast(oruga, "danger", "Error loading unassigned books", 4000)
   }
+}
+
+const openAssignModal = (userBookIds: Array<string>) => {
+  oruga.modal.open({
+    component: ShelfAssignmentModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'clip',
+    props: {
+      userBookIds: userBookIds,
+    },
+    events: {
+      assigned: () => {
+        loadUnassigned()
+        expandedBookcases.value.forEach((bcId) => {
+          toggleBookcase(bcId)
+          toggleBookcase(bcId)
+        })
+      }
+    }
+  })
+}
+
+const getBookTitle = (userBookId: string): string => {
+  const ub = shelfBookDetails.value.get(userBookId)
+  return ub ? ub.book.title : userBookId.substring(0, 8) + "..."
 }
 
 onMounted(() => {
@@ -150,9 +199,7 @@ onMounted(() => {
 <template>
   <div class="p-4 sm:p-6 max-w-4xl mx-auto">
     <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl" :class="typographyClasses">
-        {{ t('library_map.title') }}
-      </h1>
+      <h1 class="text-2xl" :class="typographyClasses">{{ t('library_map.title') }}</h1>
       <button class="btn btn-primary btn-sm" @click="showAddLocation = !showAddLocation">
         <i class="mdi mdi-plus mdi-18px" />
         {{ t('library_map.add_location') }}
@@ -212,9 +259,14 @@ onMounted(() => {
                       </div>
                       <div v-if="shelfBooks.has(shelf.id!)" class="mt-1">
                         <span v-if="shelfBooks.get(shelf.id!)!.length === 0" class="text-xs opacity-50 italic">empty</span>
-                        <span v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id" class="badge badge-outline badge-sm mr-1 mb-1">
-                          {{ sb.userBookId }}
-                        </span>
+                        <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id" class="inline-flex items-center gap-1 mr-2 mb-1">
+                          <router-link :to="{ name: 'book-detail', params: { bookId: sb.userBookId } }" class="badge badge-outline badge-sm link link-hover">
+                            {{ getBookTitle(sb.userBookId) }}
+                          </router-link>
+                          <button class="btn btn-ghost btn-xs p-0 text-error" @click="removeFromShelf(shelf.id!, sb.userBookId)">
+                            <i class="mdi mdi-close mdi-14px" />
+                          </button>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -252,13 +304,16 @@ onMounted(() => {
       </h2>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
         <div v-for="ub in unassignedBooks.content" :key="ub.id!" class="card bg-base-200 p-2">
-          <div class="flex items-center gap-2">
-            <img v-if="ub.book.image" :src="'/files/' + ub.book.image" class="w-8 h-12 object-cover rounded" />
-            <div>
+          <div class="flex items-center gap-2 justify-between">
+            <div class="flex items-center gap-2">
+              <img v-if="ub.book.image" :src="'/files/' + ub.book.image" class="w-8 h-12 object-cover rounded" />
               <router-link :to="{ name: 'book-detail', params: { bookId: ub.book.id } }" class="link link-hover text-sm font-semibold">
                 {{ ub.book.title }}
               </router-link>
             </div>
+            <button class="btn btn-primary btn-xs" @click="openAssignModal([ub.id!])">
+              {{ t('library_map.assign_to_shelf') }}
+            </button>
           </div>
         </div>
       </div>
