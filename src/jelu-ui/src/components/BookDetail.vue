@@ -287,7 +287,7 @@ const toggleMergeBookModal = (currentBook: Book|undefined, metadata: Metadata) =
   });
 }
 
-const toggleReadProgressModal = (userBookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) => {
+const toggleReadProgressModal = (userBookId: string, bookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) => {
   oruga.modal.open({
     component: ReadProgressModal,
     trapFocus: true,
@@ -296,6 +296,7 @@ const toggleReadProgressModal = (userBookId: string, pageCount: number|null, cur
     scroll: 'keep',
     props: {
       "userBookId": userBookId,
+      "bookId": bookId,
       "pageCount": pageCount,
       "currentProgress": currentProgress,
       "currentPage": currentPage,
@@ -705,7 +706,7 @@ getBook()
               <button
                 v-tooltip="t('labels.set_progress')"
                 class="btn btn-circle btn-outline border-none"
-                @click="toggleReadProgressModal(book?.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
+                @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"

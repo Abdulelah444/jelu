@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { Ref, ref, watch } from "vue";
+import { computed, Ref, ref, watch } from "vue";
 import { useI18n } from 'vue-i18n';
 import { UserBookUpdate } from "../model/Book";
+import { ReadingEventType } from "../model/ReadingEvent";
 import dataService from "../services/DataService";
 import { ObjectUtils } from "../utils/ObjectUtils";
 import useTypography from "../composables/typography";
@@ -13,104 +14,119 @@ const { t } = useI18n({
 
 const props = defineProps<{
   userBookId: string,
+  bookId: string,
   pageCount: number|null,
   currentProgress: number|null,
   currentPage: number|null,
 }>()
 
-const userBookUpdate: Ref<UserBookUpdate> = ref({id: props.userBookId, percentRead: props.currentProgress, currentPageNumber: props.currentPage})
+const localPageCount: Ref<number|null> = ref(props.pageCount)
+const userBookUpdate: Ref<UserBookUpdate> = ref({
+  id: props.userBookId,
+  percentRead: props.currentProgress ?? 0,
+  currentPageNumber: props.currentPage
+})
 const progress: Ref<boolean> = ref(false)
 
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const update = () => {
+const pagesRead = computed(() => {
+  if (localPageCount.value && userBookUpdate.value.percentRead != null) {
+    return Math.round((userBookUpdate.value.percentRead / 100) * localPageCount.value)
+  }
+  return null
+})
+
+const update = async () => {
   progress.value = true
-  // if user changed a finished event to a currently reading -> remove end date
-  dataService.updateUserBook(userBookUpdate.value)
-    .then(res => {
-      progress.value = false
-      emit('close')
-    })
-    .catch(e => {
-      progress.value = false
-    })
+  try {
+    // If user entered a page count that wasn't there before, save it to the book
+    if (localPageCount.value && localPageCount.value !== props.pageCount && props.bookId) {
+      await dataService.updateBook(props.bookId, { pageCount: localPageCount.value } as any)
+    }
+
+    // Update the userbook progress
+    await dataService.updateUserBook(userBookUpdate.value)
+
+    progress.value = false
+    emit('close')
+  } catch (e) {
+    console.log("error updating progress: " + e)
+    progress.value = false
+  }
 }
 
-watch(() => [userBookUpdate.value.currentPageNumber, userBookUpdate.value.percentRead],(newVals, oldVals) => {
-   if (props.pageCount != null) {
-     ObjectUtils.computePages(newVals, oldVals, userBookUpdate.value, props.pageCount)
-   }
- })
+watch(() => [userBookUpdate.value.currentPageNumber, userBookUpdate.value.percentRead], (newVals, oldVals) => {
+  if (localPageCount.value != null) {
+    ObjectUtils.computePages(newVals, oldVals, userBookUpdate.value, localPageCount.value)
+  }
+})
 
 const { typographyClasses } = useTypography()
 </script>
-
 <template>
-  <section class="event-modal">
+  <section class="event-modal p-4">
     <div>
-      <div>
+      <h1
+        class="text-2xl first-letter:capitalize mb-4"
+        :class="typographyClasses"
+      >
+        {{ t('labels.set_progress') }}
+      </h1>
+      <div class="flex flex-col gap-4">
         <div>
-          <h1
-            class="text-2xl first-letter:capitalize"
-            :class="typographyClasses"
-          >
-            {{ t('labels.set_progress') }}
-          </h1>
-        </div>
-      </div>
-      <div class="flex flex-col">
-        <div class="field">
           <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('book.percent_read') }} : </span>
+            <span class="label-text font-semibold first-letter:capitalize">{{ t('book.page_count') }} :</span>
           </label>
           <input
-            v-model="userBookUpdate.percentRead"
+            v-model.number="localPageCount"
+            type="number"
+            min="1"
+            placeholder="Enter total pages"
+            class="input input-bordered w-full"
+          >
+        </div>
+        <div>
+          <label class="label">
+            <span class="label-text font-semibold first-letter:capitalize">{{ t('book.percent_read') }} :</span>
+            <span class="label-text-alt text-lg font-bold">{{ userBookUpdate.percentRead ?? 0 }}%</span>
+          </label>
+          <input
+            v-model.number="userBookUpdate.percentRead"
             type="range"
             min="0"
             max="100"
-            :disabled="pageCount != null"
-            class="range range-xs range-primary"
+            :disabled="localPageCount != null"
+            class="range range-primary"
           >
         </div>
-        <div
-          v-if="pageCount != null"
-          class="field"
-        >
+        <div v-if="localPageCount != null">
           <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('book.current_page_number') }} : </span>
+            <span class="label-text font-semibold first-letter:capitalize">{{ t('book.current_page_number') }} :</span>
+            <span v-if="pagesRead != null" class="label-text-alt">{{ pagesRead }} / {{ localPageCount }} pages</span>
           </label>
           <input
-            v-model="userBookUpdate.currentPageNumber"
+            v-model.number="userBookUpdate.currentPageNumber"
             type="number"
             min="0"
-            :max="pageCount"
-            :disabled="pageCount == null"
-            class="input focus:input-accent"
+            :max="localPageCount"
+            class="input input-bordered w-full"
           >
         </div>
-        <div class="mt-3 place-self-center">
+        <div class="mt-2 place-self-center">
           <button
-            class="btn btn-success mr-2 uppercase"
+            class="btn btn-success uppercase"
+            :disabled="progress"
             @click="update"
           >
-            <span class="icon">
-              <i class="mdi mdi-pencil mdi-18px" />
-            </span>
+            <span v-if="progress" class="loading loading-spinner loading-sm"></span>
+            <span class="icon"><i class="mdi mdi-pencil mdi-18px" /></span>
             <span>{{ t('labels.submit') }}</span>
           </button>
         </div>
       </div>
     </div>
-    <progress
-      v-if="progress"
-      class="animate-pulse progress progress-success mt-5"
-      max="100"
-    />
   </section>
 </template>
-
-<style lang="scss">
-
-</style>

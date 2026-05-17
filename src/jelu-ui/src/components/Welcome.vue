@@ -171,7 +171,7 @@ function toggleReadingEventModal(currentEvent: ReadingEvent, edit: boolean) {
   });
 }
 
-function toggleReadProgressModal(userBookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) {
+function toggleReadProgressModal(userBookId: string, bookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) {
   showModal.value = !showModal.value
   oruga.modal.open({
     component: ReadProgressModal,
@@ -181,6 +181,7 @@ function toggleReadProgressModal(userBookId: string, pageCount: number|null, cur
     scroll: 'keep',
     props: {
       "userBookId": userBookId,
+      "bookId": bookId,
       "pageCount": pageCount,
       "currentProgress": currentProgress,
       "currentPage": currentPage,
@@ -226,7 +227,7 @@ const { typographyClasses } = useTypography()
                   <span
                     v-tooltip="t('labels.set_progress')"
                     class="icon text-info"
-                    @click.prevent="toggleReadProgressModal(book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
+                    @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
                   >
                     <svg
                       xmlns="http://www.w3.org/2000/svg"
