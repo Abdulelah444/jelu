@@ -5,6 +5,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
 import org.jetbrains.exposed.sql.deleteWhere
 import org.jetbrains.exposed.sql.max
@@ -128,7 +129,7 @@ class PhysicalShelfBookRepository {
             bookcaseName = bookcaseName,
             shelfLabel = shelfDisplay,
             shelfPosition = shelfPosition,
-            displayString = "$locationName \u2192 $bookcaseName \u2192 $shelfDisplay",
+            displayString = locationName + " > " + bookcaseName + " > " + shelfDisplay,
         )
     }
 
@@ -138,7 +139,8 @@ class PhysicalShelfBookRepository {
             .andWhere { PhysicalShelfBookTable.shelf eq shelfId }
             .firstOrNull()
             ?.get(PhysicalShelfBookTable.position.max())
-        return (maxPos ?: -1) + 1
+        val base: Int = (maxPos as? Int) ?: -1
+        return base + 1
     }
 }
 
