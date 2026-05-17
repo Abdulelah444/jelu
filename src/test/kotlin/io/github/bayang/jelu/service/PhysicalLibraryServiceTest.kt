@@ -35,7 +35,8 @@ class PhysicalLibraryServiceTest(
             physicalLibraryService.deleteLocation(it.id!!)
         }
         try {
-            testUser = userService.findByLogin("testphyslib")
+	    val found = userService.findByLogin("testphyslib")
+            testUser = found.first()
         } catch (e: Exception) {
             testUser = userService.save(CreateUserDto(login = "testphyslib", password = "1234", isAdmin = false))
         }
