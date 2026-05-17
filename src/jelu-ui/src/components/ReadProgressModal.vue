@@ -36,7 +36,7 @@ watch(percentRead, (newVal) => {
   if (localPageCount.value && newVal != null) {
     currentPageNumber.value = Math.round((newVal / 100) * localPageCount.value)
   }
-  updatingFrom.value = ""
+  setTimeout(() => { updatingFrom.value = "" }, 50)
 })
 
 watch(currentPageNumber, (newVal) => {
@@ -45,7 +45,7 @@ watch(currentPageNumber, (newVal) => {
   if (localPageCount.value && newVal != null) {
     percentRead.value = Math.round((newVal / localPageCount.value) * 100)
   }
-  updatingFrom.value = ""
+  setTimeout(() => { updatingFrom.value = "" }, 50)
 })
 
 watch(localPageCount, (newVal) => {
