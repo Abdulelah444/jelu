@@ -75,7 +75,7 @@ const update = async () => {
       await dataService.createReadingEvent({
         eventType: ReadingEventType.CURRENTLY_READING,
         bookId: props.bookId,
-        eventDate: new Date(),
+        startDate: new Date(),
       })
     } catch (e) {
       console.log("event creation failed, progress still saved: " + e)
