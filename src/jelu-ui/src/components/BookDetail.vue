@@ -274,7 +274,7 @@ const toggleMergeBookModal = (currentBook: Book|undefined, metadata: Metadata) =
   });
 }
 
-const toggleReadProgressModal = (userBookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) => {
+const toggleReadProgressModal = (userBookId: string, bookId: string, pageCount: number|null, currentProgress: number|null, currentPage: number|null) => {
   oruga.modal.open({
     component: ReadProgressModal,
     trapFocus: true,
@@ -283,6 +283,7 @@ const toggleReadProgressModal = (userBookId: string, pageCount: number|null, cur
     scroll: 'keep',
     props: {
       "userBookId": userBookId,
+      "bookId": bookId,
       "pageCount": pageCount,
       "currentProgress": currentProgress,
       "currentPage": currentPage,
@@ -290,7 +291,6 @@ const toggleReadProgressModal = (userBookId: string, pageCount: number|null, cur
     onClose: modalClosed
   });
 }
-
 const deleteBook = async () => {
   let deleteForUserOnly = true
   let abort = false
@@ -692,7 +692,7 @@ getBook()
               <button
                 v-tooltip="t('labels.set_progress')"
                 class="btn btn-circle btn-outline border-none"
-                @click="toggleReadProgressModal(book?.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
+                @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -839,12 +839,25 @@ getBook()
           </span>
           <span v-if="book?.currentPageNumber">&nbsp;(<span class="font-semibold capitalize">{{ t('labels.current') }}</span> : {{ book.currentPageNumber }})</span>
         </p>
-        <p
-          v-if="book?.book.pageCount == null && book?.currentPageNumber == null && book?.percentRead != null"
-          class="capitalize"
+             <div
+          v-if="book?.percentRead != null && book?.percentRead > 0"
+          class="my-2"
         >
-          {{ t('book.percent_read') }} {{ book.percentRead }} %
-        </p>
+          <progress
+            class="progress progress-primary w-full"
+            :value="Math.round(book.percentRead)"
+            max="100"
+          />
+          <p class="text-xs opacity-70 mt-1">
+            <template v-if="book.currentPageNumber != null && book.book.pageCount != null">
+              Page {{ book.currentPageNumber }} / {{ book.book.pageCount }}
+              ({{ Math.round(book.percentRead) }}%)
+            </template>
+            <template v-else>
+              {{ Math.round(book.percentRead) }}%
+            </template>
+          </p>
+        </div>
         <p v-if="book?.book?.publishedDate">
           <span class="font-semibold capitalize">{{ t('book.published_date') }} :</span>
           {{ d(stringToDate(book.book.publishedDate)!!, 'short') }}
