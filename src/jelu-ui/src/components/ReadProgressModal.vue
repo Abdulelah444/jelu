@@ -1,17 +1,14 @@
 <script setup lang="ts">
-import { computed, Ref, ref, watch } from "vue";
+import { Ref, ref, watch } from "vue";
 import { useI18n } from 'vue-i18n';
 import { UserBookUpdate } from "../model/Book";
-import { ReadingEventType } from "../model/ReadingEvent";
 import dataService from "../services/DataService";
 import { ObjectUtils } from "../utils/ObjectUtils";
 import useTypography from "../composables/typography";
-
 const { t } = useI18n({
       inheritLocale: true,
       useScope: 'global'
     })
-
 const props = defineProps<{
   userBookId: string,
   bookId: string,
@@ -19,78 +16,50 @@ const props = defineProps<{
   currentProgress: number|null,
   currentPage: number|null,
 }>()
-
 const localPageCount: Ref<number|null> = ref(props.pageCount)
-const percentRead: Ref<number> = ref(Math.round(props.currentProgress ?? 0))
-const currentPageNumber: Ref<number|null> = ref(props.currentPage)
+const userBookUpdate: Ref<UserBookUpdate> = ref({
+  id: props.userBookId,
+  percentRead: Math.round(props.currentProgress ?? 0),
+  currentPageNumber: props.currentPage
+})
 const progress: Ref<boolean> = ref(false)
-const updatingFrom: Ref<string> = ref("")
-
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
-
-watch(percentRead, (newVal) => {
-  if (updatingFrom.value === "page") return
-  updatingFrom.value = "percent"
-  if (localPageCount.value && newVal != null) {
-    currentPageNumber.value = Math.round((newVal / 100) * localPageCount.value)
-  }
-  setTimeout(() => { updatingFrom.value = "" }, 50)
-})
-
-watch(currentPageNumber, (newVal) => {
-  if (updatingFrom.value === "percent") return
-  updatingFrom.value = "page"
-  if (localPageCount.value && newVal != null) {
-    percentRead.value = Math.round((newVal / localPageCount.value) * 100)
-  }
-  setTimeout(() => { updatingFrom.value = "" }, 50)
-})
-
-watch(localPageCount, (newVal) => {
-  if (newVal && currentPageNumber.value != null) {
-    percentRead.value = Math.round((currentPageNumber.value / newVal) * 100)
-  }
-})
-
-const update = async () => {
+const update = () => {
   progress.value = true
-  try {
-    if (localPageCount.value && localPageCount.value !== props.pageCount && props.bookId) {
-      const existingUserBook = await dataService.getUserBookById(props.userBookId)
-      const existingBook = existingUserBook.book
-      existingBook.pageCount = localPageCount.value
-      await dataService.updateBook(props.bookId, existingBook)
-    }
-    const userBookUpdate: UserBookUpdate = {
-      id: props.userBookId,
-      percentRead: percentRead.value,
-      currentPageNumber: currentPageNumber.value,
-    }
-    console.log("SAVING PROGRESS:", JSON.stringify(userBookUpdate))
-    const result = await dataService.updateUserBook(userBookUpdate)
-    console.log("SAVE RESULT:", JSON.stringify(result))
-
-    // Record a reading event for this progress update
-    try {
-      await dataService.createReadingEvent({
-        eventType: ReadingEventType.CURRENTLY_READING,
-        bookId: props.bookId,
-        startDate: new Date(),
-      })
-    } catch (e) {
-      console.log("event creation failed, progress still saved: " + e)
-    }
-
-    progress.value = false
-    emit('close')
-  } catch (e) {
-    console.log("error updating progress: " + e)
-    progress.value = false
+  if (userBookUpdate.value.percentRead != null) {
+    userBookUpdate.value.percentRead = Math.round(userBookUpdate.value.percentRead)
   }
+  // Save page count to book if changed
+  if (localPageCount.value && localPageCount.value !== props.pageCount && props.bookId) {
+    dataService.getUserBookById(props.userBookId).then(existing => {
+      const existingBook = existing.book
+      existingBook.pageCount = localPageCount.value
+      dataService.updateBook(props.bookId, existingBook)
+    }).catch(e => console.log("page count save failed: " + e))
+  }
+  dataService.updateUserBook(userBookUpdate.value)
+    .then(res => {
+      progress.value = false
+      emit('close')
+    })
+    .catch(e => {
+      progress.value = false
+    })
 }
-
+watch(() => [userBookUpdate.value.currentPageNumber, userBookUpdate.value.percentRead], (newVals, oldVals) => {
+  const pc = localPageCount.value ?? props.pageCount
+  if (pc != null) {
+    ObjectUtils.computePages(newVals, oldVals, userBookUpdate.value, pc)
+    if (userBookUpdate.value.percentRead != null) {
+      userBookUpdate.value.percentRead = Math.round(userBookUpdate.value.percentRead)
+    }
+  }
+})
+const displayPercent = () => {
+  return Math.round(userBookUpdate.value.percentRead ?? 0)
+}
 const { typographyClasses } = useTypography()
 </script>
 <template>
@@ -118,24 +87,25 @@ const { typographyClasses } = useTypography()
         <div>
           <label class="label">
             <span class="label-text font-semibold first-letter:capitalize">{{ t('book.percent_read') }} :</span>
-            <span class="label-text-alt text-lg font-bold">{{ percentRead }}%</span>
+            <span class="label-text-alt text-lg font-bold">{{ displayPercent() }}%</span>
           </label>
           <input
-            v-model.number="percentRead"
+            v-model.number="userBookUpdate.percentRead"
             type="range"
             min="0"
             max="100"
             step="1"
+            :disabled="localPageCount != null"
             class="range range-primary"
           >
         </div>
         <div v-if="localPageCount != null">
           <label class="label">
             <span class="label-text font-semibold first-letter:capitalize">{{ t('book.current_page_number') }} :</span>
-            <span class="label-text-alt">{{ currentPageNumber ?? 0 }} / {{ localPageCount }}</span>
+            <span class="label-text-alt">{{ userBookUpdate.currentPageNumber ?? 0 }} / {{ localPageCount }}</span>
           </label>
           <input
-            v-model.number="currentPageNumber"
+            v-model.number="userBookUpdate.currentPageNumber"
             type="number"
             min="0"
             :max="localPageCount"
