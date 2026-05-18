@@ -83,7 +83,11 @@ const showProgressBar = (book: UserBook) => {
 }
 
 const progressBarTooltip = computed(() => {
-  return props.book.currentPageNumber != null ? `p. ${props.book.currentPageNumber}` : `${props.book.percentRead} %`
+  const pct = Math.round(props.book.percentRead ?? 0)
+  if (props.book.currentPageNumber != null && props.book.book.pageCount != null) {
+    return `Page ${props.book.currentPageNumber} / ${props.book.book.pageCount} (${pct}%)`
+  }
+  return `${pct}%`
 })
 
 const currentSeries = computed(() => {
