@@ -154,9 +154,15 @@ const currentTimestamp = ObjectUtils.timestamp()
       <div
         v-if="showProgressBar(book)"
         v-tooltip="progressBarTooltip"
-        class="bg-success absolute h-1.5"
-        :style="{ width: book.percentRead + '%' }"
-      />
+        class="absolute bottom-0 left-0 right-0"
+      >
+        <div class="w-full h-1.5 bg-base-300/50">
+          <div
+            class="h-full bg-primary transition-all duration-300"
+            :style="{ width: Math.round(book.percentRead ?? 0) + '%' }"
+          />
+        </div>
+      </div>
       <div
         v-if="props.showSelect"
         class="absolute top-0 left-1"
