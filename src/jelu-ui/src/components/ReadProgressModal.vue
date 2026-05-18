@@ -100,13 +100,9 @@ const update = async () => {
     userBookUpdate.value.percentRead =
       Math.round(Math.min(100, Math.max(0, userBookUpdate.value.percentRead ?? 0)))
 
-    // 1. Update the UserBook progress
-    await dataService.updateUserBook(userBookUpdate.value)
-
-    // 2. Record a CURRENTLY_READING event
-    //    eventDate must be undefined (not new Date()) for CURRENTLY_READING
-    //    startDate = new Date()
-    //    bookId = the Book ID (not the UserBook ID)
+    // 1. Record a CURRENTLY_READING event FIRST
+    //    (backend resets progress to 0 on CURRENTLY_READING events,
+    //     so we must create the event before setting our actual progress)
     const readingEvent: CreateReadingEvent = {
       eventType: ReadingEventType.CURRENTLY_READING,
       eventDate: undefined,
@@ -114,6 +110,9 @@ const update = async () => {
       bookId: props.bookId,
     }
     await dataService.createReadingEvent(readingEvent)
+
+    // 2. Now update the UserBook with actual progress (overwrites the reset)
+    await dataService.updateUserBook(userBookUpdate.value)
 
     progress.value = false
     emit('close')
