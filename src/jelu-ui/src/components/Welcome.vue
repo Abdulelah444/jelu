@@ -27,16 +27,6 @@ const { t } = useI18n({
     })
 const { eventClass, eventLabel } = useEvents()
 
-const bannerClass = (type: string) => {
-  if (type === 'FINISHED') {
-    return "bg-success text-success-content";
-  } else if (type === 'DROPPED') {
-    return "bg-error text-error-content";
-  } else if (type === 'CURRENTLY_READING') {
-    return "bg-info text-info-content";
-  } else return "bg-base-300";
-}
-
 const isLogged = computed(() => {
     return store != null && store != undefined && store.getters.getLogged
   })
@@ -50,9 +40,6 @@ const currentlyReadingIsLoading: Ref<boolean> = ref(false)
 const recentEventsIsLoading: Ref<boolean> = ref(false)
 
 const books: Ref<Array<UserBook>> = ref([]);
-
-const randomBook: Ref<UserBook | null> = ref(null)
-const showRecentEvents: Ref<boolean> = ref(false)
 
 const events: Ref<Array<ReadingEventWithUserBook>> = ref([]);
 
@@ -105,24 +92,11 @@ const getUserReviews = async () => {
   }
 };
 
-const getRandomBook = async () => {
-  try {
-    const res = await dataService.findUserBookByCriteria(
-      null, null, null, null, null, null, 0, 1, 'random,desc')
-    if (res.content.length > 0) {
-      randomBook.value = res.content[0]
-    }
-  } catch (error) {
-    console.log("failed get random book : " + error)
-  }
-}
-
 if (isLogged.value) {
   try {
       getCurrentlyReading()
       getMyEvents()
       getUserReviews()
-      getRandomBook()
   } catch (error) {
     console.log("failed get books : " + error);
   }
@@ -135,7 +109,6 @@ watch(() => isLogged.value, (newValue, oldValue) => {
       initialLoad.value = false
       getCurrentlyReading()
       getMyEvents()
-      getRandomBook()
   } catch (error) {
     console.log("failed get books : " + error);
   }
@@ -192,79 +165,60 @@ function toggleReadProgressModal(userBookId: string, bookId: string, pageCount: 
 
 const { typographyClasses } = useTypography()
 </script>
+
 <template>
   <div v-if="isLogged">
     <div v-if="hasBooks">
-      <div class="flex flex-col lg:flex-row gap-6">
-        <div class="flex-1">
-          <h2 class="text-2xl font-bold pb-4">
-            {{ t('home.currently_reading') }}
-          </h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
-            <div
-              v-for="book in books"
-              :key="book.id"
-            >
-              <div class="bg-info text-info-content text-center text-xs font-semibold py-1 uppercase tracking-wide">
-                {{ t('reading_events.currently_reading') }}
-              </div>
-              <book-card
-                :book="book"
-                :public="false"
-                size="xl"
-                :force-select="false"
-                :show-select="false"
-                :propose-add="true"
-              >
-                <template #icon>
-                  <span
-                    v-tooltip="t('labels.mark_read_or_drop')"
-                    class="icon text-info"
-                    @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
-                  >
-                    <i class="mdi mdi-check-circle mdi-18px" />
-                  </span>
-                  <span
-                    v-tooltip="t('labels.set_progress')"
-                    class="icon text-info"
-                    @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
-                  >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      class="w-6 h-6"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                      />
-                    </svg>
-                  </span>
-                </template>
-              </book-card>
-            </div>
-          </div>
-        </div>
-        <div v-if="randomBook" class="lg:w-1/4 flex-shrink-0">
-          <h2 class="text-2xl font-bold pb-4">
-            {{ t('library_map.rediscover') }}
-          </h2>
-          <div class="bg-warning text-warning-content text-center text-xs font-semibold py-1 uppercase tracking-wide">
-            {{ t('library_map.from_your_library') }}
-          </div>
+      <h2
+        class="text-3xl pb-3"
+        :class="typographyClasses"
+      >
+        {{ t('home.currently_reading') }} :
+      </h2>
+      <div class="flex flex-row flex-wrap justify-center gap-3">
+        <div
+          v-for="book in books"
+          :key="book.id"
+          class="sm:basis-5/12 md:basis-1/3 lg:basis-1/4 xl:basis-1/6 basis-8/12"
+        >
           <book-card
-            :book="randomBook"
+            :book="book"
             :public="false"
             size="xl"
             :force-select="false"
             :show-select="false"
-            :propose-add="false"
-            class="h-full"
-          />
+            :propose-add="true"
+          >
+            <template #icon>
+              <span
+                v-tooltip="t('labels.mark_read_or_drop')"
+                class="icon text-info"
+                @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+              >
+                <i class="mdi mdi-check-circle mdi-18px" />
+              </span>
+              <span
+                v-tooltip="t('labels.set_progress')"
+                class="icon text-info"
+                @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="w-6 h-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
+                  />
+                </svg>
+              </span>
+            </template>
+          </book-card>
         </div>
       </div>
     </div>
@@ -283,38 +237,41 @@ const { typographyClasses } = useTypography()
         :animated="true"
       />
     </div>
+    <!-- logged, no books -->
     <div v-else>
-      <h2 class="text-2xl font-bold">
+      <h2
+        class="text-3xl"
+        :class="typographyClasses"
+      >
         {{ t('home.not_reading') }}
       </h2>
       <span class="icon">
         <i class="mdi mdi-book-open-page-variant-outline mdi-48px" />
       </span>
     </div>
+    <h2
+      v-if="events.length > 0"
+      class="text-3xl py-4"
+      :class="typographyClasses"
+    >
+      {{ t('home.recent_events') }} :
+    </h2>
     <div
       v-if="events.length > 0"
-      class="flex items-center gap-2 py-4 cursor-pointer"
-      @click="showRecentEvents = !showRecentEvents"
-    >
-      <i :class="showRecentEvents ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
-      <h2 class="text-2xl font-bold">
-        {{ t('home.recent_events') }}
-      </h2>
-      <span class="badge badge-sm">{{ events.length }}</span>
-    </div>
-    <div
-      v-if="events.length > 0 && showRecentEvents"
-      class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
+      class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-1"
     >
       <div
         v-for="event in events"
         :key="event.id"
+        class="m-1 pb-6"
       >
-        <div class="h-full relative">
-          <div
-            class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
-            :class="bannerClass(event.eventType)"
-          >{{ eventLabel(event.eventType) }}</div>
+        <div class="h-full">
+          <p>
+            <span
+              class="badge mb-1"
+              :class="eventClass(event.eventType)"
+            >{{ eventLabel(event.eventType) }}</span>
+          </p>
           <book-card
             :book="event.userBook"
             :public="false"
@@ -331,26 +288,38 @@ const { typographyClasses } = useTypography()
       class="flex flex-row justify-center justify-items-center gap-3"
     >
       <o-skeleton
-        class="justify-self-center basis-44"
+        class="justify-self-center basis-36"
+        height="250px"
+        :animated="true"
+      />
+      <o-skeleton
+        class="justify-self-center basis-36"
+        height="250px"
+        :animated="true"
+      />
+      <o-skeleton
+        class="justify-self-center basis-36"
         height="250px"
         :animated="true"
       />
     </div>
     <h2
       v-if="userReviews.length > 0"
-      class="text-2xl font-bold py-4 capitalize"
+      class="text-3xl py-4 capitalize"
+      :class="typographyClasses"
     >
       {{ t('reviews.review', 2) }}
     </h2>
     <div
       v-if="userReviews.length > 0"
-      class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
+      class="flex flex-nowrap overflow-x-auto mb-10"
     >
       <div
         v-for="review in userReviews"
         :key="review.id"
+        class="m-1 pb-6 shrink-0 grow-0"
       >
-        <review-book-card
+        <ReviewBookCard
           :review="review"
           :book-reviews-link="true"
           :show-user-name="true"
@@ -359,9 +328,14 @@ const { typographyClasses } = useTypography()
     </div>
     <quotes-display v-if="isLogged" />
   </div>
+  <!-- not logged -->
   <div v-else>
     <p class="capitalize">
       {{ t('user.log_first') }}
     </p>
   </div>
 </template>
+
+<style lang="scss" scoped>
+
+</style>
