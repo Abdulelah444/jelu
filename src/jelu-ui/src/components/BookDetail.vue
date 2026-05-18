@@ -15,6 +15,7 @@ import { Review } from '../model/Review'
 import { Series } from '../model/Series'
 import { User } from '../model/User'
 import dataService from "../services/DataService"
+import { ShelfLocation } from "../model/PhysicalLibrary"
 import { key } from '../store'
 import { ObjectUtils } from '../utils/ObjectUtils'
 import AutoImportFormModalVue from "./AutoImportFormModal.vue"
@@ -67,6 +68,7 @@ const userReviews: Ref<Array<Review>> = ref([])
 
 const bookQuotes: Ref<Array<BookQuote>> = ref([])
 const users: Ref<Array<User>> = ref([])
+const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 
 const getBook = async () => {
   try {
@@ -78,11 +80,22 @@ const getBook = async () => {
     getBookQuotesForBook()
     getAllSeriesInfo()
     getBookUsers()
+    getShelfLocation()
   } catch (error) {
     console.log("failed get book : " + error);
     getBookIsLoading.value = false
   }
 };
+
+const getShelfLocation = async () => {
+  try {
+    if (book.value?.id) {
+      shelfLocation.value = await dataService.getBookPhysicalLocation(book.value.id)
+    }
+  } catch (error) {
+    console.log("failed get shelf location : " + error)
+  }
+}
 
 const getBookUsers = async () => {
   await until(book.value).not.toBeNull()
@@ -291,6 +304,7 @@ const toggleReadProgressModal = (userBookId: string, bookId: string, pageCount: 
     onClose: modalClosed
   });
 }
+
 const deleteBook = async () => {
   let deleteForUserOnly = true
   let abort = false
@@ -832,31 +846,16 @@ getBook()
           <span class="font-semibold uppercase">{{ t('book.isbn13') }} :</span>
           {{ book.book.isbn13 }}
         </p>
-        <p v-if="book?.book?.pageCount || book?.currentPageNumber">
-          <span v-if="book?.book?.pageCount">
-            <span class="font-semibold capitalize">{{ t('book.page', 2) }} :</span>
-            {{ book.book.pageCount }}
-          </span>
-          <span v-if="book?.currentPageNumber">&nbsp;(<span class="font-semibold capitalize">{{ t('labels.current') }}</span> : {{ book.currentPageNumber }})</span>
-        </p>
-             <div
-          v-if="book?.percentRead != null && book?.percentRead > 0"
-          class="my-2"
-        >
-          <progress
-            class="progress progress-primary w-full"
-            :value="Math.round(book.percentRead)"
-            max="100"
-          />
-          <p class="text-xs opacity-70 mt-1">
-            <template v-if="book.currentPageNumber != null && book.book.pageCount != null">
-              Page {{ book.currentPageNumber }} / {{ book.book.pageCount }}
-              ({{ Math.round(book.percentRead) }}%)
-            </template>
-            <template v-else>
-              {{ Math.round(book.percentRead) }}%
-            </template>
-          </p>
+        <div v-if="book?.percentRead != null || book?.currentPageNumber || book?.book?.pageCount" class="my-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold capitalize text-sm">{{ t('book.percent_read') }}</span>
+            <span class="text-sm font-bold">{{ Math.round(book?.percentRead ?? 0) }}%</span>
+          </div>
+          <progress class="progress progress-primary w-full" :value="Math.round(book?.percentRead ?? 0)" max="100"></progress>
+          <div v-if="book?.book?.pageCount || book?.currentPageNumber" class="flex justify-between text-xs opacity-70 mt-1">
+            <span v-if="book?.currentPageNumber">Page {{ book.currentPageNumber }}<span v-if="book?.book?.pageCount"> / {{ book.book.pageCount }}</span></span>
+            <span v-else-if="book?.book?.pageCount">{{ book.book.pageCount }} pages</span>
+          </div>
         </div>
         <p v-if="book?.book?.publishedDate">
           <span class="font-semibold capitalize">{{ t('book.published_date') }} :</span>
@@ -905,6 +904,19 @@ getBook()
             v-if="book?.borrowed"
             class="badge badge-info"
           >{{ t('book.borrowed') }}</span>
+        </div>
+        <div v-if="shelfLocation" class="mt-2">
+          <span class="font-semibold capitalize">{{ t('library_map.physical_location') }} :</span>
+          <span class="ml-1">{{ shelfLocation.displayString }}</span>
+          <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-2">
+            <i class="mdi mdi-map-marker mdi-18px" />
+          </router-link>
+        </div>
+        <div v-else class="mt-2">
+          <span class="text-sm opacity-50 italic">{{ t('library_map.no_location') }}</span>
+          <button class="btn btn-ghost btn-xs ml-1" @click="$router.push({ name: 'library-map' })">
+            {{ t('library_map.assign_to_shelf') }}
+          </button>
         </div>
       </div>
     </div>
