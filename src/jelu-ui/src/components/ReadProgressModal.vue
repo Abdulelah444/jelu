@@ -68,7 +68,9 @@ const update = async () => {
       percentRead: percentRead.value,
       currentPageNumber: currentPageNumber.value,
     }
-    await dataService.updateUserBook(userBookUpdate)
+    console.log("SAVING PROGRESS:", JSON.stringify(userBookUpdate))
+    const result = await dataService.updateUserBook(userBookUpdate)
+    console.log("SAVE RESULT:", JSON.stringify(result))
 
     // Record a reading event for this progress update
     try {
