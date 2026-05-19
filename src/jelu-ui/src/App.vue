@@ -304,7 +304,7 @@ function scanModalClosed() {
           :to="{ name: 'home' }"
         >
           <img
-            src="./assets/jelu_logo.svg"
+            src="./assets/app_logo.png"
             alt="home"
             class="w-14"
           >
