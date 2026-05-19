@@ -555,10 +555,10 @@ function scanModalClosed() {
           class=""
         >
           <div>
-            <span
+            <router-link
               class="h-fit"
-              @click="toggleShelvesModal"
-            ><i class="mdi mdi-bookshelf mdi-24px" /></span>
+              :to="{ name: 'library-map' }"
+            ><i class="mdi mdi-bookshelf mdi-24px" /></router-link>
           </div>
         </div>
         <div class="dropdown dropdown-end">
