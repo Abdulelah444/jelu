@@ -240,6 +240,7 @@ const { typographyClasses } = useTypography()
         :force-select="selectAll"
         :public="false"
         :show-select="showSelect"
+        :checked-ids="checkedCards"
         :propose-add="true"
         class="h-full"
         @update:modal-closed="modalClosed"

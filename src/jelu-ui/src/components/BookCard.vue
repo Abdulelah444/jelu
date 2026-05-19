@@ -16,6 +16,7 @@ const props = defineProps<{
   book: UserBook,
   size?: string,
   forceSelect: boolean,
+  checkedIds?: Array<string>,
   showSelect: boolean,
   proposeAdd: boolean,
   seriesId?: string,
@@ -26,7 +27,8 @@ const emit = defineEmits<{
   (e: 'update:checked', id: string|null, checked: boolean): void
 }>()
 
-const checked: Ref<boolean> = ref(false)
+const bookId = props.book.id != null ? props.book.id as string : props.book.book.id as string
+const checked: Ref<boolean> = ref(props.checkedIds?.includes(bookId) ?? false)
 
 const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 const fetchLocation = async () => {
@@ -177,7 +179,7 @@ const currentTimestamp = ObjectUtils.timestamp()
         <input
           v-model="checked"
           type="checkbox"
-          class="checkbox checkbox-accent checkbox-lg rounded-full border-2 bg-base-100/80 shadow-md"
+          class="checkbox checkbox-accent checkbox-lg rounded-md border-2 bg-base-100/80 shadow-md"
         >
       </div>
     </div>

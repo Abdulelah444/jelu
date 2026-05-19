@@ -511,6 +511,7 @@ try {
           :book="book"
           :force-select="selectAll"
           :show-select="showSelect"
+          :checked-ids="checkedCards"
           :public="false"
           :propose-add="userId == null"
           class="h-full"
