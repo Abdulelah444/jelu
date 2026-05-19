@@ -215,7 +215,7 @@ function scanModalClosed() {
           </label>
           <ul
             tabindex="0"
-            class="menu menu-compact dropdown-content z-[1] mt-3 p-2 shadow-sm bg-base-100 rounded-box w-52"
+            class="menu menu-compact dropdown-content z-50 mt-3 p-2 shadow-sm bg-base-100 rounded-box w-52"
           >
             <li @click="collapseDropdown()">
               <router-link
@@ -574,7 +574,7 @@ function scanModalClosed() {
           </label>
           <ul
             tabindex="0"
-            class="mt-3 p-2 shadow-sm menu menu-sm dropdown-content z-[1] bg-base-100 rounded-box w-52"
+            class="mt-3 p-2 shadow-sm menu menu-sm dropdown-content z-50 bg-base-100 rounded-box w-52"
           >
             <li
               v-if="isLogged"

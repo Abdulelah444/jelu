@@ -171,12 +171,13 @@ const currentTimestamp = ObjectUtils.timestamp()
       />
       <div
         v-if="props.showSelect"
-        class="absolute top-0 left-1"
+        class="absolute top-0 left-0 p-3 z-10"
+        @click.stop
       >
         <input
           v-model="checked"
           type="checkbox"
-          class="checkbox checkbox-accent rounded-full border-2 hover:border-4"
+          class="checkbox checkbox-accent checkbox-lg rounded-full border-2 bg-base-100/80 shadow-md"
         >
       </div>
     </div>
