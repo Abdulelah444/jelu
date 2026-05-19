@@ -621,7 +621,9 @@ function scanModalClosed() {
     </div>
     <div class="divider mt-0" />
 
-    <router-view />
+    <div class="px-2 sm:px-4 lg:px-6">
+      <router-view />
+    </div>
     <input
       id="shortcuts-modal"
       type="checkbox"

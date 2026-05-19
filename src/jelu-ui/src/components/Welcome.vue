@@ -195,12 +195,12 @@ const { typographyClasses } = useTypography()
 <template>
   <div v-if="isLogged">
     <div v-if="hasBooks">
-      <div class="flex flex-col lg:flex-row gap-6">
+      <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 px-2 sm:px-0">
         <div class="flex-1">
-          <h2 class="text-2xl font-bold pb-4">
+          <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
             {{ t('home.currently_reading') }}
           </h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3">
+          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
             <div
               v-for="book in books"
               :key="book.id"
@@ -250,7 +250,7 @@ const { typographyClasses } = useTypography()
           </div>
         </div>
         <div v-if="randomBook" class="lg:w-1/4 flex-shrink-0">
-          <h2 class="text-2xl font-bold pb-4">
+          <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
             {{ t('library_map.rediscover') }}
           </h2>
           <div class="bg-warning text-warning-content text-center text-xs font-semibold py-1 uppercase tracking-wide">
@@ -284,7 +284,7 @@ const { typographyClasses } = useTypography()
       />
     </div>
     <div v-else>
-      <h2 class="text-2xl font-bold">
+      <h2 class="text-xl sm:text-2xl font-bold">
         {{ t('home.not_reading') }}
       </h2>
       <span class="icon">
@@ -297,14 +297,14 @@ const { typographyClasses } = useTypography()
       @click="showRecentEvents = !showRecentEvents"
     >
       <i :class="showRecentEvents ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
-      <h2 class="text-2xl font-bold">
+      <h2 class="text-xl sm:text-2xl font-bold">
         {{ t('home.recent_events') }}
       </h2>
       <span class="badge badge-sm">{{ events.length }}</span>
     </div>
     <div
       v-if="events.length > 0 && showRecentEvents"
-      class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
+      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3"
     >
       <div
         v-for="event in events"
@@ -338,13 +338,13 @@ const { typographyClasses } = useTypography()
     </div>
     <h2
       v-if="userReviews.length > 0"
-      class="text-2xl font-bold py-4 capitalize"
+      class="text-xl sm:text-2xl font-bold py-4 capitalize"
     >
       {{ t('reviews.review', 2) }}
     </h2>
     <div
       v-if="userReviews.length > 0"
-      class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-3"
+      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3"
     >
       <div
         v-for="review in userReviews"

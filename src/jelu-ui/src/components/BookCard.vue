@@ -120,7 +120,7 @@ const currentTimestamp = ObjectUtils.timestamp()
 
 <template>
   <div
-    class="card card-sm bg-base-200 border border-base-300 shadow-md"
+    class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden"
   >
     <div>
       <router-link
