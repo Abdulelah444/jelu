@@ -107,10 +107,15 @@ const getUserReviews = async () => {
 
 const getRandomBook = async () => {
   try {
+    // Fetch a few random books and pick the first that isn't finished or dropped
     const res = await dataService.findUserBookByCriteria(
-      null, null, null, null, null, null, 0, 1, 'random,desc')
+      null, null, null, null, null, null, 0, 10, 'random,desc')
     if (res.content.length > 0) {
-      randomBook.value = res.content[0]
+      const eligible = res.content.find(b =>
+        b.lastReadingEvent !== ReadingEventType.FINISHED &&
+        b.lastReadingEvent !== ReadingEventType.DROPPED
+      )
+      randomBook.value = eligible || null
     }
   } catch (error) {
     console.log("failed get random book : " + error)
@@ -248,11 +253,8 @@ const { typographyClasses } = useTypography()
         </div>
         <div v-if="randomBook" class="lg:w-1/4 flex-shrink-0">
           <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
-            {{ t('library_map.rediscover') }}
+            In Your Library
           </h2>
-          <div class="bg-warning text-warning-content text-center text-xs font-semibold py-1 uppercase tracking-wide">
-            {{ t('library_map.from_your_library') }}
-          </div>
           <book-card
             :book="randomBook"
             :public="false"

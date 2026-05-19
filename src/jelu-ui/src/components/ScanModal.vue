@@ -24,6 +24,7 @@ const devices = ref([] as MediaDeviceInfo[])
 
 const torchActive = ref(false)
 const torchNotSupported = ref(false)
+const cameraError = ref("")
 
 const acceptBarcode = () => {
     emit('decoded', decodedText.value)
@@ -141,6 +142,7 @@ const { typographyClasses } = useTypography()
             </button>
           </qrcode-stream>
           <p>{{ decodedText }}</p>
+          <p v-if="cameraError" class="text-error text-sm mt-2">{{ cameraError }}</p>
         </div>
       </div>
     </div>
