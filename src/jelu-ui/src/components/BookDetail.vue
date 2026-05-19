@@ -567,8 +567,8 @@ getBook()
 
 <template>
   <div class="grid grid-cols-1 justify-center justify-items-center">
-    <div class="flex flex-col sm:grid sm:grid-cols-3 mb-4 w-full px-3 sm:px-0 sm:w-10/12">
-      <div class="hidden sm:block" />
+    <div class="grid sm:grid-cols-3 mb-4 sm:w-10/12">
+      <div />
       <div class="grow">
         <h3
           class="text-3xl"
@@ -585,10 +585,10 @@ getBook()
       </div>
       <div
         v-if="book != null"
-        class="btn btn-primary btn-outline mr-2 p-2 uppercase"
+        class="flex items-center flex-wrap"
       >
         <button
-          class="btn btn-primary btn-outline btn-sm sm:btn-md mr-1 sm:mr-2 p-1.5 sm:p-2 uppercase"
+          class="btn btn-primary btn-outline mr-2 p-2 uppercase"
           @click="toggleEdit"
         >
           <span class="icon">
@@ -597,7 +597,7 @@ getBook()
           <span>{{ t('labels.edit') }}</span>
         </button>
         <button
-          class="btn btn-error btn-outline btn-sm sm:btn-md mr-1 sm:mr-2 p-1.5 sm:p-2 uppercase"
+          class="btn btn-error btn-outline mr-2 p-2 uppercase"
           @click="deleteBook"
         >
           <span class="icon">
@@ -606,7 +606,7 @@ getBook()
           <span>{{ t('labels.delete') }}</span>
         </button>
         <button
-          class="btn btn-info btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase"
+          class="btn btn-info btn-outline p-2 uppercase"
           @click="toggleReadingEventModal(defaultCreateEvent(), false)"
         >
           <span class="icon">
@@ -737,7 +737,7 @@ getBook()
       </div>
     </div>
     <div
-      class="justify-center justify-items-center sm:gap-10 grid grid-cols-1 sm:grid-cols-2 sm:w-10/12 w-full px-4 sm:px-0"
+      class="justify-center justify-items-center sm:gap-10 grid grid-cols-1 sm:grid-cols-2 sm:w-10/12 w-full"
     >
       <div class="sm:justify-self-end">
         <figure>
@@ -745,7 +745,7 @@ getBook()
             v-if="book?.book?.image"
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
             alt="cover image"
-            class="max-h-72 sm:max-h-96 mx-auto"
+            class="max-h-96"
           >
           <img
             v-else
