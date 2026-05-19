@@ -247,11 +247,6 @@ const currentTimestamp = ObjectUtils.timestamp()
         >&#8230;</span>
       </div>
       <div class="card-actions justify-end items-center gap-1">
-        <span
-          v-if="book.lastReadingEvent"
-          :class="eventClass"
-          class="badge"
-        >{{ eventText }}</span>
         <div class="flex items-center gap-1">
           <router-link
             v-if="currentSeries != null && ! props.public"

@@ -191,7 +191,7 @@ function scanModalClosed() {
     </button>
   </div>
   <section>
-    <div class="navbar bg-base-100">
+    <div class="navbar bg-base-100 relative z-50">
       <div class="navbar-start">
         <div class="dropdown">
           <label
