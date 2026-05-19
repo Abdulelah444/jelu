@@ -72,6 +72,19 @@ const eventText = computed(() => {
   return "";
 });
 
+const bannerClass = computed(() => {
+  if (props.book.lastReadingEvent) {
+    if (props.book.lastReadingEvent === ReadingEventType.FINISHED) {
+      return "bg-success text-success-content";
+    } else if (props.book.lastReadingEvent === ReadingEventType.DROPPED) {
+      return "bg-error text-error-content";
+    } else if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+      return "bg-info text-info-content";
+    }
+  }
+  return "";
+});
+
 const authorsText = computed(() => {
   let txt = "";
   if (props.book.book.authors && props.book.book.authors.length > 0) {
@@ -124,6 +137,11 @@ const currentTimestamp = ObjectUtils.timestamp()
   <div
     class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden"
   >
+    <div
+      v-if="book.lastReadingEvent"
+      class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
+      :class="bannerClass"
+    >{{ eventText }}</div>
     <div>
       <router-link
         v-if="book.id != null"
