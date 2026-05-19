@@ -310,6 +310,10 @@ const { typographyClasses } = useTypography()
         :key="event.id"
       >
         <div class="h-full relative">
+          <div
+            class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
+            :class="bannerClass(event.eventType)"
+          >{{ eventLabel(event.eventType) }}</div>
           <book-card
             :book="event.userBook"
             :public="false"
