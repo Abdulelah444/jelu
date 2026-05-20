@@ -33,7 +33,7 @@ const editingShelfId: Ref<string | null> = ref(null)
 const editingShelfLabel: Ref<string> = ref('')
 const draggedBook: Ref<{ userBookId: string, fromShelfId: string, fromBookcaseId: string } | null> = ref(null)
 const dragOverShelfId: Ref<string | null> = ref(null)
-const shelfViewMode: Ref<'list' | 'covers'> = ref('list')
+const shelfViewMode: Ref<'list' | 'covers'> = ref('covers')
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
