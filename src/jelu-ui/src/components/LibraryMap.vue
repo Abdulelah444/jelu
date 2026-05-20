@@ -29,6 +29,8 @@ const searchQuery: Ref<string> = ref('')
 const filterAuthor: Ref<string> = ref('')
 const filterTag: Ref<string> = ref('')
 const filterLanguage: Ref<string> = ref('')
+const editingShelfId: Ref<string | null> = ref(null)
+const editingShelfLabel: Ref<string> = ref('')
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
@@ -293,6 +295,32 @@ const getBookImage = (userBookId: string): string | null => {
   return ub?.book?.image || null
 }
 
+const startEditLabel = (shelf: any) => {
+  editingShelfId.value = shelf.id!
+  editingShelfLabel.value = shelf.label || ''
+}
+
+const saveShelfLabel = async (shelfId: string, bookcaseId: string) => {
+  try {
+    await dataService.updatePhysicalShelf(shelfId, { label: editingShelfLabel.value || undefined })
+    // Update local state
+    const shelves = shelvesByBookcase.value.get(bookcaseId)
+    if (shelves) {
+      const shelf = shelves.find(s => s.id === shelfId)
+      if (shelf) shelf.label = editingShelfLabel.value || undefined
+    }
+    editingShelfId.value = null
+    editingShelfLabel.value = ''
+  } catch (e) {
+    console.log("Failed to save shelf label: " + e)
+  }
+}
+
+const cancelEditLabel = () => {
+  editingShelfId.value = null
+  editingShelfLabel.value = ''
+}
+
 onMounted(() => {
   loadLocations()
   loadUnassigned()
@@ -359,9 +387,30 @@ onMounted(() => {
             <div v-else-if="expandedBookcases.has(bookcase.id!) && shelvesByBookcase.has(bookcase.id!)" class="mt-2 space-y-1">
               <div v-for="shelf in shelvesByBookcase.get(bookcase.id!)" :key="shelf.id!"
                    class="bg-base-100 rounded px-2 py-1 border-l-4 border-secondary">
-                <div class="text-xs font-mono opacity-70 mb-1">
-                  Shelf {{ shelf.position }}
-                  <span v-if="shelf.label" class="text-xs bg-accent text-accent-content px-1.5 py-0.5 rounded-md ml-1">{{ shelf.label }}</span>
+                <div class="text-xs font-mono opacity-70 mb-1 flex items-center gap-1">
+                  <span>Shelf {{ shelf.position }}</span>
+                  <template v-if="editingShelfId === shelf.id!">
+                    <input
+                      v-model="editingShelfLabel"
+                      type="text"
+                      placeholder="e.g. Fiction, Top shelf..."
+                      class="input input-xs input-bordered w-32"
+                      @keyup.enter="saveShelfLabel(shelf.id!, bookcase.id!)"
+                      @keyup.escape="cancelEditLabel"
+                    />
+                    <button class="btn btn-ghost btn-xs p-0 text-success" @click="saveShelfLabel(shelf.id!, bookcase.id!)">
+                      <i class="mdi mdi-check mdi-14px" />
+                    </button>
+                    <button class="btn btn-ghost btn-xs p-0" @click="cancelEditLabel">
+                      <i class="mdi mdi-close mdi-14px" />
+                    </button>
+                  </template>
+                  <template v-else>
+                    <span v-if="shelf.label" class="text-xs bg-accent text-accent-content px-1.5 py-0.5 rounded-md">{{ shelf.label }}</span>
+                    <button class="btn btn-ghost btn-xs p-0 opacity-40 hover:opacity-100" @click="startEditLabel(shelf)">
+                      <i class="mdi mdi-pencil mdi-12px" />
+                    </button>
+                  </template>
                 </div>
                 <div v-if="shelfBooks.has(shelf.id!)">
                   <div v-if="shelfBooks.get(shelf.id!)!.length === 0" class="text-xs opacity-40 italic">empty</div>
