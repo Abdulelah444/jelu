@@ -120,8 +120,32 @@ const toggleLocation = async (locationId: string) => {
     try {
       const bookcases = await dataService.getPhysicalBookcases(locationId)
       bookcasesByLocation.value.set(locationId, bookcases)
+      // Load book counts in background
+      loadBookcaseCounts(bookcases)
     } catch (error) {
       ObjectUtils.toast(oruga, "danger", "Error loading bookcases", 4000)
+    }
+  }
+}
+
+const loadBookcaseCounts = async (bookcases: Array<any>) => {
+  for (const bc of bookcases) {
+    if (bc.id && !bookcaseBookCount.value.has(bc.id)) {
+      try {
+        const fullBc = await dataService.getPhysicalBookcaseById(bc.id)
+        let total = 0
+        if (fullBc.shelves) {
+          for (const shelf of fullBc.shelves) {
+            if (shelf.id) {
+              const books = await dataService.getBooksOnShelf(shelf.id)
+              total += books.length
+            }
+          }
+        }
+        bookcaseBookCount.value.set(bc.id, total)
+      } catch (e) {
+        // silently fail — count just won't show
+      }
     }
   }
 }
