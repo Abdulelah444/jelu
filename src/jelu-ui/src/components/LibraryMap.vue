@@ -187,7 +187,7 @@ const removeFromShelf = async (shelfId: string, userBookId: string, bookcaseId: 
 
 const loadUnassigned = async () => {
   try {
-    unassignedBooks.value = await dataService.getUnassignedBooks(0, 50)
+    unassignedBooks.value = await dataService.getUnassignedBooks(0, 500)
     checkedUnassigned.value = []
     selectAllUnassigned.value = false
   } catch (error) {
