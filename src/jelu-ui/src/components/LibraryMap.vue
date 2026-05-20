@@ -34,6 +34,9 @@ const editingShelfLabel: Ref<string> = ref('')
 const draggedBook: Ref<{ userBookId: string, fromShelfId: string, fromBookcaseId: string } | null> = ref(null)
 const dragOverShelfId: Ref<string | null> = ref(null)
 const shelfViewMode: Ref<'list' | 'covers'> = ref('covers')
+const editingBookcaseId: Ref<string | null> = ref(null)
+const editingBookcaseName: Ref<string> = ref('')
+const editingBookcaseShelfCount: Ref<number> = ref(0)
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
@@ -392,6 +395,53 @@ const onDragStartUnassigned = (event: DragEvent, userBookId: string) => {
   }
 }
 
+const startEditBookcase = (bookcase: any) => {
+  editingBookcaseId.value = bookcase.id!
+  editingBookcaseName.value = bookcase.name
+  editingBookcaseShelfCount.value = bookcase.shelfCount
+}
+
+const saveBookcase = async (bookcaseId: string, locationId: string) => {
+  try {
+    const updated = await dataService.updatePhysicalBookcase(bookcaseId, {
+      name: editingBookcaseName.value,
+      shelfCount: editingBookcaseShelfCount.value,
+    })
+    // Update local state
+    const bookcases = bookcasesByLocation.value.get(locationId)
+    if (bookcases) {
+      const bc = bookcases.find(b => b.id === bookcaseId)
+      if (bc) {
+        bc.name = updated.name
+        bc.shelfCount = updated.shelfCount
+      }
+    }
+    // Reload shelves for this bookcase since count may have changed
+    if (expandedBookcases.value.has(bookcaseId)) {
+      const loc = locations.value.find(l => l.id === locationId)
+      if (loc) {
+        const bc = bookcasesByLocation.value.get(locationId)?.find(b => b.id === bookcaseId)
+        if (bc && bc.shelves) {
+          shelvesByBookcase.value.set(bookcaseId, bc.shelves)
+        } else {
+          // Refetch
+          const fullBc = await dataService.getPhysicalBookcaseById(bookcaseId)
+          if (fullBc.shelves) shelvesByBookcase.value.set(bookcaseId, fullBc.shelves)
+        }
+      }
+    }
+    editingBookcaseId.value = null
+    ObjectUtils.toast(oruga, "success", "Bookcase updated", 2000)
+  } catch (e) {
+    console.log("Failed to update bookcase: " + e)
+    ObjectUtils.toast(oruga, "danger", "Failed to update bookcase", 3000)
+  }
+}
+
+const cancelEditBookcase = () => {
+  editingBookcaseId.value = null
+}
+
 const shelfBookCount = (shelfId: string): number => {
   if (shelfBooks.value.has(shelfId)) return shelfBooks.value.get(shelfId)!.length
   return 0
@@ -476,7 +526,24 @@ onMounted(() => {
         <div v-for="bookcase in (bookcasesByLocation.get(location.id!) || [])" :key="bookcase.id!"
              class="card bg-base-200 w-72 flex-shrink-0">
           <div class="card-body p-3">
-            <div class="flex justify-between items-center cursor-pointer" @click="toggleBookcase(bookcase.id!)">
+            <!-- Editing mode -->
+            <div v-if="editingBookcaseId === bookcase.id!" class="space-y-2 p-1">
+              <div class="flex gap-2 items-center">
+                <input v-model="editingBookcaseName" type="text" class="input input-sm input-bordered flex-1" placeholder="Bookcase name" />
+              </div>
+              <div class="flex gap-2 items-center">
+                <label class="text-xs opacity-70">Shelves:</label>
+                <input v-model.number="editingBookcaseShelfCount" type="number" min="1" max="20" class="input input-sm input-bordered w-20" />
+              </div>
+              <div class="flex gap-1">
+                <button class="btn btn-success btn-xs" @click.stop="saveBookcase(bookcase.id!, location.id!)">
+                  <i class="mdi mdi-check mdi-14px" /> Save
+                </button>
+                <button class="btn btn-ghost btn-xs" @click.stop="cancelEditBookcase">Cancel</button>
+              </div>
+            </div>
+            <!-- Normal display -->
+            <div v-else class="flex justify-between items-center cursor-pointer" @click="toggleBookcase(bookcase.id!)">
               <h3 class="font-bold text-base">
                 <i class="mdi mdi-bookshelf mdi-18px mr-1" />
                 {{ bookcase.name }}
@@ -486,6 +553,9 @@ onMounted(() => {
                 <span v-if="bookcaseBookCount.has(bookcase.id!)" class="text-xs bg-primary text-primary-content px-2 py-0.5 rounded-md">
                   {{ bookcaseBookCount.get(bookcase.id!) }} books
                 </span>
+                <button class="btn btn-ghost btn-xs opacity-40 hover:opacity-100" @click.stop="startEditBookcase(bookcase)">
+                  <i class="mdi mdi-pencil mdi-14px" />
+                </button>
                 <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteBookcase(location.id!, bookcase.id!)">
                   <i class="mdi mdi-delete mdi-14px" />
                 </button>
