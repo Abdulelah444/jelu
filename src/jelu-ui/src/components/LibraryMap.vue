@@ -622,7 +622,7 @@ onMounted(() => {
                    @dragleave="onDragLeave"
                    @drop="onDrop($event, shelf.id!, bookcase.id!)">
                 <div class="text-xs font-mono opacity-70 mb-1 flex items-center gap-1">
-                  <span>Shelf {{ shelf.position }}</span>
+                  <span v-if="!shelf.label">Shelf {{ shelf.position }}</span>
                   <template v-if="editingShelfId === shelf.id!">
                     <input
                       v-model="editingShelfLabel"
