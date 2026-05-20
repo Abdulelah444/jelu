@@ -280,9 +280,9 @@ onMounted(() => {
                 <i class="mdi mdi-bookshelf mdi-18px mr-1" />
                 {{ bookcase.name }}
               </h3>
-              <div class="flex items-center gap-1">
-                <span class="badge badge-sm">{{ bookcase.shelfCount }} shelves</span>
-                <span v-if="bookcaseBookCount.has(bookcase.id!)" class="badge badge-primary badge-sm">
+              <div class="flex items-center gap-1 flex-wrap justify-end">
+                <span class="text-xs bg-base-300 px-2 py-0.5 rounded-md">{{ bookcase.shelfCount }} shelves</span>
+                <span v-if="bookcaseBookCount.has(bookcase.id!)" class="text-xs bg-primary text-primary-content px-2 py-0.5 rounded-md">
                   {{ bookcaseBookCount.get(bookcase.id!) }} books
                 </span>
                 <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteBookcase(location.id!, bookcase.id!)">
@@ -300,7 +300,7 @@ onMounted(() => {
                    class="bg-base-100 rounded px-2 py-1 border-l-4 border-secondary">
                 <div class="text-xs font-mono opacity-70 mb-1">
                   Shelf {{ shelf.position }}
-                  <span v-if="shelf.label" class="badge badge-accent badge-xs ml-1">{{ shelf.label }}</span>
+                  <span v-if="shelf.label" class="text-xs bg-accent text-accent-content px-1.5 py-0.5 rounded-md ml-1">{{ shelf.label }}</span>
                 </div>
                 <div v-if="shelfBooks.has(shelf.id!)">
                   <div v-if="shelfBooks.get(shelf.id!)!.length === 0" class="text-xs opacity-40 italic">empty</div>
