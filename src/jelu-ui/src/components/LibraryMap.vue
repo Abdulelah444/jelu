@@ -620,7 +620,7 @@ onMounted(() => {
         </div>
       </div>
 
-      <div v-if="expandedLocations.has(location.id!)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 ml-4">
+      <div v-if="expandedLocations.has(location.id!)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 mt-3">
         <div v-for="bookcase in (bookcasesByLocation.get(location.id!) || [])" :key="bookcase.id!"
              class="card bg-base-200">
           <div class="card-body p-3">
