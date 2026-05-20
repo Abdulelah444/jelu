@@ -37,6 +37,8 @@ const shelfViewMode: Ref<'list' | 'covers'> = ref('covers')
 const editingBookcaseId: Ref<string | null> = ref(null)
 const editingBookcaseName: Ref<string> = ref('')
 const editingBookcaseShelfCount: Ref<number> = ref(0)
+const editingLocationId: Ref<string | null> = ref(null)
+const editingLocationName: Ref<string> = ref('')
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
@@ -447,6 +449,28 @@ const onDragStartUnassigned = (event: DragEvent, userBookId: string) => {
   }
 }
 
+const startEditLocation = (location: any) => {
+  editingLocationId.value = location.id!
+  editingLocationName.value = location.name
+}
+
+const saveLocation = async (locationId: string) => {
+  try {
+    await dataService.updatePhysicalLocation(locationId, { name: editingLocationName.value })
+    const loc = locations.value.find(l => l.id === locationId)
+    if (loc) loc.name = editingLocationName.value
+    editingLocationId.value = null
+    ObjectUtils.toast(oruga, "success", "Location updated", 2000)
+  } catch (e) {
+    console.log("Failed to update location: " + e)
+    ObjectUtils.toast(oruga, "danger", "Failed to update location", 3000)
+  }
+}
+
+const cancelEditLocation = () => {
+  editingLocationId.value = null
+}
+
 const startEditBookcase = (bookcase: any) => {
   editingBookcaseId.value = bookcase.id!
   editingBookcaseName.value = bookcase.name
@@ -566,16 +590,32 @@ onMounted(() => {
     </div>
 
     <div v-for="location in locations" :key="location.id!" class="mb-6">
-      <div class="card bg-base-200 border border-base-300 cursor-pointer" @click="toggleLocation(location.id!)">
-        <div class="card-body p-3 flex-row items-center gap-3">
+      <div class="card bg-base-200 border border-base-300">
+        <!-- Editing mode -->
+        <div v-if="editingLocationId === location.id!" class="card-body p-3 flex-row items-center gap-2">
+          <i class="mdi mdi-map-marker mdi-24px text-primary" />
+          <input v-model="editingLocationName" type="text" class="input input-sm input-bordered flex-1"
+                 @keyup.enter="saveLocation(location.id!)" @keyup.escape="cancelEditLocation" />
+          <button class="btn btn-success btn-xs" @click.stop="saveLocation(location.id!)">
+            <i class="mdi mdi-check mdi-14px" />
+          </button>
+          <button class="btn btn-ghost btn-xs" @click.stop="cancelEditLocation">
+            <i class="mdi mdi-close mdi-14px" />
+          </button>
+        </div>
+        <!-- Normal display -->
+        <div v-else class="card-body p-3 flex-row items-center gap-3 cursor-pointer" @click="toggleLocation(location.id!)">
           <i class="mdi mdi-map-marker mdi-24px text-primary" />
           <i :class="expandedLocations.has(location.id!) ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-18px opacity-50" />
           <h2 class="text-lg font-bold flex-1">{{ location.name }}</h2>
           <span v-if="bookcasesByLocation.has(location.id!)" class="text-xs bg-base-300 px-1.5 py-0.5 rounded-md">
             {{ bookcasesByLocation.get(location.id!)?.length || 0 }} bookcases
           </span>
+          <button class="btn btn-ghost btn-xs opacity-40 hover:opacity-100" @click.stop="startEditLocation(location)">
+            <i class="mdi mdi-pencil mdi-14px" />
+          </button>
           <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteLocation(location.id!)">
-            <i class="mdi mdi-delete mdi-18px" />
+            <i class="mdi mdi-delete mdi-14px" />
           </button>
         </div>
       </div>
@@ -601,22 +641,22 @@ onMounted(() => {
               </div>
             </div>
             <!-- Normal display -->
-            <div v-else class="flex justify-between items-center cursor-pointer" @click="toggleBookcase(bookcase.id!)">
-              <h3 class="font-bold text-base">
-                <i class="mdi mdi-bookshelf mdi-18px mr-1" />
-                {{ bookcase.name }}
-              </h3>
-              <div class="flex items-center gap-1 flex-wrap justify-end">
+            <div v-else class="cursor-pointer" @click="toggleBookcase(bookcase.id!)">
+              <div class="flex items-start gap-2">
+                <i class="mdi mdi-bookshelf mdi-18px mt-0.5" />
+                <h3 class="font-bold text-sm leading-tight line-clamp-2 flex-1 min-h-[2.5rem]">{{ bookcase.name }}</h3>
+                <button class="btn btn-ghost btn-xs p-0 opacity-40 hover:opacity-100 flex-shrink-0" @click.stop="startEditBookcase(bookcase)">
+                  <i class="mdi mdi-pencil mdi-12px" />
+                </button>
+                <button class="btn btn-ghost btn-xs p-0 text-error flex-shrink-0" @click.stop="deleteBookcase(location.id!, bookcase.id!)">
+                  <i class="mdi mdi-delete mdi-12px" />
+                </button>
+              </div>
+              <div class="flex items-center gap-2 mt-1">
                 <span class="text-xs bg-base-300 px-1.5 py-0.5 rounded-md flex items-center gap-1"><i class="mdi mdi-view-headline mdi-14px" />{{ bookcase.shelfCount }}</span>
                 <span v-if="bookcaseBookCount.has(bookcase.id!)" class="text-xs bg-primary text-primary-content px-1.5 py-0.5 rounded-md flex items-center gap-1">
                   <i class="mdi mdi-book-multiple mdi-14px" />{{ bookcaseBookCount.get(bookcase.id!) }}
                 </span>
-                <button class="btn btn-ghost btn-xs opacity-40 hover:opacity-100" @click.stop="startEditBookcase(bookcase)">
-                  <i class="mdi mdi-pencil mdi-14px" />
-                </button>
-                <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteBookcase(location.id!, bookcase.id!)">
-                  <i class="mdi mdi-delete mdi-14px" />
-                </button>
               </div>
             </div>
 
