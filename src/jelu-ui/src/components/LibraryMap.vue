@@ -31,6 +31,8 @@ const filterTag: Ref<string> = ref('')
 const filterLanguage: Ref<string> = ref('')
 const editingShelfId: Ref<string | null> = ref(null)
 const editingShelfLabel: Ref<string> = ref('')
+const draggedBook: Ref<{ userBookId: string, fromShelfId: string, fromBookcaseId: string } | null> = ref(null)
+const dragOverShelfId: Ref<string | null> = ref(null)
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
@@ -295,6 +297,100 @@ const getBookImage = (userBookId: string): string | null => {
   return ub?.book?.image || null
 }
 
+const onDragStart = (event: DragEvent, userBookId: string, fromShelfId: string, fromBookcaseId: string) => {
+  draggedBook.value = { userBookId, fromShelfId, fromBookcaseId }
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', userBookId)
+  }
+}
+
+const onDragOver = (event: DragEvent, shelfId: string) => {
+  event.preventDefault()
+  if (event.dataTransfer) event.dataTransfer.dropEffect = 'move'
+  dragOverShelfId.value = shelfId
+}
+
+const onDragLeave = () => {
+  dragOverShelfId.value = null
+}
+
+const onDrop = async (event: DragEvent, toShelfId: string, toBookcaseId: string) => {
+  event.preventDefault()
+  dragOverShelfId.value = null
+  if (!draggedBook.value) return
+  const { userBookId, fromShelfId, fromBookcaseId } = draggedBook.value
+  if (fromShelfId === toShelfId) {
+    draggedBook.value = null
+    return
+  }
+  try {
+    // Remove from old shelf
+    await dataService.removeBookFromShelf(fromShelfId, userBookId)
+    // Add to new shelf
+    await dataService.assignBookToShelf(toShelfId, { userBookId })
+    // Refresh both shelves
+    const fromBooks = await dataService.getBooksOnShelf(fromShelfId)
+    shelfBooks.value.set(fromShelfId, fromBooks)
+    const toBooks = await dataService.getBooksOnShelf(toShelfId)
+    shelfBooks.value.set(toShelfId, toBooks)
+    // Update book counts
+    const updateCount = (bcId: string) => {
+      let total = 0
+      const shelves = shelvesByBookcase.value.get(bcId) || []
+      for (const s of shelves) {
+        if (s.id && shelfBooks.value.has(s.id)) total += shelfBooks.value.get(s.id)!.length
+      }
+      bookcaseBookCount.value.set(bcId, total)
+    }
+    updateCount(fromBookcaseId)
+    if (toBookcaseId !== fromBookcaseId) updateCount(toBookcaseId)
+    ObjectUtils.toast(oruga, "success", "Book moved", 2000)
+  } catch (e) {
+    console.log("Failed to move book: " + e)
+    ObjectUtils.toast(oruga, "danger", "Failed to move book", 3000)
+  }
+  draggedBook.value = null
+}
+
+const onDropFromUnassigned = async (event: DragEvent, toShelfId: string, toBookcaseId: string) => {
+  event.preventDefault()
+  dragOverShelfId.value = null
+  const userBookId = event.dataTransfer?.getData('text/plain')
+  if (!userBookId) return
+  // If it came from a shelf, use onDrop instead
+  if (draggedBook.value) {
+    await onDrop(event, toShelfId, toBookcaseId)
+    return
+  }
+  try {
+    await dataService.assignBookToShelf(toShelfId, { userBookId })
+    const toBooks = await dataService.getBooksOnShelf(toShelfId)
+    shelfBooks.value.set(toShelfId, toBooks)
+    const updateCount = (bcId: string) => {
+      let total = 0
+      const shelves = shelvesByBookcase.value.get(bcId) || []
+      for (const s of shelves) {
+        if (s.id && shelfBooks.value.has(s.id)) total += shelfBooks.value.get(s.id)!.length
+      }
+      bookcaseBookCount.value.set(bcId, total)
+    }
+    updateCount(toBookcaseId)
+    await loadUnassigned()
+    ObjectUtils.toast(oruga, "success", "Book assigned", 2000)
+  } catch (e) {
+    console.log("Failed to assign book: " + e)
+  }
+}
+
+const onDragStartUnassigned = (event: DragEvent, userBookId: string) => {
+  draggedBook.value = null
+  if (event.dataTransfer) {
+    event.dataTransfer.effectAllowed = 'move'
+    event.dataTransfer.setData('text/plain', userBookId)
+  }
+}
+
 const startEditLabel = (shelf: any) => {
   editingShelfId.value = shelf.id!
   editingShelfLabel.value = shelf.label || ''
@@ -386,7 +482,11 @@ onMounted(() => {
 
             <div v-else-if="expandedBookcases.has(bookcase.id!) && shelvesByBookcase.has(bookcase.id!)" class="mt-2 space-y-1">
               <div v-for="shelf in shelvesByBookcase.get(bookcase.id!)" :key="shelf.id!"
-                   class="bg-base-100 rounded px-2 py-1 border-l-4 border-secondary">
+                   class="bg-base-100 rounded px-2 py-1 border-l-4 transition-colors duration-150"
+                   :class="dragOverShelfId === shelf.id! ? 'border-primary bg-primary/10' : 'border-secondary'"
+                   @dragover="onDragOver($event, shelf.id!)"
+                   @dragleave="onDragLeave"
+                   @drop="onDrop($event, shelf.id!, bookcase.id!)">
                 <div class="text-xs font-mono opacity-70 mb-1 flex items-center gap-1">
                   <span>Shelf {{ shelf.position }}</span>
                   <template v-if="editingShelfId === shelf.id!">
@@ -414,7 +514,10 @@ onMounted(() => {
                 </div>
                 <div v-if="shelfBooks.has(shelf.id!)">
                   <div v-if="shelfBooks.get(shelf.id!)!.length === 0" class="text-xs opacity-40 italic">empty</div>
-                  <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id" class="flex items-center gap-1 py-0.5">
+                  <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id"
+                       class="flex items-center gap-1 py-0.5 cursor-grab active:cursor-grabbing"
+                       draggable="true"
+                       @dragstart="onDragStart($event, sb.userBookId, shelf.id!, bookcase.id!)">
                     <img v-if="getBookImage(sb.userBookId)" :src="'/files/' + getBookImage(sb.userBookId)" class="w-5 h-7 object-cover rounded-sm" />
                     <router-link :to="{ name: 'book-detail', params: { bookId: sb.userBookId } }"
                                  class="text-xs link link-hover truncate flex-1">
@@ -497,8 +600,10 @@ onMounted(() => {
       <p class="text-xs opacity-60 mb-2">Showing {{ filteredUnassigned.length }} of {{ unassignedBooks.totalElements }} books</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
         <div v-for="ub in filteredUnassigned" :key="ub.id!" class="card bg-base-200 p-2">
-          <div class="flex items-center gap-2">
-            <input type="checkbox" :value="ub.id!" v-model="checkedUnassigned" class="checkbox checkbox-sm checkbox-accent" />
+          <div class="flex items-center gap-2 cursor-grab active:cursor-grabbing"
+               draggable="true"
+               @dragstart="onDragStartUnassigned($event, ub.id!)">
+            <input type="checkbox" :value="ub.id!" v-model="checkedUnassigned" class="checkbox checkbox-sm checkbox-accent" @click.stop />
             <img v-if="ub.book.image" :src="'/files/' + ub.book.image" class="w-8 h-12 object-cover rounded" />
             <router-link :to="{ name: 'book-detail', params: { bookId: ub.book.id } }"
                          class="link link-hover text-sm font-semibold truncate flex-1">
