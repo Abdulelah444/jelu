@@ -346,7 +346,31 @@ const onDragLeave = () => {
 const onDrop = async (event: DragEvent, toShelfId: string, toBookcaseId: string) => {
   event.preventDefault()
   dragOverShelfId.value = null
-  if (!draggedBook.value) return
+  if (!draggedBook.value) {
+    // Dropped from unassigned books
+    const userBookId = event.dataTransfer?.getData('text/plain')
+    if (!userBookId) return
+    try {
+      await dataService.assignBookToShelf(toShelfId, { userBookId })
+      const toBooks = await dataService.getBooksOnShelf(toShelfId)
+      shelfBooks.value.set(toShelfId, toBooks)
+      const updateCount = (bcId: string) => {
+        let total = 0
+        const shelves = shelvesByBookcase.value.get(bcId) || []
+        for (const s of shelves) {
+          if (s.id && shelfBooks.value.has(s.id)) total += shelfBooks.value.get(s.id)!.length
+        }
+        bookcaseBookCount.value.set(bcId, total)
+      }
+      updateCount(toBookcaseId)
+      await loadUnassigned()
+      ObjectUtils.toast(oruga, "success", "Book assigned", 2000)
+    } catch (e) {
+      console.log("Failed to assign book: " + e)
+      ObjectUtils.toast(oruga, "danger", "Failed to assign book", 3000)
+    }
+    return
+  }
   const { userBookId, fromShelfId, fromBookcaseId } = draggedBook.value
   if (fromShelfId === toShelfId) {
     draggedBook.value = null
