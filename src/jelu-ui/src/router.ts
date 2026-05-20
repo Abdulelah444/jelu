@@ -138,6 +138,12 @@ const router = createRouter({
             name: 'list-detail'
         },
         {
+            path: '/dashboard',
+            name: 'reading-dashboard',
+            component: () => import('./components/ReadingDashboard.vue'),
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/profile',
             component: AdminBaseVue,
             name: 'profile-page',

@@ -274,7 +274,7 @@ function scanModalClosed() {
             <li @click="collapseDropdown()">
               <router-link
                 v-if="isLogged"
-                :to="'/profile/stats'"
+                :to="{ name: 'reading-dashboard' }"
                 class="font-sans text-base capitalize"
               >
                 Stats
@@ -451,7 +451,7 @@ function scanModalClosed() {
           <li>
             <router-link
               v-if="isLogged"
-              :to="'/profile/stats'"
+              :to="{ name: 'reading-dashboard' }"
               class="font-sans text-xl capitalize"
             >
               Stats
