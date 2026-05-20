@@ -33,6 +33,7 @@ const editingShelfId: Ref<string | null> = ref(null)
 const editingShelfLabel: Ref<string> = ref('')
 const draggedBook: Ref<{ userBookId: string, fromShelfId: string, fromBookcaseId: string } | null> = ref(null)
 const dragOverShelfId: Ref<string | null> = ref(null)
+const shelfViewMode: Ref<'list' | 'covers'> = ref('list')
 
 const uniqueAuthors = computed(() => {
   if (!unassignedBooks.value) return []
@@ -391,6 +392,11 @@ const onDragStartUnassigned = (event: DragEvent, userBookId: string) => {
   }
 }
 
+const shelfBookCount = (shelfId: string): number => {
+  if (shelfBooks.value.has(shelfId)) return shelfBooks.value.get(shelfId)!.length
+  return 0
+}
+
 const startEditLabel = (shelf: any) => {
   editingShelfId.value = shelf.id!
   editingShelfLabel.value = shelf.label || ''
@@ -427,9 +433,19 @@ onMounted(() => {
   <div class="p-4 sm:p-6 max-w-5xl mx-auto">
     <div class="flex justify-between items-center mb-6">
       <h1 class="text-2xl" :class="typographyClasses">{{ t('library_map.title') }}</h1>
-      <button class="btn btn-primary btn-sm" @click="showAddLocation = !showAddLocation">
+      <div class="flex gap-2">
+        <div class="btn-group">
+          <button class="btn btn-sm" :class="shelfViewMode === 'list' ? 'btn-active' : 'btn-ghost'" @click="shelfViewMode = 'list'">
+            <i class="mdi mdi-format-list-bulleted mdi-18px" />
+          </button>
+          <button class="btn btn-sm" :class="shelfViewMode === 'covers' ? 'btn-active' : 'btn-ghost'" @click="shelfViewMode = 'covers'">
+            <i class="mdi mdi-view-grid mdi-18px" />
+          </button>
+        </div>
+        <button class="btn btn-primary btn-sm" @click="showAddLocation = !showAddLocation">
         <i class="mdi mdi-plus mdi-18px" /> {{ t('library_map.add_location') }}
-      </button>
+        </button>
+      </div>
     </div>
 
     <div v-if="showAddLocation" class="card bg-base-200 p-4 mb-4">
@@ -511,21 +527,50 @@ onMounted(() => {
                       <i class="mdi mdi-pencil mdi-12px" />
                     </button>
                   </template>
+                  <span v-if="shelfBooks.has(shelf.id!)" class="text-xs bg-base-300 px-1.5 py-0.5 rounded-md ml-auto">
+                    {{ shelfBookCount(shelf.id!) }}
+                  </span>
                 </div>
                 <div v-if="shelfBooks.has(shelf.id!)">
                   <div v-if="shelfBooks.get(shelf.id!)!.length === 0" class="text-xs opacity-40 italic">empty</div>
-                  <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id"
-                       class="flex items-center gap-1 py-0.5 cursor-grab active:cursor-grabbing"
-                       draggable="true"
-                       @dragstart="onDragStart($event, sb.userBookId, shelf.id!, bookcase.id!)">
-                    <img v-if="getBookImage(sb.userBookId)" :src="'/files/' + getBookImage(sb.userBookId)" class="w-5 h-7 object-cover rounded-sm" />
-                    <router-link :to="{ name: 'book-detail', params: { bookId: sb.userBookId } }"
-                                 class="text-xs link link-hover truncate flex-1">
-                      {{ getBookTitle(sb.userBookId) }}
-                    </router-link>
-                    <button class="btn btn-ghost btn-xs p-0 text-error" @click="removeFromShelf(shelf.id!, sb.userBookId, bookcase.id!)">
-                      <i class="mdi mdi-close mdi-14px" />
-                    </button>
+                  <!-- List view -->
+                  <template v-else-if="shelfViewMode === 'list'">
+                    <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id"
+                         class="flex items-center gap-1 py-0.5 cursor-grab active:cursor-grabbing"
+                         draggable="true"
+                         @dragstart="onDragStart($event, sb.userBookId, shelf.id!, bookcase.id!)">
+                      <img v-if="getBookImage(sb.userBookId)" :src="'/files/' + getBookImage(sb.userBookId)" class="w-5 h-7 object-cover rounded-sm" />
+                      <router-link :to="{ name: 'book-detail', params: { bookId: sb.userBookId } }"
+                                   class="text-xs link link-hover truncate flex-1">
+                        {{ getBookTitle(sb.userBookId) }}
+                      </router-link>
+                      <button class="btn btn-ghost btn-xs p-0 text-error" @click="removeFromShelf(shelf.id!, sb.userBookId, bookcase.id!)">
+                        <i class="mdi mdi-close mdi-14px" />
+                      </button>
+                    </div>
+                  </template>
+                  <!-- Covers view -->
+                  <div v-else class="flex flex-wrap gap-1 mt-1">
+                    <div v-for="sb in shelfBooks.get(shelf.id!)" :key="sb.id"
+                         class="relative group cursor-grab active:cursor-grabbing"
+                         draggable="true"
+                         @dragstart="onDragStart($event, sb.userBookId, shelf.id!, bookcase.id!)">
+                      <router-link :to="{ name: 'book-detail', params: { bookId: sb.userBookId } }">
+                        <img v-if="getBookImage(sb.userBookId)"
+                             :src="'/files/' + getBookImage(sb.userBookId)"
+                             :title="getBookTitle(sb.userBookId)"
+                             class="w-10 h-14 object-cover rounded-sm hover:ring-2 hover:ring-primary transition-all" />
+                        <div v-else
+                             :title="getBookTitle(sb.userBookId)"
+                             class="w-10 h-14 bg-base-300 rounded-sm flex items-center justify-center text-xs opacity-50 hover:ring-2 hover:ring-primary">
+                          <i class="mdi mdi-book mdi-18px" />
+                        </div>
+                      </router-link>
+                      <button class="btn btn-ghost btn-xs p-0 text-error absolute -top-1 -right-1 opacity-0 group-hover:opacity-100 bg-base-100 rounded-full"
+                              @click="removeFromShelf(shelf.id!, sb.userBookId, bookcase.id!)">
+                        <i class="mdi mdi-close mdi-12px" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
