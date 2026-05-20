@@ -244,15 +244,7 @@ function scanModalClosed() {
                 {{ t('nav.to_read') }}
               </router-link>
             </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                class="font-sans text-base capitalize"
-                :to="{ name: 'random' }"
-              >
-                {{ t('nav.random') }}
-              </router-link>
-            </li>
+
             <li @click="collapseDropdown()">
               <router-link
                 v-if="isLogged"
@@ -412,15 +404,7 @@ function scanModalClosed() {
               {{ t('nav.to_read') }}
             </router-link>
           </li>
-          <li>
-            <router-link
-              v-if="isLogged"
-              class="font-sans text-xl capitalize"
-              :to="{ name: 'random' }"
-            >
-              {{ t('nav.random') }}
-            </router-link>
-          </li>
+
           <li>
             <router-link
               v-if="isLogged"
