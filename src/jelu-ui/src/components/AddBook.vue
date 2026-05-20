@@ -67,6 +67,8 @@ const form = reactive({
 });
 const eventType = ref(null);
 const eventDate: Ref<Date|null> = ref(new Date());
+const selectedShelfId: Ref<string | null> = ref(null)
+const shelfOptions: Ref<Array<{id: string, label: string}>> = ref([])
 const imageUrl = ref<string | null>(null);
 const imagePath = ref<string | null>(null);
 const file = ref(null);
@@ -128,6 +130,29 @@ const deleteImage: Ref<boolean> = ref(false)
 function toggleRemoveImage() {
   deleteImage.value = !deleteImage.value
 }
+
+const loadShelfOptions = async () => {
+  try {
+    const locations = await dataService.getPhysicalLocations()
+    const options: Array<{id: string, label: string}> = []
+    for (const loc of locations) {
+      const bookcases = await dataService.getPhysicalBookcases(loc.id!)
+      for (const bc of bookcases) {
+        const fullBc = await dataService.getPhysicalBookcaseById(bc.id!)
+        if (fullBc.shelves) {
+          for (const shelf of fullBc.shelves) {
+            const label = loc.name + ' > ' + bc.name + ' > ' + (shelf.label || 'Shelf ' + shelf.position)
+            options.push({ id: shelf.id!, label })
+          }
+        }
+      }
+    }
+    shelfOptions.value = options
+  } catch (e) {
+    console.log("Failed to load shelf options: " + e)
+  }
+}
+loadShelfOptions()
 
 const importBook = async () => {
   console.log("import book");
@@ -202,7 +227,15 @@ const importBook = async () => {
       progress.value = false
       console.log(`saved book ${res.book.title}`);
       ObjectUtils.toast(oruga, "success", t('labels.book_title_saved', {title : res.book.title}), 4000)
+      if (selectedShelfId.value && res.id) {
+        try {
+          await dataService.assignBookToShelf(selectedShelfId.value, { userBookId: res.id })
+        } catch (e) {
+          console.log('Failed to assign to shelf: ' + e)
+        }
+      }
       clearForm();
+      selectedShelfId.value = null
       await router.push({name: 'my-books'})
     } catch (error: any) {
       progress.value = false
@@ -1265,6 +1298,16 @@ const displayDatepicker = computed(() => {
             <span>{{ imagePath }}</span>
           </fieldset>
         </div>
+        <fieldset class="fieldset">
+          <legend class="fieldset-legend capitalize">
+            <i class="mdi mdi-bookshelf mdi-18px mr-1" />
+            Assign to shelf
+          </legend>
+          <select v-model="selectedShelfId" class="select select-bordered w-full">
+            <option :value="null">None (assign later)</option>
+            <option v-for="opt in shelfOptions" :key="opt.id" :value="opt.id">{{ opt.label }}</option>
+          </select>
+        </fieldset>
         <div class="field">
           <button
             class="btn btn-success mb-3 uppercase"
