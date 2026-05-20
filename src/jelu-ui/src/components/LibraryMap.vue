@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useOruga } from "@oruga-ui/oruga-next"
 import { useTitle } from '@vueuse/core'
-import { onMounted, Ref, ref } from 'vue'
+import { computed, onMounted, Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { PhysicalLocation, PhysicalBookcase, PhysicalShelf, PhysicalShelfBook } from "../model/PhysicalLibrary"
 import { UserBook } from "../model/Book"
@@ -25,6 +25,67 @@ const shelfBooks: Ref<Map<string, Array<PhysicalShelfBook>>> = ref(new Map())
 const bookDetailsCache: Ref<Map<string, UserBook>> = ref(new Map())
 const bookcaseBookCount: Ref<Map<string, number>> = ref(new Map())
 const unassignedBooks: Ref<Page<UserBook> | null> = ref(null)
+const searchQuery: Ref<string> = ref('')
+const filterAuthor: Ref<string> = ref('')
+const filterTag: Ref<string> = ref('')
+const filterLanguage: Ref<string> = ref('')
+
+const uniqueAuthors = computed(() => {
+  if (!unassignedBooks.value) return []
+  const authors = new Set<string>()
+  unassignedBooks.value.content.forEach(ub => {
+    ub.book.authors?.forEach(a => authors.add(a.name))
+  })
+  return Array.from(authors).sort()
+})
+
+const uniqueTags = computed(() => {
+  if (!unassignedBooks.value) return []
+  const tags = new Set<string>()
+  unassignedBooks.value.content.forEach(ub => {
+    ub.book.tags?.forEach(t => tags.add(t.name))
+  })
+  return Array.from(tags).sort()
+})
+
+const uniqueLanguages = computed(() => {
+  if (!unassignedBooks.value) return []
+  const langs = new Set<string>()
+  unassignedBooks.value.content.forEach(ub => {
+    if (ub.book.language) langs.add(ub.book.language)
+  })
+  return Array.from(langs).sort()
+})
+
+const filteredUnassigned = computed(() => {
+  if (!unassignedBooks.value) return []
+  let books = unassignedBooks.value.content
+  const q = searchQuery.value.toLowerCase().trim()
+  if (q) {
+    books = books.filter(ub =>
+      ub.book.title?.toLowerCase().includes(q) ||
+      ub.book.authors?.some(a => a.name.toLowerCase().includes(q)) ||
+      ub.book.isbn13?.includes(q) ||
+      ub.book.isbn10?.includes(q)
+    )
+  }
+  if (filterAuthor.value) {
+    books = books.filter(ub =>
+      ub.book.authors?.some(a => a.name === filterAuthor.value)
+    )
+  }
+  if (filterTag.value) {
+    books = books.filter(ub =>
+      ub.book.tags?.some(t => t.name === filterTag.value)
+    )
+  }
+  if (filterLanguage.value) {
+    books = books.filter(ub =>
+      ub.book.language === filterLanguage.value
+    )
+  }
+  return books
+})
 const checkedUnassigned: Ref<Array<string>> = ref([])
 const selectAllUnassigned: Ref<boolean> = ref(false)
 
@@ -359,8 +420,34 @@ onMounted(() => {
           </button>
         </div>
       </div>
+      <!-- Search and filters -->
+      <div class="flex flex-wrap gap-2 mb-3">
+        <input
+          v-model="searchQuery"
+          type="text"
+          placeholder="Search by title, author, ISBN..."
+          class="input input-sm input-bordered flex-1 min-w-48"
+        />
+        <select v-model="filterAuthor" class="select select-sm select-bordered">
+          <option value="">All authors</option>
+          <option v-for="a in uniqueAuthors" :key="a" :value="a">{{ a }}</option>
+        </select>
+        <select v-model="filterTag" class="select select-sm select-bordered">
+          <option value="">All tags</option>
+          <option v-for="t in uniqueTags" :key="t" :value="t">{{ t }}</option>
+        </select>
+        <select v-model="filterLanguage" class="select select-sm select-bordered">
+          <option value="">All languages</option>
+          <option v-for="l in uniqueLanguages" :key="l" :value="l">{{ l }}</option>
+        </select>
+        <button v-if="searchQuery || filterAuthor || filterTag || filterLanguage"
+                class="btn btn-ghost btn-sm" @click="searchQuery = ''; filterAuthor = ''; filterTag = ''; filterLanguage = ''">
+          <i class="mdi mdi-close mdi-18px" /> Clear
+        </button>
+      </div>
+      <p class="text-xs opacity-60 mb-2">Showing {{ filteredUnassigned.length }} of {{ unassignedBooks.totalElements }} books</p>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-        <div v-for="ub in unassignedBooks.content" :key="ub.id!" class="card bg-base-200 p-2">
+        <div v-for="ub in filteredUnassigned" :key="ub.id!" class="card bg-base-200 p-2">
           <div class="flex items-center gap-2">
             <input type="checkbox" :value="ub.id!" v-model="checkedUnassigned" class="checkbox checkbox-sm checkbox-accent" />
             <img v-if="ub.book.image" :src="'/files/' + ub.book.image" class="w-8 h-12 object-cover rounded" />
