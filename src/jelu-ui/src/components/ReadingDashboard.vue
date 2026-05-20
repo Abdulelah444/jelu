@@ -76,16 +76,28 @@ const booksLastYear = computed(() => {
 })
 
 const pagesThisMonth = computed(() => {
+  // Pages from finished books this month (from stats API)
   const m = currentYearMonths.value.find(s => s.month === currentMonth)
-  return m?.pageCount ?? 0
+  let pages = m?.pageCount ?? 0
+  // Add pages from currently reading books (their current progress)
+  for (const ub of currentlyReading.value) {
+    pages += ub.currentPageNumber ?? 0
+  }
+  return pages
 })
 
 const pagesThisYear = computed(() => {
-  return currentYearMonths.value.reduce((sum, m) => sum + m.pageCount, 0)
+  let pages = currentYearMonths.value.reduce((sum, m) => sum + m.pageCount, 0)
+  // Add pages from currently reading books
+  for (const ub of currentlyReading.value) {
+    pages += ub.currentPageNumber ?? 0
+  }
+  return pages
 })
 
 // Weekly pace: pages from finished books in last 7 days + estimate from currently reading
 const weeklyPace = computed(() => {
+  // Pages from books finished in last 7 days
   const sevenDaysAgo = now.subtract(7, 'day')
   let pages = 0
   for (const ev of allFinishedEvents.value) {
@@ -93,6 +105,10 @@ const weeklyPace = computed(() => {
     if (evDate.isAfter(sevenDaysAgo)) {
       pages += ev.userBook?.book?.pageCount ?? 0
     }
+  }
+  // Add current progress from actively reading books
+  for (const ub of currentlyReading.value) {
+    pages += ub.currentPageNumber ?? 0
   }
   return Math.round(pages / 7)
 })
