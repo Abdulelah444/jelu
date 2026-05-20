@@ -546,9 +546,9 @@ onMounted(() => {
         </button>
       </div>
 
-      <div v-if="expandedLocations.has(location.id!)" class="flex flex-wrap gap-4 ml-4">
+      <div v-if="expandedLocations.has(location.id!)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 ml-4">
         <div v-for="bookcase in (bookcasesByLocation.get(location.id!) || [])" :key="bookcase.id!"
-             class="card bg-base-200 w-64 sm:w-72 lg:w-80 flex-shrink-0">
+             class="card bg-base-200">
           <div class="card-body p-3">
             <!-- Editing mode -->
             <div v-if="editingBookcaseId === bookcase.id!" class="space-y-2 p-1">
@@ -672,7 +672,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <div v-if="addingBookcaseForLocation === location.id!" class="card bg-base-100 w-64 sm:w-72 lg:w-80 flex-shrink-0 p-3">
+        <div v-if="addingBookcaseForLocation === location.id!" class="card bg-base-100 p-3">
           <div class="space-y-2">
             <div class="form-control">
               <label class="label py-0"><span class="label-text text-xs">{{ t('library_map.bookcase_name') }}</span></label>
@@ -689,7 +689,7 @@ onMounted(() => {
           </div>
         </div>
 
-        <button v-else class="btn btn-outline btn-sm h-20 w-64 sm:w-72 lg:w-80 flex-shrink-0" @click="startAddBookcase(location.id!)">
+        <button v-else class="btn btn-outline btn-sm h-20" @click="startAddBookcase(location.id!)">
           <i class="mdi mdi-plus mdi-24px" /> {{ t('library_map.add_bookcase') }}
         </button>
       </div>
