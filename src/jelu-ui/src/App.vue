@@ -274,10 +274,10 @@ function scanModalClosed() {
             <li @click="collapseDropdown()">
               <router-link
                 v-if="isLogged"
-                :to="{ name: 'reviews' }"
+                :to="'/profile/stats'"
                 class="font-sans text-base capitalize"
               >
-                {{ t('nav.activity') }}
+                Stats
               </router-link>
             </li>
             <li>
@@ -451,10 +451,10 @@ function scanModalClosed() {
           <li>
             <router-link
               v-if="isLogged"
-              :to="{ name: 'reviews' }"
+              :to="'/profile/stats'"
               class="font-sans text-xl capitalize"
             >
-              {{ t('nav.activity') }}
+              Stats
             </router-link>
           </li>
           <li>
@@ -466,15 +466,7 @@ function scanModalClosed() {
               {{ t('book.author', 2) }}
             </router-link>
           </li>
-          <li
-            v-if="isLogged"
-            class="mr-1"
-          >
-            <span
-              class="font-sans text-xl capitalize"
-              @click="toggleShelvesModal"
-            >{{ t('settings.shelves') }}</span>
-          </li>
+
         </ul>
         <div
           v-if="isLogged && showSearchInput"
