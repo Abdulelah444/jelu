@@ -120,8 +120,12 @@ const toggleLocation = async (locationId: string) => {
     try {
       const bookcases = await dataService.getPhysicalBookcases(locationId)
       bookcasesByLocation.value.set(locationId, bookcases)
-      // Load book counts in background
-      loadBookcaseCounts(bookcases)
+      // Auto-expand and load all bookcases
+      for (const bc of bookcases) {
+        if (bc.id && !expandedBookcases.value.has(bc.id)) {
+          toggleBookcase(bc.id)
+        }
+      }
     } catch (error) {
       ObjectUtils.toast(oruga, "danger", "Error loading bookcases", 4000)
     }
@@ -562,12 +566,18 @@ onMounted(() => {
     </div>
 
     <div v-for="location in locations" :key="location.id!" class="mb-6">
-      <div class="flex items-center gap-2 cursor-pointer mb-2" @click="toggleLocation(location.id!)">
-        <i :class="expandedLocations.has(location.id!) ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
-        <h2 class="text-xl font-bold">{{ location.name }}</h2>
-        <button class="btn btn-ghost btn-xs text-error ml-auto" @click.stop="deleteLocation(location.id!)">
-          <i class="mdi mdi-delete mdi-18px" />
-        </button>
+      <div class="card bg-base-200 border border-base-300 cursor-pointer" @click="toggleLocation(location.id!)">
+        <div class="card-body p-3 flex-row items-center gap-3">
+          <i class="mdi mdi-map-marker mdi-24px text-primary" />
+          <i :class="expandedLocations.has(location.id!) ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-18px opacity-50" />
+          <h2 class="text-lg font-bold flex-1">{{ location.name }}</h2>
+          <span v-if="bookcasesByLocation.has(location.id!)" class="text-xs bg-base-300 px-1.5 py-0.5 rounded-md">
+            {{ bookcasesByLocation.get(location.id!)?.length || 0 }} bookcases
+          </span>
+          <button class="btn btn-ghost btn-xs text-error" @click.stop="deleteLocation(location.id!)">
+            <i class="mdi mdi-delete mdi-18px" />
+          </button>
+        </div>
       </div>
 
       <div v-if="expandedLocations.has(location.id!)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-4 ml-4">
