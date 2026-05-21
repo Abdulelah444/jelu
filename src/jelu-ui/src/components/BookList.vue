@@ -468,6 +468,15 @@ try {
         </span>
       </button>
       <button
+        v-tooltip="'Shuffle'"
+        class="btn btn-outline btn-warning"
+        @click="sortBy = 'random'; sortOrder = 'desc'"
+      >
+        <span class="icon text-lg">
+          <i class="mdi mdi-shuffle-variant" />
+        </span>
+      </button>
+      <button
         v-if="showSelect"
         v-tooltip="t('bulk.select_all')"
         class="btn btn-outline btn-accent"
