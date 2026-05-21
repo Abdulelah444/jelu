@@ -203,7 +203,7 @@ const shuffleBooks = async () => {
   try {
     const res = await dataService.findUserBookByCriteria(
       eventTypes.value, null, userId.value,
-      toRead.value, owned.value, borrowed.value,
+      toReadAsBool.value, ownedAsBool.value, borrowedAsBool.value,
       0, perPage.value, 'random,desc')
     books.value = res.content
     total.value = res.totalElements
