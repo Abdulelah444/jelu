@@ -29,6 +29,8 @@ const { sortQuery, sortOrder, sortBy, sortOrderUpdated } = useSort('lastReadingE
 const { showSelect, selectAll, checkedCards, cardChecked, toggleEdit } = useBulkEdition(modalClosed)
 const isShuffled = ref(false)
 const originalOrder: Ref<Array<any>> = ref([])
+const isShuffled = ref(false)
+const originalOrder: Ref<Array<any>> = ref([])
 
 const open = ref(false)
 
