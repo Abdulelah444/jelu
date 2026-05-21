@@ -194,24 +194,28 @@ onMounted(() => {
   console.log("Component is mounted!");
 });
 
-const shuffleBooks = () => {
+const savedSort = ref('')
+
+const shuffleBooks = async () => {
   if (!isShuffled.value) {
-    originalOrder.value = [...books.value]
+    savedSort.value = sortQuery.value
   }
-  const arr = [...books.value]
-  for (let i = arr.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [arr[i], arr[j]] = [arr[j], arr[i]]
+  try {
+    const res = await dataService.findUserBookByCriteria(
+      eventTypes.value, null, userId.value,
+      toRead.value, owned.value, borrowed.value,
+      0, perPage.value, 'random,desc')
+    books.value = res.content
+    total.value = res.totalElements
+    isShuffled.value = true
+  } catch (e) {
+    console.log("Failed to shuffle: " + e)
   }
-  books.value = arr
-  isShuffled.value = true
 }
 
 const restoreOrder = () => {
-  if (originalOrder.value.length > 0) {
-    books.value = [...originalOrder.value]
-  }
   isShuffled.value = false
+  getBooks()
 }
 
 function modalClosed() {
