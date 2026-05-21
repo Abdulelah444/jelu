@@ -29,8 +29,6 @@ const { sortQuery, sortOrder, sortBy, sortOrderUpdated } = useSort('lastReadingE
 const { showSelect, selectAll, checkedCards, cardChecked, toggleEdit } = useBulkEdition(modalClosed)
 const isShuffled = ref(false)
 const originalOrder: Ref<Array<any>> = ref([])
-const isShuffled = ref(false)
-const originalOrder: Ref<Array<any>> = ref([])
 
 const open = ref(false)
 
@@ -195,6 +193,26 @@ const throttledGetBooks = useThrottleFn(() => {
 onMounted(() => {
   console.log("Component is mounted!");
 });
+
+const shuffleBooks = () => {
+  if (!isShuffled.value) {
+    originalOrder.value = [...books.value]
+  }
+  const arr = [...books.value]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  books.value = arr
+  isShuffled.value = true
+}
+
+const restoreOrder = () => {
+  if (originalOrder.value.length > 0) {
+    books.value = [...originalOrder.value]
+  }
+  isShuffled.value = false
+}
 
 function modalClosed() {
   console.log("modal closed")
