@@ -27,6 +27,8 @@ const { total, page, pageAsNumber, perPage, updatePage, getPageIsLoading, update
 const { sortQuery, sortOrder, sortBy, sortOrderUpdated } = useSort('lastReadingEventDate,desc')
 
 const { showSelect, selectAll, checkedCards, cardChecked, toggleEdit } = useBulkEdition(modalClosed)
+const isShuffled = ref(false)
+const originalOrder: Ref<Array<any>> = ref([])
 
 const open = ref(false)
 
@@ -468,12 +470,23 @@ try {
         </span>
       </button>
       <button
+        v-if="!isShuffled"
         v-tooltip="'Shuffle'"
         class="btn btn-outline btn-warning"
-        @click="sortBy = 'random'; sortOrder = 'desc'"
+        @click="shuffleBooks"
       >
         <span class="icon text-lg">
           <i class="mdi mdi-shuffle-variant" />
+        </span>
+      </button>
+      <button
+        v-if="isShuffled"
+        v-tooltip="'Restore order'"
+        class="btn btn-outline btn-info"
+        @click="restoreOrder"
+      >
+        <span class="icon text-lg">
+          <i class="mdi mdi-sort-ascending" />
         </span>
       </button>
       <button
