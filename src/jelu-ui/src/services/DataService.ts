@@ -491,7 +491,7 @@ class DataService {
 
   findUserBookByCriteria = async (lastEventTypes?: Array<ReadingEventType> | null, bookId?: string|null,
     userId?: string|null, toRead?: boolean | null, owned?: boolean | null, borrowed?: boolean | null,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserBook>>(`${this.API_USERBOOK}`, {
         params: {
@@ -501,6 +501,7 @@ class DataService {
           toRead: toRead,
           owned: owned,
           borrowed: borrowed,
+          hasPageCount: hasPageCount != null ? hasPageCount : undefined,
           page: page,
           size: size,
           sort: sort
@@ -1141,7 +1142,7 @@ class DataService {
   myReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}/me`, {
         params: {
@@ -1177,7 +1178,7 @@ class DataService {
   findReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, userId?: string, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}`, {
         params: {
@@ -1393,7 +1394,7 @@ class DataService {
   }
 
   messages = async (messageCategories?: Array<MessageCategory> | null, read?: boolean,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserMessage>>(`${this.API_USER_MESSAGES}`, {
         params: {

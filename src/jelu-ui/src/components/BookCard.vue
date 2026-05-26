@@ -54,6 +54,8 @@ const eventClass = computed(() => {
       props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING
     ) {
       return "badge-success";
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return "badge-warning";
     } else return "";
   }
   return "";
@@ -63,6 +65,8 @@ const eventText = computed(() => {
   if (props.book.lastReadingEvent) {
     if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else if (props.book.lastReadingEvent === ReadingEventType.DROPPED) {
       return t('reading_events.dropped');
     } else if (props.book.lastReadingEvent === ReadingEventType.FINISHED) {
@@ -80,6 +84,8 @@ const bannerClass = computed(() => {
       return "bg-error text-error-content";
     } else if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
       return "bg-info text-info-content";
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return "bg-warning text-warning-content";
     }
   }
   return "";
@@ -135,7 +141,7 @@ const currentTimestamp = ObjectUtils.timestamp()
 
 <template>
   <div
-    class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden"
+    class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden h-full flex flex-col"
   >
     <div
       v-if="book.lastReadingEvent"
@@ -201,7 +207,7 @@ const currentTimestamp = ObjectUtils.timestamp()
         >
       </div>
     </div>
-    <div class="card-body">
+    <div class="card-body flex-grow">
       <router-link
         v-if="book.id != null"
         class="grow"

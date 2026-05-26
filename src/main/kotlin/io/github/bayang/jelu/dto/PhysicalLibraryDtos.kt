@@ -83,6 +83,7 @@ data class ReorderShelfBooksDto(
 )
 
 data class ShelfLocationDto(
+    val bookcaseNumber: Int,
     val locationName: String,
     val bookcaseName: String,
     val shelfLabel: String,

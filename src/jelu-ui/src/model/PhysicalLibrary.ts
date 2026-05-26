@@ -70,6 +70,7 @@ export interface BulkAssignBooksToShelf {
 }
 
 export interface ShelfLocation {
+    bookcaseNumber: number,
     locationName: string,
     bookcaseName: string,
     shelfLabel: string,

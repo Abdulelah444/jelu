@@ -34,6 +34,8 @@ const bannerClass = (type: string) => {
     return "bg-error text-error-content";
   } else if (type === 'CURRENTLY_READING') {
     return "bg-info text-info-content";
+  } else if (type === 'PAUSED') {
+    return "bg-warning text-warning-content";
   } else return "bg-base-300";
 }
 
@@ -50,6 +52,8 @@ const currentlyReadingIsLoading: Ref<boolean> = ref(false)
 const recentEventsIsLoading: Ref<boolean> = ref(false)
 
 const books: Ref<Array<UserBook>> = ref([]);
+const pausedBooks: Ref<Array<UserBook>> = ref([]);
+const pausedIsLoading: Ref<boolean> = ref(false);
 
 const randomBook: Ref<UserBook | null> = ref(null)
 const showRecentEvents: Ref<boolean> = ref(false)
@@ -78,6 +82,17 @@ const getCurrentlyReading = async () => {
 
 };
 
+const getPausedBooks = async () => {
+  pausedIsLoading.value = true
+  try {
+    const res = await dataService.findUserBookByCriteria([ReadingEventType.PAUSED], null, null, null)
+    pausedBooks.value = res.content.slice(0, 6)
+    pausedIsLoading.value = false
+  } catch (error) {
+    console.log("failed get paused books : " + error)
+    pausedIsLoading.value = false
+  }
+}
 const nonCurrentlyReadingEvents: Array<ReadingEventType> = [ReadingEventType.DROPPED, ReadingEventType.FINISHED]
 
 const getMyEvents = async () => {
@@ -125,6 +140,7 @@ const getRandomBook = async () => {
 if (isLogged.value) {
   try {
       getCurrentlyReading()
+      getPausedBooks()
       getMyEvents()
       getUserReviews()
       getRandomBook()
@@ -140,6 +156,7 @@ watch(() => isLogged.value, (newValue, oldValue) => {
       initialLoad.value = false
       getCurrentlyReading()
       getMyEvents()
+      getPausedBooks()
       getRandomBook()
   } catch (error) {
     console.log("failed get books : " + error);
@@ -289,6 +306,36 @@ const { typographyClasses } = useTypography()
       <span class="icon">
         <i class="mdi mdi-book-open-page-variant-outline mdi-48px" />
       </span>
+    </div>
+    <!-- Paused books section -->
+    <div v-if="pausedBooks.length > 0" class="mt-6 px-2 sm:px-0">
+      <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
+        <i class="mdi mdi-pause-circle mdi-24px mr-1 text-warning" />
+        Paused
+        <span class="badge badge-warning badge-sm ml-2">{{ pausedBooks.length }}</span>
+      </h2>
+      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+        <div v-for="book in pausedBooks" :key="book.id">
+          <book-card
+            :book="book"
+            :public="false"
+            size="xl"
+            :force-select="false"
+            :show-select="false"
+            :propose-add="true"
+          >
+            <template #icon>
+              <span
+                v-tooltip="'Resume reading'"
+                class="icon text-warning"
+                @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+              >
+                <i class="mdi mdi-play-circle mdi-18px" />
+              </span>
+            </template>
+          </book-card>
+        </div>
+      </div>
     </div>
     <div
       v-if="events.length > 0"

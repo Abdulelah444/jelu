@@ -76,4 +76,5 @@ enum class ReadingEventType {
     FINISHED,
     DROPPED,
     CURRENTLY_READING,
+    PAUSED,
 }

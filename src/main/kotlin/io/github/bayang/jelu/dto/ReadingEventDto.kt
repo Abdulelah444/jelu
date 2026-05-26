@@ -57,5 +57,6 @@ enum class ReadingEventTypeFilter {
     FINISHED,
     DROPPED,
     CURRENTLY_READING,
+    PAUSED,
     NONE,
 }

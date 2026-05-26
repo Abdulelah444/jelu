@@ -85,291 +85,106 @@ const deleteEvent = () => {
 
 const { typographyClasses } = useTypography()
 </script>
-
 <template>
-  <section class="event-modal">
-    <div
-      v-if="props.edit"
-    >
-      <div>
-        <div>
-          <h1
-            class="text-2xl first-letter:capitalize"
-            :class="typographyClasses"
-          >
-            {{ t('reading_events.edit_event') }}
-          </h1>
+  <section class="event-modal p-4">
+    <!-- EDIT MODE -->
+    <div v-if="props.edit">
+      <h1 class="text-xl font-medium capitalize mb-4" :class="typographyClasses">
+        {{ t('reading_events.edit_event') }}
+      </h1>
+
+      <!-- Status segmented toggle -->
+      <div class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.event_type') }}</label>
+        <div class="inline-flex rounded-lg border border-base-content/30 overflow-hidden">
+          <div class="px-4 py-2 text-sm cursor-pointer transition-colors" :class="currentCreateEvent.eventType === 'CURRENTLY_READING' ? 'bg-info/20 text-info font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.CURRENTLY_READING">
+            {{ t('reading_events.currently_reading') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'PAUSED' ? 'bg-warning/20 text-warning font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.PAUSED">
+            {{ t('reading_events.paused') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'FINISHED' ? 'bg-success/20 text-success font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.FINISHED">
+            {{ t('reading_events.finished') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'DROPPED' ? 'bg-error/20 text-error font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.DROPPED">
+            {{ t('reading_events.dropped') }}
+          </div>
         </div>
       </div>
-      <div>
-        <div class="field">
-          <label class="label">
-            <span class="label-text font-semibold">{{ t('reading_events.last_event_type') }} : </span>
-          </label>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-28"
-              class="radio radio-primary my-2"
-              value="FINISHED"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.finished') }}
-            </span>
-          </div>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-28"
-              class="radio radio-primary my-2"
-              value="CURRENTLY_READING"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.currently_reading') }}
-            </span>
-          </div>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-28"
-              class="radio radio-primary my-2"
-              value="DROPPED"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.dropped') }}
-            </span>
-          </div>
-        </div>
-        <div class="field">
-          <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('reading_events.start_date') }} : </span>
-          </label>
-          <datepicker
-            v-model="currentEvent.startDate"
-            class="input input-primary"
-            :typeable="true"
-            :clearable="false"
-          >
-            <template #clear="{ onClear }">
-              <button @click="onClear">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
-                  />
-                </svg>
-              </button>
-            </template>
-          </datepicker>
-        </div>
-        <div
-          v-if="currentEvent.eventType !== ReadingEventType.CURRENTLY_READING"
-          class="field"
-        >
-          <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('reading_events.event_date') }} : </span>
-          </label>
-          <datepicker
-            v-model="currentEvent.endDate"
-            class="input input-primary"
-            :typeable="true"
-            :clearable="true"
-          >
-            <template #clear="{ onClear }">
-              <button @click="onClear">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
-                  />
-                </svg>
-              </button>
-            </template>
-          </datepicker>
-        </div>
-        <div class="mt-3">
-          <button
-            class="btn btn-secondary mr-2 uppercase"
-            @click="update"
-          >
-            <span class="icon">
-              <i class="mdi mdi-pencil mdi-18px" />
-            </span>
-            <span>{{ t('labels.submit') }}</span>
-          </button>
-          <button
-            class="btn btn-error uppercase"
-            @click="deleteEvent"
-          >
-            <span class="icon">
-              <i class="mdi mdi-delete mdi-18px" />
-            </span>
-            <span>{{ t('labels.delete') }}</span>
-          </button>
-        </div>
+
+      <!-- Start date -->
+      <div class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.start_date') }}</label>
+        <datepicker v-model="currentEvent.startDate" class="input input-bordered w-full" :typeable="true" :clearable="false" />
+      </div>
+
+      <!-- End date (not for currently reading) -->
+      <div v-if="currentEvent.eventType !== ReadingEventType.CURRENTLY_READING" class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.event_date') }}</label>
+        <datepicker v-model="currentEvent.endDate" class="input input-bordered w-full" :typeable="true" :clearable="true" />
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex gap-2 mt-4">
+        <button class="btn btn-success" @click="update">
+          <i class="mdi mdi-check mdi-18px mr-1" />
+          {{ t('labels.submit') }}
+        </button>
+        <button class="btn btn-error btn-outline" @click="deleteEvent">
+          <i class="mdi mdi-delete mdi-18px mr-1" />
+          {{ t('labels.delete') }}
+        </button>
       </div>
     </div>
-    <div
-      v-else
-    >
-      <div>
-        <div>
-          <h1
-            class="text-2xl capitalize"
-            :class="typographyClasses"
-          >
-            {{ t('reading_events.choose_event') }}
-          </h1>
+
+    <!-- CREATE MODE -->
+    <div v-else>
+      <h1 class="text-xl font-medium capitalize mb-4" :class="typographyClasses">
+        {{ t('reading_events.choose_event') }}
+      </h1>
+
+      <!-- Status segmented toggle -->
+      <div class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.event_type') }}</label>
+        <div class="inline-flex rounded-lg border border-base-content/30 overflow-hidden">
+          <div class="px-4 py-2 text-sm cursor-pointer transition-colors" :class="currentCreateEvent.eventType === 'CURRENTLY_READING' ? 'bg-info/20 text-info font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.CURRENTLY_READING">
+            {{ t('reading_events.currently_reading') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'PAUSED' ? 'bg-warning/20 text-warning font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.PAUSED">
+            {{ t('reading_events.paused') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'FINISHED' ? 'bg-success/20 text-success font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.FINISHED">
+            {{ t('reading_events.finished') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'DROPPED' ? 'bg-error/20 text-error font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.DROPPED">
+            {{ t('reading_events.dropped') }}
+          </div>
         </div>
       </div>
-      <div>
-        <div class="field">
-          <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('reading_events.event_type') }} : </span>
-          </label>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-29"
-              class="radio radio-primary my-2"
-              value="FINISHED"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.finished') }}
-            </span>
-          </div>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-29"
-              class="radio radio-primary my-2"
-              value="CURRENTLY_READING"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.currently_reading') }}
-            </span>
-          </div>
-          <div class="field">
-            <input
-              v-model="currentCreateEvent.eventType"
-              type="radio"
-              name="radio-29"
-              class="radio radio-primary my-2"
-              value="DROPPED"
-            >
-            <span class="label-text ml-2">
-              {{ t('reading_events.dropped') }}
-            </span>
-          </div>
-        </div>
-        <div
-          v-if="currentEvent.eventType === ReadingEventType.CURRENTLY_READING"
-          class="field"
-        >
-          <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('reading_events.start_date') }} :</span>
-          </label>
-          <datepicker
-            v-model="currentCreateEvent.startDate"
-            class="input input-primary"
-            :clearable="true"
-            :typeable="true"
-          >
-            <template #clear="{ onClear }">
-              <button @click="onClear">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
-                  />
-                </svg>
-              </button>
-            </template>
-          </datepicker>
-        </div>
-        <div
-          v-if="currentCreateEvent.eventType != ReadingEventType.CURRENTLY_READING"
-          class="field"
-        >
-          <label class="label">
-            <span class="label-text font-semibold first-letter:capitalize">{{ t('reading_events.event_date') }} :</span>
-          </label>
-          <datepicker
-            v-model="currentCreateEvent.eventDate"
-            class="input input-primary"
-            :clearable="true"
-            :typeable="true"
-          >
-            <template #clear="{ onClear }">
-              <button @click="onClear">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M12 9.75L14.25 12m0 0l2.25 2.25M14.25 12l2.25-2.25M14.25 12L12 14.25m-2.58 4.92l-6.375-6.375a1.125 1.125 0 010-1.59L9.42 4.83c.211-.211.498-.33.796-.33H19.5a2.25 2.25 0 012.25 2.25v10.5a2.25 2.25 0 01-2.25 2.25h-9.284c-.298 0-.585-.119-.796-.33z"
-                  />
-                </svg>
-              </button>
-            </template>
-          </datepicker>
-        </div>
-        <div>
-          <button
-            class="btn btn-secondary btn-outline mt-3 uppercase"
-            @click="create"
-          >
-            <span class="icon">
-              <i class="mdi mdi-pencil mdi-18px" />
-            </span>
-            <span>{{ t('labels.create') }}</span>
-          </button>
-        </div>
+
+      <!-- Start date (for currently reading) -->
+      <div v-if="currentCreateEvent.eventType === ReadingEventType.CURRENTLY_READING" class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.start_date') }}</label>
+        <datepicker v-model="currentCreateEvent.startDate" class="input input-bordered w-full" :clearable="true" :typeable="true" />
+      </div>
+
+      <!-- Event date (for non-currently reading) -->
+      <div v-if="currentCreateEvent.eventType !== ReadingEventType.CURRENTLY_READING" class="mb-4">
+        <label class="text-sm text-base-content/60 block mb-2 capitalize">{{ t('reading_events.event_date') }}</label>
+        <datepicker v-model="currentCreateEvent.eventDate" class="input input-bordered w-full" :clearable="true" :typeable="true" />
+      </div>
+
+      <!-- Create button -->
+      <div class="mt-4">
+        <button class="btn btn-success" @click="create">
+          <i class="mdi mdi-check mdi-18px mr-1" />
+          {{ t('labels.create') }}
+        </button>
       </div>
     </div>
-    <progress
-      v-if="progress"
-      class="animate-pulse progress progress-success mt-5"
-      max="100"
-    />
+
+    <progress v-if="progress" class="animate-pulse progress progress-success mt-5" max="100" />
   </section>
 </template>
-
 <style lang="scss">
-
 </style>

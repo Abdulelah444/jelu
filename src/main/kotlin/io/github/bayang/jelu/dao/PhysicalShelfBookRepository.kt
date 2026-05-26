@@ -129,6 +129,7 @@ class PhysicalShelfBookRepository {
 
         val locationName = row[PhysicalLocationTable.name]
         val bookcaseName = row[PhysicalBookcaseTable.name]
+        val bookcaseSortOrder = row[PhysicalBookcaseTable.sortOrder]
         val shelfPosition = row[PhysicalShelfTable.position]
         val shelfLabel = row[PhysicalShelfTable.label]
 
@@ -140,11 +141,12 @@ class PhysicalShelfBookRepository {
             }
 
         return ShelfLocationDto(
+            bookcaseNumber = bookcaseSortOrder + 1,
             locationName = locationName,
             bookcaseName = bookcaseName,
             shelfLabel = shelfDisplay,
             shelfPosition = shelfPosition,
-            displayString = locationName + " > " + bookcaseName + " > " + shelfDisplay,
+            displayString = locationName + " > " + bookcaseName + " (Bookcase " + (bookcaseSortOrder + 1) + ") > " + shelfDisplay,
         )
     }
 

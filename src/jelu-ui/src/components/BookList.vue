@@ -38,6 +38,7 @@ const getBookIsLoading: Ref<boolean> = ref(false)
 const toRead: Ref<string|null> = useRouteQuery('toRead', "null")
 const owned: Ref<string|null> = useRouteQuery('owned', "null")
 const borrowed: Ref<string|null> = useRouteQuery('borrowed', "null")
+const hasPageCount: Ref<string|null> = useRouteQuery("hasPageCount", "null")
 const userId: Ref<string|null> = useRouteQuery('userId', null)
 const eventTypes: Ref<Array<ReadingEventType>> = useRouteQuery('lastEventTypes', [])
 const username = ref("")
@@ -103,7 +104,7 @@ const getUsername = async () => {
 
 getUsername()
 
-watch([page, eventTypes, toRead, owned, borrowed, sortQuery], (newVal, oldVal) => {
+watch([page, eventTypes, toRead, owned, borrowed, hasPageCount, sortQuery], (newVal, oldVal) => {
   console.log("all " + newVal + " " + oldVal)
   if (newVal !== oldVal) {
     throttledGetBooks()
@@ -150,12 +151,21 @@ const borrowedAsBool = computed(() => {
   }
   }
 )
+const hasPageCountAsBool = computed(() => {
+  if (hasPageCount.value?.toLowerCase() === "null") {
+    return null
+  } else if (hasPageCount.value?.toLowerCase() === "true") {
+    return true
+  } else {
+    return false
+  }
+})
 
 const getBooks = () => {
   getBookIsLoading.value = true
   dataService.findUserBookByCriteria(eventTypes.value, null, userId.value,
   toReadAsBool.value, ownedAsBool.value, borrowedAsBool.value,
-  pageAsNumber.value - 1, perPage.value, sortQuery.value)
+  pageAsNumber.value - 1, perPage.value, sortQuery.value, hasPageCountAsBool.value)
   .then(res => {
         console.log(res)
           total.value = res.totalElements
@@ -368,6 +378,15 @@ try {
             v-model="eventTypes"
             type="checkbox"
             class="checkbox checkbox-primary"
+            value="PAUSED"
+          >
+          {{ t('reading_events.paused') }}
+        </label>
+        <label class="label">
+          <input
+            v-model="eventTypes"
+            type="checkbox"
+            class="checkbox checkbox-primary"
             value="NONE"
           >
           {{ t('reading_events.none') }}
@@ -472,6 +491,21 @@ try {
           <span class="label-text">{{ t('labels.true') }}</span>
         </div>
       </div>
+      <div class="field flex flex-col items-start">
+        <label class="label">Has page count :</label>
+        <div class="field">
+          <input v-model="hasPageCount" type="radio" name="radio-pc" class="radio radio-primary my-2" value="null">
+          <span class="label-text">All</span>
+        </div>
+        <div class="field">
+          <input v-model="hasPageCount" type="radio" name="radio-pc" class="radio radio-primary mb-2" value="false">
+          <span class="label-text">Missing</span>
+        </div>
+        <div class="field">
+          <input v-model="hasPageCount" type="radio" name="radio-pc" class="radio radio-primary" value="true">
+          <span class="label-text">Has pages</span>
+        </div>
+      </div>
     </template>
   </sort-filter-bar-vue>
   <div class="flex flex-row justify-between mb-2">
@@ -555,7 +589,7 @@ try {
   />
   <div
     v-if="books.length > 0"
-    class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-2 my-3 shrink-0 grow-0 mt-2"
+    class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-2 my-3 shrink-0 grow-0 mt-2 items-stretch"
   >
     <TransitionGroup name="list">
       <div

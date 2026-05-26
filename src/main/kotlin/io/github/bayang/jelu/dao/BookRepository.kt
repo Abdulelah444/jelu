@@ -576,6 +576,14 @@ class BookRepository(
 
     fun findSeriesByName(name: String): List<Series> = Series.find { SeriesTable.name.lowerCase() eq name.lowercase() }.toList()
 
+    fun findBooksMissingPageCount(pageable: Pageable): Page<Book> {
+        val query = BookTable.selectAll().where { BookTable.pageCount eq null }
+        val total = query.count()
+        query.limit(pageable.pageSize).offset(pageable.offset)
+        query.orderBy(BookTable.title to SortOrder.ASC_NULLS_LAST)
+        return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
+    }
+
     fun findBookById(bookId: UUID): Book = Book[bookId]
 
     fun findAuthorsById(authorId: UUID): Author = Author[authorId]
@@ -1553,6 +1561,7 @@ class BookRepository(
         toRead: Boolean?,
         owned: Boolean?,
         borrowed: Boolean?,
+        hasPageCount: Boolean? = null,
         pageable: Pageable,
     ): PageImpl<UserBook> {
         val cols = mutableListOf<Expression<*>>()
@@ -1625,6 +1634,13 @@ class BookRepository(
                 // default value if checkbox not set is null, so if caller asks explicitly with borrowed == false,
                 // try to return everything that is not true
                 query.andWhere { UserBookTable.borrowed eq borrowed or (UserBookTable.borrowed.isNull()) }
+            }
+        }
+        if (hasPageCount != null) {
+            if (hasPageCount) {
+                query.andWhere { BookTable.pageCount.isNotNull() }
+            } else {
+                query.andWhere { BookTable.pageCount.isNull() }
             }
         }
         val total = query.count()
@@ -1899,6 +1915,7 @@ class BookRepository(
                     userId,
                     null,
                     listOf(ReadingEventTypeFilter.CURRENTLY_READING, ReadingEventTypeFilter.NONE),
+                    null,
                     null,
                     null,
                     null,

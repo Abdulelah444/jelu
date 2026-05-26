@@ -110,7 +110,7 @@ class CsvExportService(
                 )
                 do {
                     books =
-                        bookService.findUserBookByCriteria(userId!!, null, null, null, null, null, PageRequest.of(currentPage, pageSize))
+                        bookService.findUserBookByCriteria(userId!!, null, null, null, null, null, null, PageRequest.of(currentPage, pageSize))
                     currentPage++
                     logger.debug { "current $currentPage" }
                     count += books.content.size

@@ -152,8 +152,33 @@ const sortedEvents = computed(() => {
   else {
     return []
   }
-}
-)
+})
+
+const readingPace = computed(() => {
+  if (!book.value?.readingEvents || !book.value?.book?.pageCount) return null
+  const currentEvent = book.value.readingEvents.find(
+    (e: ReadingEvent) => e.eventType === ReadingEventType.CURRENTLY_READING
+  )
+  if (!currentEvent?.startDate) return null
+  const startDate = dayjs(currentEvent.startDate)
+  const daysReading = dayjs().diff(startDate, "day", true)
+  if (daysReading < 0.01) return null
+  const pagesRead = book.value.currentPageNumber ?? Math.round((book.value.percentRead ?? 0) * book.value.book.pageCount / 100)
+  if (pagesRead <= 0) return null
+  const effectiveDays = Math.max(daysReading, 1)
+  const pace = pagesRead / effectiveDays
+  const pagesRemaining = book.value.book.pageCount - pagesRead
+  const daysRemaining = pagesRemaining > 0 ? Math.ceil(pagesRemaining / pace) : 0
+  const estimatedFinish = dayjs().add(daysRemaining, "day")
+  return {
+    pagesPerDay: Math.round(pace * 10) / 10,
+    daysReading: Math.round(daysReading),
+    daysRemaining,
+    estimatedFinish: estimatedFinish.format("MMM D, YYYY"),
+    pagesRead,
+    pagesRemaining,
+  }
+})
 
 const hasExternalLink = computed(() => book.value?.book.amazonId != null
   || book.value?.book.goodreadsId != null
@@ -373,6 +398,8 @@ const eventClass = (event: ReadingEvent) => {
     event.eventType === ReadingEventType.CURRENTLY_READING
   ) {
     return "bg-success";
+  } else if (event.eventType === ReadingEventType.PAUSED) {
+    return "bg-warning";
   }
   else return "";
 };
@@ -386,6 +413,8 @@ const iconClass = (event: ReadingEvent) => {
     event.eventType === ReadingEventType.CURRENTLY_READING
   ) {
     return "mdi-book-open-page-variant";
+  } else if (event.eventType === ReadingEventType.PAUSED) {
+    return "mdi-pause-circle";
   }
   else return "";
 };
@@ -397,12 +426,15 @@ const eventLabel = (type: ReadingEventType) => {
       return t('reading_events.dropped');
     } else if (type === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (type === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else return "";
 };
 
 function defaultCreateEvent(): CreateReadingEvent {
+  const currentType = book.value?.lastReadingEvent ?? ReadingEventType.CURRENTLY_READING
   return {
-    eventType: ReadingEventType.CURRENTLY_READING,
+    eventType: currentType,
     eventDate: new Date(),
     startDate: new Date(),
     bookId: book.value?.book.id
@@ -855,6 +887,22 @@ getBook()
           <div v-if="book?.book?.pageCount || book?.currentPageNumber" class="flex justify-between text-xs opacity-70 mt-1">
             <span v-if="book?.currentPageNumber">Page {{ book.currentPageNumber }}<span v-if="book?.book?.pageCount"> / {{ book.book.pageCount }}</span></span>
             <span v-else-if="book?.book?.pageCount">{{ book.book.pageCount }} pages</span>
+          </div>
+        </div>
+        <div v-if="readingPace" class="my-3 p-3 bg-base-200 rounded-lg text-sm">
+          <div class="flex items-center gap-2 mb-1">
+            <i class="mdi mdi-speedometer mdi-18px" />
+            <span class="font-semibold">Reading Pace</span>
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1 mt-2">
+            <span class="opacity-70">Pace:</span>
+            <span class="font-medium">{{ readingPace.pagesPerDay }} pages/day</span>
+            <span class="opacity-70">Days reading:</span>
+            <span class="font-medium">{{ readingPace.daysReading }} days</span>
+            <span class="opacity-70">Pages remaining:</span>
+            <span class="font-medium">{{ readingPace.pagesRemaining }}</span>
+            <span v-if="readingPace.daysRemaining > 0" class="opacity-70">Est. finish:</span>
+            <span v-if="readingPace.daysRemaining > 0" class="font-medium">{{ readingPace.estimatedFinish }} ({{ readingPace.daysRemaining }} days)</span>
           </div>
         </div>
         <p v-if="book?.book?.publishedDate">

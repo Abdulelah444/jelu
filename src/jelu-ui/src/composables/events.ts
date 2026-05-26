@@ -17,6 +17,8 @@ const eventClass = (type: ReadingEventType) => {
       type === ReadingEventType.CURRENTLY_READING
     ) {
       return "badge-success";
+    } else if (type === ReadingEventType.PAUSED) {
+      return "badge-warning";
     } else return "";
 };
 
@@ -28,6 +30,8 @@ const eventLabel = (type: ReadingEventType) => {
       return t('reading_events.dropped');
     } else if (type === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (type === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else return "";
 };
 

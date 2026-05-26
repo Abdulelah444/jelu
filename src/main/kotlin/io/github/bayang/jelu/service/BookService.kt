@@ -62,6 +62,7 @@ class BookService(
     private val shelfService: ShelfService,
     private val searchIndexService: SearchIndexService,
     private val luceneHelper: LuceneHelper,
+    private val bookEnrichmentService: BookEnrichmentService,
 ) {
     @Transactional
     fun findAll(
@@ -136,8 +137,9 @@ class BookService(
         userId: UUID?,
         pageable: Pageable,
     ): Page<SeriesDto> = bookRepository.findAllSeries(name, userId, pageable).map { it.toSeriesDto() }
-
     @Transactional
+    fun findBooksMissingPageCount(pageable: Pageable): Page<BookDto> = bookRepository.findBooksMissingPageCount(pageable).map { it.toBookDto() }
+
     fun findBookById(bookId: UUID): BookDto = bookRepository.findBookById(bookId).toBookDto()
 
     @Transactional
@@ -323,6 +325,9 @@ class BookService(
         } else {
             searchIndexService.bookUpdated(book)
         }
+        if (newBook) {
+            bookEnrichmentService.enrichBook(book.toBookDto(), user)
+        }
         return created.toUserBookLightDto()
     }
 
@@ -492,9 +497,10 @@ class BookService(
         toRead: Boolean?,
         owned: Boolean? = null,
         borrowed: Boolean? = null,
+        hasPageCount: Boolean? = null,
         pageable: Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> =
-        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, pageable).map {
+        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, pageable).map {
             it.toUserBookWthoutEventsAndUserDto()
         }
 

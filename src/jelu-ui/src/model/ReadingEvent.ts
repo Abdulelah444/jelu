@@ -30,6 +30,7 @@ export enum ReadingEventType {
   FINISHED = 'FINISHED',
   DROPPED = 'DROPPED',
   CURRENTLY_READING = 'CURRENTLY_READING',
+  PAUSED = 'PAUSED',
   NONE = 'NONE'
 }
 
