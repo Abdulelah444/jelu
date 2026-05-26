@@ -104,6 +104,9 @@ object ScopePathMatcher {
             Pair("/api/v1/custom-lists", "POST") to listOf(TokenScope.LISTS_WRITE),
             Pair("/api/v1/custom-lists", "PUT") to listOf(TokenScope.LISTS_WRITE),
             Pair("/api/v1/custom-lists", "DELETE") to listOf(TokenScope.LISTS_WRITE),
+            Pair("/api/v1/wishlist", "GET") to listOf(TokenScope.LISTS_READ),
+            Pair("/api/v1/wishlist", "POST") to listOf(TokenScope.LISTS_WRITE),
+            Pair("/api/v1/wishlist", "DELETE") to listOf(TokenScope.LISTS_WRITE),
             // Import/Export
             Pair("/api/v1/imports", "GET") to listOf(TokenScope.IMPORT_WRITE),
             Pair("/api/v1/imports", "POST") to listOf(TokenScope.IMPORT_WRITE),

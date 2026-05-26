@@ -443,6 +443,10 @@ const toggleScanModal = () => {
       decoded: (barcode: string | null) => {
         if (barcode != null) {
           form.isbn13 = barcode
+          dataService.fetchMetadata(barcode).then((res: Metadata) => {
+            metadata.value = res
+            mergeMetadata()
+          }).catch((e: any) => console.log("scan auto-fill failed: " + e))
         }
       },
     },

@@ -75,6 +75,12 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
+            path: "/wishlist",
+            component: () => import("./components/Wishlist.vue"),
+            name: "wishlist",
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/random',
             component: () => import(/* webpackChunkName: "recommend" */ './components/RandomList.vue'),
             name: 'random',

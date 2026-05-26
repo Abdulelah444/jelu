@@ -782,4 +782,31 @@
             CREATE INDEX idx_phys_shelf_book_shelf ON physical_shelf_book(shelf);
         </sql>
     </changeSet>
+    <changeSet id="create_wishlist" author="jelu">
+        <createTable tableName="wishlist_item">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+            <column name="user" type="binary(16)" remarks="Technical ID">
+                <constraints foreignKeyName="fk_wishlist_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="item_type" type="varchar(20)" remarks="BOOK or CONCEPT">
+                <constraints nullable="false" />
+            </column>
+            <column name="title" type="varchar(1000)" remarks="Book title or concept name" />
+            <column name="description" type="varchar(5000)" remarks="Notes or concept description" />
+            <column name="isbn" type="varchar(30)" remarks="ISBN for book items" />
+            <column name="authors" type="varchar(1000)" remarks="Authors for book items" />
+            <column name="image" type="varchar(1000)" remarks="Cover image URL" />
+            <column name="page_count" type="int" remarks="Page count for book items" />
+            <column name="publisher" type="varchar(500)" remarks="Publisher for book items" />
+            <column name="language" type="varchar(50)" remarks="Language for book items" />
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

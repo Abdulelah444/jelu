@@ -2397,6 +2397,32 @@ class DataService {
       throw new Error("error book physical location " + error)
     }
   }
+  getWishlistItems = async (itemType?: string) => {
+    try {
+      const response = await this.apiClient.get<Array<any>>("/wishlist", { params: { itemType } })
+      return response.data
+    } catch (error) {
+      console.log("error wishlist " + (error as any).code)
+      throw new Error("error wishlist " + error)
+    }
+  }
+  createWishlistItem = async (item: any) => {
+    try {
+      const response = await this.apiClient.post<any>("/wishlist", item)
+      return response.data
+    } catch (error) {
+      console.log("error create wishlist " + (error as any).code)
+      throw new Error("error create wishlist " + error)
+    }
+  }
+  deleteWishlistItem = async (id: string) => {
+    try {
+      await this.apiClient.delete("/wishlist/" + id)
+    } catch (error) {
+      console.log("error delete wishlist " + (error as any).code)
+      throw new Error("error delete wishlist " + error)
+    }
+  }
 }
 
 export default new DataService()

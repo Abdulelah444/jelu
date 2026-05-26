@@ -57,6 +57,7 @@ const pausedIsLoading: Ref<boolean> = ref(false);
 
 const randomBook: Ref<UserBook | null> = ref(null)
 const showRecentEvents: Ref<boolean> = ref(false)
+const showPaused: Ref<boolean> = ref(false)
 
 const events: Ref<Array<ReadingEventWithUserBook>> = ref([]);
 
@@ -309,12 +310,15 @@ const { typographyClasses } = useTypography()
     </div>
     <!-- Paused books section -->
     <div v-if="pausedBooks.length > 0" class="mt-6 px-2 sm:px-0">
-      <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
-        <i class="mdi mdi-pause-circle mdi-24px mr-1 text-warning" />
-        Paused
-        <span class="badge badge-warning badge-sm ml-2">{{ pausedBooks.length }}</span>
-      </h2>
-      <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
+      <div class="flex items-center gap-2 cursor-pointer" @click="showPaused = !showPaused">
+        <i :class="showPaused ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
+        <h2 class="text-xl sm:text-2xl font-bold">
+          <i class="mdi mdi-pause-circle mdi-24px mr-1 text-warning" />
+          Paused
+          <span class="badge badge-warning badge-sm ml-2">{{ pausedBooks.length }}</span>
+        </h2>
+      </div>
+      <div v-if="showPaused" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
         <div v-for="book in pausedBooks" :key="book.id">
           <book-card
             :book="book"
