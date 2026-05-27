@@ -152,6 +152,14 @@ const borrowedAsBool = computed(() => {
   }
   }
 )
+const hasDigitalFileAsBool = computed(() => {
+  if (hasDigitalFile.value?.toLowerCase() === "null") {
+    return undefined
+  } else if (hasDigitalFile.value?.toLowerCase() === "true") {
+    return true
+  }
+  return false
+})
 const hasPageCountAsBool = computed(() => {
   if (hasPageCount.value?.toLowerCase() === "null") {
     return null
