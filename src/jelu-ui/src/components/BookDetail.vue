@@ -73,6 +73,7 @@ const digitalUploadLoading: Ref<boolean> = ref(false)
 const digitalDownloadLoading: Ref<boolean> = ref(false)
 const digitalDeleteLoading: Ref<boolean> = ref(false)
 const showDigitalSearchModal: Ref<boolean> = ref(false)
+const downloadProgress: Ref<string> = ref("")
 const users: Ref<Array<User>> = ref([])
 const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 
@@ -120,14 +121,53 @@ const searchDigitalCopies = async () => {
 const triggerDownload = async (release: any) => {
   if (!book.value?.id) return
   digitalDownloadLoading.value = true
+  downloadProgress.value = "Starting download..."
+  showDigitalSearchModal.value = false
   try {
     await dataService.triggerDigitalDownload(book.value.id, release)
-    oruga.notification.open({ message: "Download triggered: " + release.title, variant: "success", duration: 4000 })
-    showDigitalSearchModal.value = false
+    // Poll for completion
+    const sourceId = release.source_id || release.sourceId
+    if (sourceId) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await dataService.checkDownloadStatus(book.value!.id!, sourceId)
+          if (status.status === "complete") {
+            clearInterval(pollInterval)
+            digitalDownloadLoading.value = false
+            downloadProgress.value = ""
+            if (status.linked) {
+              oruga.notification.open({ message: "Downloaded and linked!", variant: "success", duration: 4000 })
+              getBook()
+            } else {
+              oruga.notification.open({ message: "Download complete but could not auto-link", variant: "warning", duration: 4000 })
+            }
+          } else if (status.status === "error" || status.status === "cancelled") {
+            clearInterval(pollInterval)
+            digitalDownloadLoading.value = false
+            downloadProgress.value = ""
+            oruga.notification.open({ message: "Download failed: " + (status.message || status.status), variant: "danger", duration: 4000 })
+          } else {
+            const pct = Math.round(status.progress || 0)
+            downloadProgress.value = status.status + (pct > 0 ? " " + pct + "%" : "...")
+          }
+        } catch (e) {
+          // Keep polling on transient errors
+        }
+      }, 3000)
+      // Safety timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (digitalDownloadLoading.value) {
+          digitalDownloadLoading.value = false
+          downloadProgress.value = ""
+          oruga.notification.open({ message: "Download timed out - check CWA UI", variant: "warning", duration: 4000 })
+        }
+      }, 300000)
+    }
   } catch (error) {
-    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
-  } finally {
     digitalDownloadLoading.value = false
+    downloadProgress.value = ""
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
   }
 }
 
@@ -1102,11 +1142,18 @@ getBook()
             <div class="flex items-center gap-2 text-sm mb-2">
               <span class="badge badge-primary badge-sm">{{ book?.digitalFileFormat?.toUpperCase() }}</span>
               <span class="text-base-content/60">{{ book?.digitalFileSizeBytes ? (book.digitalFileSizeBytes / 1024 / 1024).toFixed(1) + ' MB' : '' }}</span>
+              <span v-if="book?.digitalFileAddedDate" class="text-base-content/60 text-xs">
+                Added {{ new Date(book.digitalFileAddedDate).toLocaleDateString() }}
+              </span>
               <span v-if="book?.lastSentToReaderDate" class="text-base-content/60 text-xs">
-                Sent {{ new Date(book.lastSentToReaderDate).toLocaleDateString() }}
+                | Sent {{ new Date(book.lastSentToReaderDate).toLocaleDateString() }}
               </span>
             </div>
             <div class="flex flex-wrap gap-2">
+              <a :href="'/api/v1/userbooks/' + book?.id + '/digital/download-file'" class="btn btn-primary btn-sm" download>
+                <i class="mdi mdi-download mdi-18px" />
+                Download
+              </a>
               <button class="btn btn-outline btn-sm btn-error" :disabled="digitalDeleteLoading" @click="deleteDigitalFile">
                 <span v-if="digitalDeleteLoading" class="loading loading-spinner loading-xs"></span>
                 <i v-else class="mdi mdi-delete mdi-18px" />
@@ -1121,8 +1168,12 @@ getBook()
 
           <!-- No digital file -->
           <div v-else>
+            <div v-if="downloadProgress" class="flex items-center gap-2 text-sm mb-2">
+              <span class="loading loading-spinner loading-sm text-primary"></span>
+              <span>{{ downloadProgress }}</span>
+            </div>
             <div class="flex flex-wrap gap-2">
-              <button class="btn btn-primary btn-sm" :disabled="digitalSearchLoading" @click="searchDigitalCopies">
+              <button class="btn btn-primary btn-sm" :disabled="digitalSearchLoading || digitalDownloadLoading" @click="searchDigitalCopies">
                 <span v-if="digitalSearchLoading" class="loading loading-spinner loading-xs"></span>
                 <i v-else class="mdi mdi-cloud-download mdi-18px" />
                 Download digital copy

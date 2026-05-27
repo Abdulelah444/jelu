@@ -201,13 +201,14 @@ class BooksController(
         @RequestParam(name = "owned", required = false) owned: Boolean?,
         @RequestParam(name = "borrowed", required = false) borrowed: Boolean?,
         @RequestParam(name = "hasPageCount", required = false) hasPageCount: Boolean?,
+        @RequestParam(name = "hasDigitalFile", required = false) hasDigitalFile: Boolean?,
         @RequestParam(name = "userId", required = false) userId: UUID?,
         @PageableDefault(page = 0, size = 20, direction = Sort.Direction.DESC, sort = ["modificationDate"]) @ParameterObject pageable:
             Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> {
         assertIsJeluUser(principal.principal)
         val finalUserId = userId ?: (principal.principal as JeluUser).user.id!!
-        return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, pageable)
+        return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable)
     }
 
     @GetMapping(path = ["/authors"])

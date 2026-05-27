@@ -39,6 +39,7 @@ const toRead: Ref<string|null> = useRouteQuery('toRead', "null")
 const owned: Ref<string|null> = useRouteQuery('owned', "null")
 const borrowed: Ref<string|null> = useRouteQuery('borrowed', "null")
 const hasPageCount: Ref<string|null> = useRouteQuery("hasPageCount", "null")
+const hasDigitalFile: Ref<string|null> = useRouteQuery("hasDigitalFile", "null")
 const userId: Ref<string|null> = useRouteQuery('userId', null)
 const eventTypes: Ref<Array<ReadingEventType>> = useRouteQuery('lastEventTypes', [])
 const username = ref("")
@@ -104,7 +105,7 @@ const getUsername = async () => {
 
 getUsername()
 
-watch([page, eventTypes, toRead, owned, borrowed, hasPageCount, sortQuery], (newVal, oldVal) => {
+watch([page, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, sortQuery], (newVal, oldVal) => {
   console.log("all " + newVal + " " + oldVal)
   if (newVal !== oldVal) {
     throttledGetBooks()
@@ -165,7 +166,7 @@ const getBooks = () => {
   getBookIsLoading.value = true
   dataService.findUserBookByCriteria(eventTypes.value, null, userId.value,
   toReadAsBool.value, ownedAsBool.value, borrowedAsBool.value,
-  pageAsNumber.value - 1, perPage.value, sortQuery.value, hasPageCountAsBool.value)
+  pageAsNumber.value - 1, perPage.value, sortQuery.value, hasPageCountAsBool.value, hasDigitalFileAsBool.value)
   .then(res => {
         console.log(res)
           total.value = res.totalElements
@@ -504,6 +505,21 @@ try {
         <div class="field">
           <input v-model="hasPageCount" type="radio" name="radio-pc" class="radio radio-primary" value="true">
           <span class="label-text">Has pages</span>
+        </div>
+      </div>
+      <div class="field flex flex-col items-start">
+        <label class="label">Digital copy :</label>
+        <div class="field">
+          <input v-model="hasDigitalFile" type="radio" name="radio-df" class="radio radio-primary my-2" value="null">
+          <span class="label-text">All</span>
+        </div>
+        <div class="field">
+          <input v-model="hasDigitalFile" type="radio" name="radio-df" class="radio radio-primary mb-2" value="false">
+          <span class="label-text">No digital</span>
+        </div>
+        <div class="field">
+          <input v-model="hasDigitalFile" type="radio" name="radio-df" class="radio radio-primary" value="true">
+          <span class="label-text">Has digital</span>
         </div>
       </div>
     </template>

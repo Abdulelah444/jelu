@@ -491,7 +491,7 @@ class DataService {
 
   findUserBookByCriteria = async (lastEventTypes?: Array<ReadingEventType> | null, bookId?: string|null,
     userId?: string|null, toRead?: boolean | null, owned?: boolean | null, borrowed?: boolean | null,
-    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserBook>>(`${this.API_USERBOOK}`, {
         params: {
@@ -502,6 +502,7 @@ class DataService {
           owned: owned,
           borrowed: borrowed,
           hasPageCount: hasPageCount != null ? hasPageCount : undefined,
+          hasDigitalFile: hasDigitalFile != null ? hasDigitalFile : undefined,
           page: page,
           size: size,
           sort: sort
@@ -1142,7 +1143,7 @@ class DataService {
   myReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}/me`, {
         params: {
@@ -1178,7 +1179,7 @@ class DataService {
   findReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, userId?: string, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}`, {
         params: {
@@ -1394,7 +1395,7 @@ class DataService {
   }
 
   messages = async (messageCategories?: Array<MessageCategory> | null, read?: boolean,
-    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserMessage>>(`${this.API_USER_MESSAGES}`, {
         params: {
@@ -2421,6 +2422,64 @@ class DataService {
     } catch (error) {
       console.log("error delete wishlist " + (error as any).code)
       throw new Error("error delete wishlist " + error)
+    }
+  }
+
+  // Digital Copy endpoints
+  searchDigitalCandidates = async (userbookId: string, query?: string, lang: string = "en", ext: string = "epub") => {
+    try {
+      const params: any = { lang, ext }
+      if (query) params.query = query
+      const response = await this.apiClient.get<any>(`${this.API_USERBOOK}/${userbookId}/digital/search-candidates`, { params })
+      return response.data
+    } catch (error) {
+      console.log("error searching digital candidates " + (error as any).code)
+      throw new Error("error searching digital candidates " + error)
+    }
+  }
+
+  triggerDigitalDownload = async (userbookId: string, release: any) => {
+    try {
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/download`, release)
+      return response.data
+    } catch (error) {
+      console.log("error triggering download " + (error as any).code)
+      throw new Error("error triggering download " + error)
+    }
+  }
+
+  uploadDigitalFile = async (userbookId: string, file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      return response.data
+    } catch (error) {
+      console.log("error uploading digital file " + (error as any).code)
+      throw new Error("error uploading digital file " + error)
+    }
+  }
+
+
+  checkDownloadStatus = async (userbookId: string, sourceId: string) => {
+    try {
+      const response = await this.apiClient.get<any>(`${this.API_USERBOOK}/${userbookId}/digital/download-status`, { params: { sourceId } })
+      return response.data
+    } catch (error) {
+      console.log("error checking download status " + (error as any).code)
+      throw new Error("error checking download status " + error)
+    }
+  }
+
+  deleteDigitalFile = async (userbookId: string) => {
+    try {
+      const response = await this.apiClient.delete<any>(`${this.API_USERBOOK}/${userbookId}/digital`)
+      return response.data
+    } catch (error) {
+      console.log("error deleting digital file " + (error as any).code)
+      throw new Error("error deleting digital file " + error)
     }
   }
 }

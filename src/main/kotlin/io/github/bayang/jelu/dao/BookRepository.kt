@@ -1574,6 +1574,7 @@ class BookRepository(
         owned: Boolean?,
         borrowed: Boolean?,
         hasPageCount: Boolean? = null,
+        hasDigitalFile: Boolean? = null,
         pageable: Pageable,
     ): PageImpl<UserBook> {
         val cols = mutableListOf<Expression<*>>()
@@ -1653,6 +1654,13 @@ class BookRepository(
                 query.andWhere { BookTable.pageCount.isNotNull() }
             } else {
                 query.andWhere { BookTable.pageCount.isNull() }
+            }
+        }
+        if (hasDigitalFile != null) {
+            if (hasDigitalFile) {
+                query.andWhere { UserBookTable.digitalFilePath.isNotNull() }
+            } else {
+                query.andWhere { UserBookTable.digitalFilePath.isNull() }
             }
         }
         val total = query.count()
@@ -1927,6 +1935,7 @@ class BookRepository(
                     userId,
                     null,
                     listOf(ReadingEventTypeFilter.CURRENTLY_READING, ReadingEventTypeFilter.NONE),
+                    null,
                     null,
                     null,
                     null,

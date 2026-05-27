@@ -287,6 +287,13 @@ const currentTimestamp = ObjectUtils.timestamp()
             <i class="mdi mdi-bookshelf mdi-18px" />
           </span>
           <span
+            v-if="book.digitalFilePath"
+            v-tooltip="'Digital copy available'"
+            class="icon text-success"
+          >
+            <i class="mdi mdi-file-document mdi-18px" />
+          </span>
+          <span
             v-if="book.toRead"
             v-tooltip="t('book.in_read_list')"
             class="icon text-info"

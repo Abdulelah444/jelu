@@ -499,9 +499,10 @@ class BookService(
         owned: Boolean? = null,
         borrowed: Boolean? = null,
         hasPageCount: Boolean? = null,
+        hasDigitalFile: Boolean? = null,
         pageable: Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> =
-        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, pageable).map {
+        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable).map {
             it.toUserBookWthoutEventsAndUserDto()
         }
 
