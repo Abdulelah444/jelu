@@ -20,6 +20,10 @@ data class UserBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 
@@ -37,6 +41,10 @@ data class UserBookLightDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 
@@ -53,6 +61,10 @@ data class UserBookLightWithoutBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 
@@ -69,6 +81,10 @@ data class UserBookWithoutEventsAndUserDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val avgRating: Double? = null,
     val userAvgRating: Double? = null,
     val price: Double?,
@@ -86,6 +102,10 @@ data class UserBookWithoutEventsDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 
@@ -99,6 +119,10 @@ data class CreateUserBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 
@@ -111,6 +135,10 @@ data class UserBookUpdateDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
     val price: Double?,
 )
 

@@ -809,4 +809,33 @@
             <column name="language" type="varchar(50)" remarks="Language for book items" />
         </createTable>
     </changeSet>
+    <changeSet id="add_borrow_and_owner_fields" author="jelu">
+        <sql>
+            ALTER TABLE user_book ADD borrower_name varchar(500);
+            ALTER TABLE user_book ADD borrow_date timestamp;
+            ALTER TABLE user_book ADD expected_return_date timestamp;
+            ALTER TABLE user_book ADD owner_name varchar(500);
+        </sql>
+    </changeSet>
+    <changeSet id="add_lending_history" author="jelu">
+        <createTable tableName="lending_history">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="user_book" type="binary(16)" remarks="FK to user_book">
+                <constraints foreignKeyName="fk_lending_history_userbook" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="borrower_name" type="varchar(500)">
+                <constraints nullable="false" />
+            </column>
+            <column name="lend_date" type="timestamp">
+                <constraints nullable="false" />
+            </column>
+            <column name="return_date" type="timestamp" />
+            <column name="notes" type="varchar(5000)" />
+        </createTable>
+    </changeSet>
 </databaseChangeLog>

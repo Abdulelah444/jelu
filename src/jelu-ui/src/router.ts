@@ -81,6 +81,18 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
+            path: "/lending-history",
+            component: () => import("./components/LendingHistory.vue"),
+            name: "lending-history",
+            beforeEnter: [isLogged],
+        },
+        {
+            path: "/lending-history",
+            component: () => import("./components/LendingHistory.vue"),
+            name: "lending-history",
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/random',
             component: () => import(/* webpackChunkName: "recommend" */ './components/RandomList.vue'),
             name: 'random',
@@ -168,6 +180,11 @@ const router = createRouter({
                 { path: 'data', component: () => import(/* webpackChunkName: "recommend" */ './components/DataAdmin.vue')},
                 { path: 'api-tokens', component: () => import(/* webpackChunkName: "recommend" */ './components/ApiTokens.vue')},
             ]
+        },
+        {
+            path: "/public/book/:bookId",
+            component: () => import("./components/PublicBookInfo.vue"),
+            name: "public-book",
         },
     ],
 })

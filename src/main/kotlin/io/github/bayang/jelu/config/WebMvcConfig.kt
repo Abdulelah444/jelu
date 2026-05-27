@@ -15,6 +15,10 @@ const val EXPORTS_PREFIX = "/exports"
 class WebMvcConfig(
     private val properties: JeluProperties,
 ) : WebMvcConfigurer {
+    override fun addViewControllers(registry: org.springframework.web.servlet.config.annotation.ViewControllerRegistry) {
+        registry.addViewController("/public/**").setViewName("forward:/")
+    }
+
     override fun addResourceHandlers(registry: ResourceHandlerRegistry) {
         // serve pictures
         registry

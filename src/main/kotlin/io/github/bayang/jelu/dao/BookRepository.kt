@@ -1212,6 +1212,14 @@ class BookRepository(
         if (book.borrowed != null) {
             found.borrowed = book.borrowed
         }
+        if (book.borrowerName != null) {
+            found.borrowerName = book.borrowerName
+        }
+        if (book.ownerName != null) {
+            found.ownerName = book.ownerName
+        }
+        found.borrowDate = book.borrowDate
+        found.expectedReturnDate = book.expectedReturnDate
         found.modificationDate = nowInstant()
         return found
     }
@@ -1546,6 +1554,10 @@ class BookRepository(
             this.personalNotes = cleanString(createUserBookDto.personalNotes)
             this.percentRead = createUserBookDto.percentRead
             this.borrowed = createUserBookDto.borrowed
+            this.borrowerName = createUserBookDto.borrowerName
+            this.borrowDate = createUserBookDto.borrowDate
+            this.expectedReturnDate = createUserBookDto.expectedReturnDate
+            this.ownerName = createUserBookDto.ownerName
             this.priceInCents = toCents
         }
     }

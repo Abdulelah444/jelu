@@ -57,7 +57,8 @@ store.dispatch('getUser')
     if (store.state.route != null && (
       store.state.route.name === "review-detail" ||
       store.state.route.name === "list-detail"||
-      store.state.route.name === "book-reviews")) {
+      store.state.route.name === "book-reviews" ||
+      store.state.route.name === "public-book")) {
       router.push(store.state.route)
       initialLoad.value = false
       return
@@ -253,6 +254,15 @@ function scanModalClosed() {
               >
                 Wishlist
               </router-link>
+            <li @click="collapseDropdown()">
+              <router-link
+                v-if="isLogged"
+                class="font-sans text-base capitalize"
+                :to="{ name: 'lending-history' }"
+              >
+                Lending History
+              </router-link>
+            </li>
             </li>
             <li @click="collapseDropdown()">
               <router-link
@@ -413,6 +423,7 @@ function scanModalClosed() {
           <ul tabindex="0" class="dropdown-content z-50 menu menu-sm p-2 shadow-lg bg-base-200 rounded-box w-52 mt-2 border border-base-content/20">
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-bookmark-outline mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart-outline mdi-18px mr-2" />Wishlist</router-link></li>
+            <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'history' }"><i class="mdi mdi-history mdi-18px mr-2" />{{ t('nav.history') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'reading-dashboard' }"><i class="mdi mdi-chart-bar mdi-18px mr-2" />Stats</router-link></li>

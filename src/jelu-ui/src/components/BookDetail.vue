@@ -154,6 +154,10 @@ const sortedEvents = computed(() => {
   }
 })
 
+const qrCodeUrl = computed(() => {
+  if (!book.value?.book?.id) return ""
+  return "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(location.origin + "/public/book/" + book.value.book.id)
+})
 const readingPace = computed(() => {
   if (!book.value?.readingEvents || !book.value?.book?.pageCount) return null
   const currentEvent = book.value.readingEvents.find(
@@ -440,6 +444,34 @@ function defaultCreateEvent(): CreateReadingEvent {
     bookId: book.value?.book.id
   }
 }
+const showLendModal = ref(false)
+const lendForm = ref({ borrowerName: "", expectedReturnDate: "" })
+const lendBook = async () => {
+  if (!book.value?.id || !lendForm.value.borrowerName) return
+  try {
+    await dataService.updateUserBook({id: book.value.id,
+      borrowed: true,
+      borrowerName: lendForm.value.borrowerName,
+      borrowDate: new Date().toISOString(),
+      expectedReturnDate: lendForm.value.expectedReturnDate ? new Date(lendForm.value.expectedReturnDate).toISOString() : null,
+    })
+    showLendModal.value = false
+    lendForm.value = { borrowerName: "", expectedReturnDate: "" }
+    book.value = await dataService.getUserBookById(props.bookId)
+  } catch (e) { console.log("lend failed: " + e) }
+}
+const returnBook = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.updateUserBook({id: book.value.id,
+      borrowed: false,
+      borrowerName: null,
+      borrowDate: null,
+      expectedReturnDate: null,
+    })
+    book.value = await dataService.getUserBookById(props.bookId)
+  } catch (e) { console.log("return failed: " + e) }
+}
 
 const publisherQuery = computed(() => {
   if (book.value?.book.publisher) {
@@ -659,6 +691,14 @@ getBook()
             <i class="mdi mdi-plus mdi-18px" />
           </span>
           <span>{{ t('labels.event') }}</span>
+        </button>
+        <button v-if="!book?.borrowed" class="btn btn-warning btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase" @click="showLendModal = true">
+          <i class="mdi mdi-account-arrow-right mdi-18px mr-1" />
+          <span>Lend</span>
+        </button>
+        <button v-else class="btn btn-success btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase" @click="returnBook">
+          <i class="mdi mdi-book-check mdi-18px mr-1" />
+          <span>Return</span>
         </button>
         <label
           v-tooltip="t('labels.get_embed_code')"
@@ -953,6 +993,24 @@ getBook()
             class="badge badge-info"
           >{{ t('book.borrowed') }}</span>
         </div>
+        <!-- Borrower info -->
+        <div v-if="book?.borrowed && book?.borrowerName" class="mt-2 p-3 bg-warning/10 rounded-lg border border-warning/30">
+          <div class="flex items-center gap-2 text-sm">
+            <i class="mdi mdi-account-arrow-right mdi-18px text-warning" />
+            <span class="font-medium">Lent to {{ book.borrowerName }}</span>
+          </div>
+          <div v-if="book?.borrowDate" class="text-xs text-base-content/50 mt-1 ml-6">
+            Since {{ new Date(book.borrowDate).toLocaleDateString() }}
+          </div>
+          <div v-if="book?.expectedReturnDate" class="text-xs text-base-content/50 ml-6">
+            Expected return: {{ new Date(book.expectedReturnDate).toLocaleDateString() }}
+          </div>
+        </div>
+        <!-- Owner name -->
+        <div v-if="book?.ownerName" class="mt-2 text-sm">
+          <i class="mdi mdi-account mdi-18px mr-1 text-info" />
+          <span class="text-base-content/60">Owner:</span> {{ book.ownerName }}
+        </div>
         <div v-if="shelfLocation" class="mt-2">
           <span class="font-semibold capitalize">{{ t('library_map.physical_location') }} :</span>
           <span class="ml-1">{{ shelfLocation.displayString }}</span>
@@ -965,6 +1023,22 @@ getBook()
           <button class="btn btn-ghost btn-xs ml-1" @click="$router.push({ name: 'library-map' })">
             {{ t('library_map.assign_to_shelf') }}
           </button>
+        </div>
+        <div class="mt-3">
+          <button class="btn btn-outline btn-sm" onclick="document.getElementById('qr-modal').showModal()">
+            <i class="mdi mdi-qrcode mdi-18px mr-1" /> QR Code
+          </button>
+          <dialog id="qr-modal" class="modal">
+            <div class="modal-box text-center">
+              <h3 class="font-bold text-lg mb-3">Scan to view book info</h3>
+              <img :src="qrCodeUrl" alt="QR Code" class="mx-auto rounded-lg">
+              <p class="text-sm text-base-content/50 mt-3">{{ book?.book?.title }}</p>
+              <div class="modal-action justify-center">
+                <button class="btn btn-sm" onclick="document.getElementById('qr-modal').close()">Close</button>
+              </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+          </dialog>
         </div>
       </div>
     </div>
@@ -1362,6 +1436,25 @@ getBook()
       />
     </label>
   </label>
+    <!-- Lend modal -->
+    <dialog v-if="showLendModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4"><i class="mdi mdi-account-arrow-right mdi-24px mr-2 text-warning" />Lend Book</h3>
+        <fieldset class="fieldset mb-3">
+          <legend class="fieldset-legend">Who are you lending to?</legend>
+          <input v-model="lendForm.borrowerName" type="text" class="input w-full focus:input-accent" placeholder="Borrower name">
+        </fieldset>
+        <fieldset class="fieldset mb-3">
+          <legend class="fieldset-legend">Expected return date (optional)</legend>
+          <input v-model="lendForm.expectedReturnDate" type="date" class="input w-full focus:input-accent">
+        </fieldset>
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="showLendModal = false">Cancel</button>
+          <button class="btn btn-warning" :disabled="!lendForm.borrowerName" @click="lendBook">Lend</button>
+        </div>
+      </div>
+      <div class="modal-backdrop" @click="showLendModal = false" />
+    </dialog>
 </template>
 
 <style scoped>

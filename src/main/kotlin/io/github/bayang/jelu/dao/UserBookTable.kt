@@ -31,6 +31,10 @@ object UserBookTable : UUIDTable("user_book") {
     val currentPageNumber: Column<Int?> = integer(name = "current_page_number").nullable()
     val borrowed: Column<Boolean?> = bool("is_borrowed").nullable()
     val priceInCents: Column<Long?> = long("price_in_cents").nullable()
+    val borrowerName: Column<String?> = varchar("borrower_name", 500).nullable()
+    val borrowDate: Column<java.time.Instant?> = timestamp("borrow_date").nullable()
+    val expectedReturnDate: Column<java.time.Instant?> = timestamp("expected_return_date").nullable()
+    val ownerName: Column<String?> = varchar("owner_name", 500).nullable()
 }
 
 class UserBook(
@@ -54,6 +58,10 @@ class UserBook(
     var avgRating: Double? = null
     var userAvgRating: Double? = null
     var priceInCents by UserBookTable.priceInCents
+    var borrowerName by UserBookTable.borrowerName
+    var borrowDate by UserBookTable.borrowDate
+    var expectedReturnDate by UserBookTable.expectedReturnDate
+    var ownerName by UserBookTable.ownerName
 
     fun toUserBookDto(): UserBookDto =
         UserBookDto(
@@ -70,6 +78,10 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -88,6 +100,10 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -105,6 +121,10 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -123,6 +143,10 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
             avgRating = this.avgRating,
             userAvgRating = this.userAvgRating,
             price = centsToDouble(this.priceInCents),
@@ -141,6 +165,10 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
             price = centsToDouble(this.priceInCents),
         )
 }
