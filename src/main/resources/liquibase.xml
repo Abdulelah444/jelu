@@ -838,4 +838,13 @@
             <column name="notes" type="varchar(5000)" />
         </createTable>
     </changeSet>
+    <changeSet id="add_digital_file_fields" author="jelu">
+        <sql>
+            ALTER TABLE user_book ADD digital_file_path varchar(1000);
+            ALTER TABLE user_book ADD digital_file_format varchar(20);
+            ALTER TABLE user_book ADD digital_file_size_bytes bigint;
+            ALTER TABLE user_book ADD digital_file_added_date timestamp;
+            ALTER TABLE user_book ADD last_sent_to_reader_date timestamp;
+        </sql>
+    </changeSet>
 </databaseChangeLog>

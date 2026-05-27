@@ -35,6 +35,11 @@ object UserBookTable : UUIDTable("user_book") {
     val borrowDate: Column<java.time.Instant?> = timestamp("borrow_date").nullable()
     val expectedReturnDate: Column<java.time.Instant?> = timestamp("expected_return_date").nullable()
     val ownerName: Column<String?> = varchar("owner_name", 500).nullable()
+    val digitalFilePath: Column<String?> = varchar("digital_file_path", 1000).nullable()
+    val digitalFileFormat: Column<String?> = varchar("digital_file_format", 20).nullable()
+    val digitalFileSizeBytes: Column<Long?> = long("digital_file_size_bytes").nullable()
+    val digitalFileAddedDate: Column<java.time.Instant?> = timestamp("digital_file_added_date").nullable()
+    val lastSentToReaderDate: Column<java.time.Instant?> = timestamp("last_sent_to_reader_date").nullable()
 }
 
 class UserBook(
@@ -62,6 +67,11 @@ class UserBook(
     var borrowDate by UserBookTable.borrowDate
     var expectedReturnDate by UserBookTable.expectedReturnDate
     var ownerName by UserBookTable.ownerName
+    var digitalFilePath by UserBookTable.digitalFilePath
+    var digitalFileFormat by UserBookTable.digitalFileFormat
+    var digitalFileSizeBytes by UserBookTable.digitalFileSizeBytes
+    var digitalFileAddedDate by UserBookTable.digitalFileAddedDate
+    var lastSentToReaderDate by UserBookTable.lastSentToReaderDate
 
     fun toUserBookDto(): UserBookDto =
         UserBookDto(
@@ -82,6 +92,11 @@ class UserBook(
             borrowDate = this.borrowDate,
             expectedReturnDate = this.expectedReturnDate,
             ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -104,6 +119,11 @@ class UserBook(
             borrowDate = this.borrowDate,
             expectedReturnDate = this.expectedReturnDate,
             ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -125,6 +145,11 @@ class UserBook(
             borrowDate = this.borrowDate,
             expectedReturnDate = this.expectedReturnDate,
             ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -147,6 +172,11 @@ class UserBook(
             borrowDate = this.borrowDate,
             expectedReturnDate = this.expectedReturnDate,
             ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             avgRating = this.avgRating,
             userAvgRating = this.userAvgRating,
             price = centsToDouble(this.priceInCents),
@@ -169,6 +199,11 @@ class UserBook(
             borrowDate = this.borrowDate,
             expectedReturnDate = this.expectedReturnDate,
             ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             price = centsToDouble(this.priceInCents),
         )
 }

@@ -54,6 +54,11 @@ export interface UserBook {
     avgRating?: number|null,
     userAvgRating?: number|null,
     price?: number|null,
+    digitalFilePath?: string|null,
+    digitalFileFormat?: string|null,
+    digitalFileSizeBytes?: number|null,
+    digitalFileAddedDate?: string|null,
+    lastSentToReaderDate?: string|null,
   }
 export interface UserBookBulkUpdate {
     ids: Array<string>,

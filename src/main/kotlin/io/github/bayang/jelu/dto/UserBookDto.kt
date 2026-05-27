@@ -24,6 +24,11 @@ data class UserBookDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -45,6 +50,11 @@ data class UserBookLightDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -65,6 +75,11 @@ data class UserBookLightWithoutBookDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -85,6 +100,11 @@ data class UserBookWithoutEventsAndUserDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val avgRating: Double? = null,
     val userAvgRating: Double? = null,
     val price: Double?,
@@ -106,6 +126,11 @@ data class UserBookWithoutEventsDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -123,6 +148,11 @@ data class CreateUserBookDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -139,6 +169,11 @@ data class UserBookUpdateDto(
     val borrowDate: Instant? = null,
     val expectedReturnDate: Instant? = null,
     val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
