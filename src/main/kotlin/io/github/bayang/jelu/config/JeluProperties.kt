@@ -20,6 +20,7 @@ data class JeluProperties(
         ),
     val metadataProviders: List<MetaDataProvider>?,
     val lucene: Lucene = Lucene(indexAnalyzer = IndexAnalyzer()),
+    val ebooks: Ebooks = Ebooks(),
 ) {
     data class MetaDataProvider(
         var name: String,
@@ -86,6 +87,12 @@ data class JeluProperties(
         @get:Positive
         var maxGram: Int = 10,
         var preserveOriginal: Boolean = true,
+    )
+
+    data class Ebooks(
+        var storagePath: String = "/files/ebooks",
+        var maxFileSizeMb: Int = 50,
+        var allowedExtensions: List<String> = listOf("epub", "pdf", "mobi", "azw3", "cbz", "cbr"),
     )
 
     data class Lucene(

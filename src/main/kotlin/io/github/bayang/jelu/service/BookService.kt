@@ -48,6 +48,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.time.Instant
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -819,4 +820,30 @@ class BookService(
         bookId: UUID,
         pageable: Pageable,
     ): Page<UserDto> = bookRepository.findBookUsersById(bookId, pageable).map { it.toUserDto() }
+
+    @Transactional
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+    ): UserBookLightDto {
+        return bookRepository.updateDigitalFileFields(
+            userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
+        ).toUserBookLightDto()
+    }
+
+    @Transactional
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+    ): UserBookLightDto {
+        return bookRepository.updateDigitalFileFields(
+            userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
+        ).toUserBookLightDto()
+    }
 }

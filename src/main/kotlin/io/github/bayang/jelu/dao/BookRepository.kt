@@ -1972,4 +1972,44 @@ class BookRepository(
             total,
         )
     }
+
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+        lastSentDate: Instant? = null,
+    ): UserBook {
+        val userBook = UserBook[userbookId]
+        userBook.digitalFilePath = filePath
+        userBook.digitalFileFormat = fileFormat
+        userBook.digitalFileSizeBytes = fileSizeBytes
+        userBook.digitalFileAddedDate = fileAddedDate
+        if (lastSentDate != null) {
+            userBook.lastSentToReaderDate = lastSentDate
+        }
+        userBook.modificationDate = Instant.now()
+        return userBook
+    }
+
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+        lastSentDate: Instant? = null,
+    ): UserBook {
+        val userBook = UserBook[userbookId]
+        userBook.digitalFilePath = filePath
+        userBook.digitalFileFormat = fileFormat
+        userBook.digitalFileSizeBytes = fileSizeBytes
+        userBook.digitalFileAddedDate = fileAddedDate
+        if (lastSentDate != null) {
+            userBook.lastSentToReaderDate = lastSentDate
+        }
+        userBook.modificationDate = Instant.now()
+        return userBook
+    }
 }
