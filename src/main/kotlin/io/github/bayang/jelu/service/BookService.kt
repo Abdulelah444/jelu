@@ -833,17 +833,4 @@ class BookService(
             userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
         ).toUserBookLightDto()
     }
-
-    @Transactional
-    fun updateDigitalFileFields(
-        userbookId: UUID,
-        filePath: String?,
-        fileFormat: String?,
-        fileSizeBytes: Long?,
-        fileAddedDate: Instant?,
-    ): UserBookLightDto {
-        return bookRepository.updateDigitalFileFields(
-            userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
-        ).toUserBookLightDto()
-    }
 }
