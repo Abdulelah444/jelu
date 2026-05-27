@@ -67,6 +67,12 @@ const getBookIsLoading: Ref<boolean> = ref(false)
 const userReviews: Ref<Array<Review>> = ref([])
 
 const bookQuotes: Ref<Array<BookQuote>> = ref([])
+const digitalSearchResults: Ref<Array<any>> = ref([])
+const digitalSearchLoading: Ref<boolean> = ref(false)
+const digitalUploadLoading: Ref<boolean> = ref(false)
+const digitalDownloadLoading: Ref<boolean> = ref(false)
+const digitalDeleteLoading: Ref<boolean> = ref(false)
+const showDigitalSearchModal: Ref<boolean> = ref(false)
 const users: Ref<Array<User>> = ref([])
 const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 
@@ -94,6 +100,66 @@ const getShelfLocation = async () => {
     }
   } catch (error) {
     console.log("failed get shelf location : " + error)
+  }
+}
+
+const searchDigitalCopies = async () => {
+  if (!book.value?.id) return
+  digitalSearchLoading.value = true
+  try {
+    const result = await dataService.searchDigitalCandidates(book.value.id)
+    digitalSearchResults.value = result.releases || []
+    showDigitalSearchModal.value = true
+  } catch (error) {
+    oruga.notification.open({ message: "Search failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalSearchLoading.value = false
+  }
+}
+
+const triggerDownload = async (release: any) => {
+  if (!book.value?.id) return
+  digitalDownloadLoading.value = true
+  try {
+    await dataService.triggerDigitalDownload(book.value.id, release)
+    oruga.notification.open({ message: "Download triggered: " + release.title, variant: "success", duration: 4000 })
+    showDigitalSearchModal.value = false
+  } catch (error) {
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalDownloadLoading.value = false
+  }
+}
+
+const uploadDigitalFile = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file || !book.value?.id) return
+  digitalUploadLoading.value = true
+  try {
+    await dataService.uploadDigitalFile(book.value.id, file)
+    oruga.notification.open({ message: "File uploaded successfully", variant: "success", duration: 4000 })
+    getBook()
+  } catch (error) {
+    oruga.notification.open({ message: "Upload failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalUploadLoading.value = false
+    target.value = ""
+  }
+}
+
+const deleteDigitalFile = async () => {
+  if (!book.value?.id) return
+  if (!confirm("Remove the digital copy? The file will be deleted.")) return
+  digitalDeleteLoading.value = true
+  try {
+    await dataService.deleteDigitalFile(book.value.id)
+    oruga.notification.open({ message: "Digital copy removed", variant: "success", duration: 4000 })
+    getBook()
+  } catch (error) {
+    oruga.notification.open({ message: "Delete failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalDeleteLoading.value = false
   }
 }
 
@@ -1024,6 +1090,89 @@ getBook()
             {{ t('library_map.assign_to_shelf') }}
           </button>
         </div>
+        <!-- Digital Copy Section -->
+        <div class="mt-3 p-3 rounded-lg bg-base-200">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="mdi mdi-book-open-page-variant mdi-24px text-primary" />
+            <span class="font-semibold">Digital Copy</span>
+          </div>
+
+          <!-- Has digital file -->
+          <div v-if="book?.digitalFilePath">
+            <div class="flex items-center gap-2 text-sm mb-2">
+              <span class="badge badge-primary badge-sm">{{ book?.digitalFileFormat?.toUpperCase() }}</span>
+              <span class="text-base-content/60">{{ book?.digitalFileSizeBytes ? (book.digitalFileSizeBytes / 1024 / 1024).toFixed(1) + ' MB' : '' }}</span>
+              <span v-if="book?.lastSentToReaderDate" class="text-base-content/60 text-xs">
+                Sent {{ new Date(book.lastSentToReaderDate).toLocaleDateString() }}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-outline btn-sm btn-error" :disabled="digitalDeleteLoading" @click="deleteDigitalFile">
+                <span v-if="digitalDeleteLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-delete mdi-18px" />
+                Remove
+              </button>
+              <label class="btn btn-outline btn-sm">
+                <i class="mdi mdi-swap-horizontal mdi-18px" /> Replace
+                <input type="file" class="hidden" accept=".epub,.pdf,.mobi,.azw3,.cbz,.cbr" @change="uploadDigitalFile">
+              </label>
+            </div>
+          </div>
+
+          <!-- No digital file -->
+          <div v-else>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-sm" :disabled="digitalSearchLoading" @click="searchDigitalCopies">
+                <span v-if="digitalSearchLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-cloud-download mdi-18px" />
+                Download digital copy
+              </button>
+              <label class="btn btn-outline btn-sm" :class="{ 'loading': digitalUploadLoading }">
+                <span v-if="digitalUploadLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-upload mdi-18px" />
+                Upload manually
+                <input type="file" class="hidden" accept=".epub,.pdf,.mobi,.azw3,.cbz,.cbr" @change="uploadDigitalFile">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Digital Search Modal -->
+        <dialog v-if="showDigitalSearchModal" class="modal modal-open">
+          <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-3">
+              <i class="mdi mdi-magnify mr-1" /> Select a version to download
+            </h3>
+            <div v-if="digitalSearchResults.length === 0" class="text-center py-4 text-base-content/50">
+              No results found
+            </div>
+            <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+              <div
+                v-for="(release, index) in digitalSearchResults"
+                :key="index"
+                class="flex items-center justify-between p-3 rounded-lg bg-base-200 hover:bg-base-300 cursor-pointer"
+                @click="triggerDownload(release)"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm truncate">{{ release.title }}</div>
+                  <div class="text-xs text-base-content/60 flex gap-2 mt-1">
+                    <span v-if="release.extra?.author">{{ release.extra.author }}</span>
+                    <span v-if="release.extra?.publisher">{{ release.extra.publisher }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 ml-3 shrink-0">
+                  <span class="badge badge-sm">{{ release.format }}</span>
+                  <span class="badge badge-ghost badge-sm">{{ release.size }}</span>
+                  <span v-if="release.language" class="badge badge-outline badge-sm uppercase">{{ release.language }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-sm" @click="showDigitalSearchModal = false">Close</button>
+            </div>
+          </div>
+          <div class="modal-backdrop" @click="showDigitalSearchModal = false"></div>
+        </dialog>
         <div class="mt-3">
           <button class="btn btn-outline btn-sm" onclick="document.getElementById('qr-modal').showModal()">
             <i class="mdi mdi-qrcode mdi-18px mr-1" /> QR Code
