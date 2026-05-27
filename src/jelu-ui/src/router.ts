@@ -57,6 +57,18 @@ const router = createRouter({
             name: 'login'
         },
 	{
+            path: '/digital-library',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
+            name: 'digital-library',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/digital-library',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
+            name: 'digital-library',
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/library-map',
             component: () => import(/* webpackChunkName: "recommend" */ './components/LibraryMap.vue'),
             name: 'library-map',

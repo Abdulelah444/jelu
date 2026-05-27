@@ -190,6 +190,20 @@ const currentTimestamp = ObjectUtils.timestamp()
         </figure>
       </router-link>
       <div
+        v-if="book.digitalFilePath"
+        v-tooltip="'Digital copy'"
+        class="absolute top-1 left-1 z-10 bg-success/90 rounded-full p-0.5"
+      >
+        <i class="mdi mdi-book-open-page-variant mdi-14px text-success-content" />
+      </div>
+      <div
+        v-if="book.digitalFilePath"
+        v-tooltip="'Digital copy'"
+        class="absolute top-1 left-1 z-10 bg-success/90 rounded-full p-0.5"
+      >
+        <i class="mdi mdi-book-open-page-variant mdi-14px text-success-content" />
+      </div>
+      <div
         v-if="showProgressBar(book)"
         v-tooltip="progressBarTooltip"
         class="bg-success absolute h-1.5"
@@ -286,13 +300,7 @@ const currentTimestamp = ObjectUtils.timestamp()
           >
             <i class="mdi mdi-bookshelf mdi-18px" />
           </span>
-          <span
-            v-if="book.digitalFilePath"
-            v-tooltip="'Digital copy available'"
-            class="icon text-success"
-          >
-            <i class="mdi mdi-file-document mdi-18px" />
-          </span>
+
           <span
             v-if="book.toRead"
             v-tooltip="t('book.in_read_list')"

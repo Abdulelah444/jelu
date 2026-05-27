@@ -425,6 +425,7 @@ function scanModalClosed() {
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart-outline mdi-18px mr-2" />Wishlist</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
+            <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'digital-library' }"><i class="mdi mdi-book-open-page-variant mdi-18px mr-2" />Digital Library</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'history' }"><i class="mdi mdi-history mdi-18px mr-2" />{{ t('nav.history') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'reading-dashboard' }"><i class="mdi mdi-chart-bar mdi-18px mr-2" />Stats</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'authors' }"><i class="mdi mdi-account-group mdi-18px mr-2" />{{ t('book.author', 2) }}</router-link></li>
