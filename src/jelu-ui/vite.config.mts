@@ -25,10 +25,11 @@ export default defineConfig({
         },
         injectRegister: "script-defer",
         manifest: {
-          name: 'Jelu',
+          name: 'Jelu Library',
           short_name: 'Jelu',
-          description: 'Jelu read tracker app',
-          theme_color: '#f7f5d1',
+          description: 'Personal book library',
+          theme_color: '#1a1a2e',
+          background_color: '#1a1a2e',
           icons: [
             {
               src: 'android-chrome-192x192.png',
