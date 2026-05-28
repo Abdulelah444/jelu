@@ -31,6 +31,11 @@ const filterTag: Ref<string> = ref('')
 const filterLanguage: Ref<string> = ref('')
 const editingShelfId: Ref<string | null> = ref(null)
 const editingShelfLabel: Ref<string> = ref('')
+const allBookcases = computed(() => {
+  const all: Array<PhysicalBookcase> = []
+  bookcasesByLocation.value.forEach(bcs => all.push(...bcs))
+  return all
+})
 const draggedBook: Ref<{ userBookId: string, fromShelfId: string, fromBookcaseId: string } | null> = ref(null)
 const dragOverShelfId: Ref<string | null> = ref(null)
 const shelfViewMode: Ref<'list' | 'covers'> = ref('covers')
@@ -751,7 +756,7 @@ const moveShelfToOtherBookcase = async (shelfId: string, fromBookcaseId: string,
                         <i class="mdi mdi-arrow-right-bold mdi-14px" />
                       </label>
                       <ul tabindex="0" class="dropdown-content menu p-1 shadow bg-base-100 rounded-box w-44 z-20">
-                        <li v-for="bc in bookcases.filter(b => b.id !== bookcase.id)" :key="bc.id">
+                        <li v-for="bc in allBookcases.filter(b => b.id !== bookcase.id)" :key="bc.id">
                           <a @click="moveShelfToOtherBookcase(shelf.id!, bookcase.id!, bc.id!)">{{ bc.name }}</a>
                         </li>
                       </ul>

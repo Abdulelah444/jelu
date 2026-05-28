@@ -154,6 +154,7 @@ class PhysicalLibraryService(
         return shelf.toDto()
     }
 
+    @Transactional
     fun findUnassignedBooks(pageable: Pageable): Page<UserBookLightDto> =
         shelfBookRepository.findUnassigned(pageable).map { it.toUserBookLightDto() }
 
