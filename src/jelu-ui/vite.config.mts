@@ -25,8 +25,8 @@ export default defineConfig({
         },
         injectRegister: "script-defer",
         manifest: {
-          name: 'Jelu Library',
-          short_name: 'Jelu',
+          name: 'My Library',
+          short_name: 'My Library',
           description: 'Personal book library',
           theme_color: '#1a1a2e',
           background_color: '#1a1a2e',
