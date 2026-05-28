@@ -751,16 +751,13 @@ const moveShelfToOtherBookcase = async (shelfId: string, fromBookcaseId: string,
                     <button class="btn btn-ghost btn-xs p-0 opacity-40 hover:opacity-100" @click="moveShelfDown(bookcase.id!, shelf.id!)">
                       <i class="mdi mdi-arrow-down mdi-14px" />
                     </button>
-                    <div class="dropdown dropdown-end">
-                      <label tabindex="0" class="btn btn-ghost btn-xs p-0 opacity-40 hover:opacity-100">
-                        <i class="mdi mdi-arrow-right-bold mdi-14px" />
-                      </label>
-                      <ul tabindex="0" class="dropdown-content menu p-1 shadow bg-base-100 rounded-box w-44 z-20">
-                        <li v-for="bc in allBookcases.filter(b => b.id !== bookcase.id)" :key="bc.id">
-                          <a @click="moveShelfToOtherBookcase(shelf.id!, bookcase.id!, bc.id!)">{{ bc.name }}</a>
-                        </li>
-                      </ul>
-                    </div>
+                    <select
+                      class="select select-xs select-ghost opacity-40 hover:opacity-100 w-20"
+                      @change="(e) => { const t = (e.target as HTMLSelectElement); if (t.value) { moveShelfToOtherBookcase(shelf.id!, bookcase.id!, t.value); t.value = ''; } }"
+                    >
+                      <option value="" selected>Move</option>
+                      <option v-for="bc in allBookcases.filter(b => b.id !== bookcase.id)" :key="bc.id" :value="bc.id!">{{ bc.name }}</option>
+                    </select>
                     <span v-if="shelfBooks.has(shelf.id!)" class="text-xs bg-base-300 px-1.5 py-0.5 rounded-md ml-1">
                       {{ shelfBookCount(shelf.id!) }}
                     </span>
