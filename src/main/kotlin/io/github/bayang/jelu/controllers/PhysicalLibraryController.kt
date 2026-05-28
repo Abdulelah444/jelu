@@ -161,6 +161,27 @@ class PhysicalLibraryController(
         return ResponseEntity.noContent().build()
     }
 
+
+    @PutMapping(path = ["/physical-bookcases/{bookcaseId}/shelves/reorder"])
+    fun reorderShelves(
+        @PathVariable("bookcaseId") bookcaseId: UUID,
+        @RequestBody shelfIds: List<UUID>,
+        principal: Authentication,
+    ): ResponseEntity<Void> {
+        physicalLibraryService.reorderShelves(bookcaseId, shelfIds)
+        return ResponseEntity.noContent().build()
+    }
+
+    @PutMapping(path = ["/physical-shelves/{shelfId}/move"])
+    fun moveShelfToBookcase(
+        @PathVariable("shelfId") shelfId: UUID,
+        @RequestBody body: Map<String, String>,
+        principal: Authentication,
+    ): PhysicalShelfDto {
+        val targetBookcaseId = UUID.fromString(body["bookcaseId"] ?: throw IllegalArgumentException("bookcaseId required"))
+        return physicalLibraryService.moveShelf(shelfId, targetBookcaseId)
+    }
+
     @GetMapping(path = ["/userbooks/unassigned"])
     fun getUnassignedBooks(
         @PageableDefault(page = 0, size = 20, direction = Sort.Direction.DESC, sort = ["modificationDate"]) @ParameterObject pageable:

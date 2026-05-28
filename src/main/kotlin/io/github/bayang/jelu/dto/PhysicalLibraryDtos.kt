@@ -60,6 +60,8 @@ data class PhysicalShelfDto(
 data class UpdatePhysicalShelfDto(
     val label: String? = null,
     val tagId: UUID? = null,
+    val position: Int? = null,
+    val bookcaseId: UUID? = null,
 )
 
 data class PhysicalShelfBookDto(

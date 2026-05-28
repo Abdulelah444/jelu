@@ -2482,6 +2482,25 @@ class DataService {
       throw new Error("error deleting digital file " + error)
     }
   }
+
+  reorderShelves = async (bookcaseId: string, shelfIds: Array<string>) => {
+    try {
+      await this.apiClient.put('/physical-bookcases/' + bookcaseId + '/shelves/reorder', shelfIds)
+    } catch (error) {
+      console.log("error reorder shelves " + (error as any).code)
+      throw new Error("error reorder shelves " + error)
+    }
+  }
+
+  moveShelfToBookcase = async (shelfId: string, bookcaseId: string) => {
+    try {
+      const response = await this.apiClient.put('/physical-shelves/' + shelfId + '/move', { bookcaseId })
+      return response.data
+    } catch (error) {
+      console.log("error move shelf " + (error as any).code)
+      throw new Error("error move shelf " + error)
+    }
+  }
 }
 
 export default new DataService()

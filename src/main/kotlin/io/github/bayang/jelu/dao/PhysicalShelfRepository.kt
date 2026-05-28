@@ -31,6 +31,10 @@ class PhysicalShelfRepository {
             if (dto.tagId != null) {
                 this.tag = Tag[dto.tagId]
             }
+            dto.position?.let { this.position = it }
+            if (dto.bookcaseId != null) {
+                this.bookcase = PhysicalBookcase[dto.bookcaseId]
+            }
             this.modificationDate = nowInstant()
         }
 
