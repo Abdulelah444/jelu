@@ -4,7 +4,6 @@ import io.github.bayang.jelu.service.BookService
 import io.github.bayang.jelu.service.LabelGeneratorService
 import io.github.bayang.jelu.service.LabelSize
 import org.springframework.http.HttpHeaders
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -23,12 +22,12 @@ class LabelController(
         @PathVariable("id") userBookId: UUID,
         @RequestParam(defaultValue = "40") widthMm: Int,
         @RequestParam(defaultValue = "30") heightMm: Int,
+        @RequestParam(defaultValue = "") baseUrl: String,
         principal: Authentication,
     ): ResponseEntity<ByteArray> {
         val ub = bookService.findUserBookById(userBookId)
         val size = LabelSize(widthMm, heightMm)
-        val baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
-        val url = "$baseUrl/public/book/${ub.book.id}"
+        val url = "${baseUrl}/public/book/${ub.book.id}"
         val png = labelService.generateLabel(ub.book.title, url, size)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${ub.book.title}.png\"")

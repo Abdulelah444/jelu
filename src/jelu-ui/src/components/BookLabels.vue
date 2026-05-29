@@ -42,7 +42,7 @@ const loadBooks = async () => {
 }
 
 const labelPreviewUrl = (ubId: string) => {
-  return '/api/v1/userbooks/' + ubId + '/label.png?widthMm=' + labelWidth.value + '&heightMm=' + labelHeight.value
+  return '/api/v1/userbooks/' + ubId + '/label.png?widthMm=' + labelWidth.value + '&heightMm=' + labelHeight.value + '&baseUrl=' + encodeURIComponent(window.location.origin)
 }
 
 const downloadLabel = async (ub: UserBook) => {
@@ -50,7 +50,7 @@ const downloadLabel = async (ub: UserBook) => {
   try {
     const response = await dataService.apiClient.get(
       '/userbooks/' + ub.id + '/label.png',
-      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value }, responseType: 'blob' }
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: window.location.origin }, responseType: 'blob' }
     )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
@@ -70,7 +70,7 @@ const downloadAll = async () => {
   try {
     const response = await dataService.apiClient.get(
       '/labels/bulk.zip',
-      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value }, responseType: 'blob' }
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: window.location.origin }, responseType: 'blob' }
     )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
