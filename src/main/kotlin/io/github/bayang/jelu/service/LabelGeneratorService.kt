@@ -13,7 +13,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.imageio.ImageIO
 
-data class LabelSize(val widthMm: Int, val heightMm: Int, val dpi: Int = 203) {
+data class LabelSize(val widthMm: Int, val heightMm: Int, val dpi: Int = 600) {
     val widthPx: Int get() = (widthMm * dpi / 25.4).toInt()
     val heightPx: Int get() = (heightMm * dpi / 25.4).toInt()
 }
