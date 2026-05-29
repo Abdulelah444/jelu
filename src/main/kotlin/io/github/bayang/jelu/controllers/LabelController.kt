@@ -39,6 +39,7 @@ class LabelController(
     fun getBulkLabels(
         @RequestParam(defaultValue = "40") widthMm: Int,
         @RequestParam(defaultValue = "30") heightMm: Int,
+        @RequestParam(defaultValue = "") baseUrl: String,
         principal: Authentication,
     ): ResponseEntity<ByteArray> {
         val size = LabelSize(widthMm, heightMm)
@@ -51,7 +52,6 @@ class LabelController(
             owned = true,
             pageable = org.springframework.data.domain.PageRequest.of(0, 500),
         )
-        val baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
         val books = page.content.map { ub ->
             ub.book.title to "$baseUrl/public/book/${ub.book.id}"
         }
