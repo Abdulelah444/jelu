@@ -15,6 +15,7 @@ import java.util.UUID
 class LabelController(
     private val labelService: LabelGeneratorService,
     private val bookService: BookService,
+    private val properties: io.github.bayang.jelu.config.JeluProperties,
 ) {
 
     @GetMapping("/userbooks/{id}/label.png")
@@ -27,7 +28,8 @@ class LabelController(
     ): ResponseEntity<ByteArray> {
         val ub = bookService.findUserBookById(userBookId)
         val size = LabelSize(widthMm, heightMm)
-        val url = "${baseUrl}/public/book/${ub.book.id}"
+        val resolvedBase = properties.qrBaseUrl.ifEmpty { baseUrl }
+        val url = "${resolvedBase}/public/book/${ub.book.id}"
         val png = labelService.generateLabel(ub.book.title, url, size)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${ub.book.title}.png\"")
@@ -53,7 +55,8 @@ class LabelController(
             pageable = org.springframework.data.domain.PageRequest.of(0, 500),
         )
         val books = page.content.map { ub ->
-            ub.book.title to "$baseUrl/public/book/${ub.book.id}"
+            val resolvedBase = properties.qrBaseUrl.ifEmpty { baseUrl }
+            ub.book.title to "$resolvedBase/public/book/${ub.book.id}"
         }
         val zip = labelService.generateBulkZip(books, size)
         return ResponseEntity.ok()

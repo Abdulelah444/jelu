@@ -21,6 +21,7 @@ data class JeluProperties(
     val metadataProviders: List<MetaDataProvider>?,
     val lucene: Lucene = Lucene(indexAnalyzer = IndexAnalyzer()),
     val ebooks: Ebooks = Ebooks(),
+    val qrBaseUrl: String = "",
 ) {
     data class MetaDataProvider(
         var name: String,
