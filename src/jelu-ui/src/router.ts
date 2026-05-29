@@ -57,9 +57,21 @@ const router = createRouter({
             name: 'login'
         },
 	{
+            path: '/book-labels',
+            component: () => import('./components/BookLabels.vue'),
+            name: 'book-labels',
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/digital-library',
             component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
             name: 'digital-library',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/book-labels',
+            component: () => import('./components/BookLabels.vue'),
+            name: 'book-labels',
             beforeEnter: [isLogged],
         },
         {
