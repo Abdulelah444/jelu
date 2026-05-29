@@ -31,52 +31,66 @@ class LabelGeneratorService {
     }
 
     fun generateLabel(title: String, bookUrl: String, size: LabelSize): ByteArray {
-        val img = BufferedImage(size.widthPx, size.heightPx, BufferedImage.TYPE_INT_ARGB)
+        val w = size.widthPx
+        val h = size.heightPx
+        val img = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
         val g = img.createGraphics()
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
 
-        // White background
+        // White background with border
         g.color = Color.WHITE
-        g.fillRect(0, 0, size.widthPx, size.heightPx)
-
-        // Border
+        g.fillRect(0, 0, w, h)
+        val border = (w * 0.01).toInt().coerceAtLeast(2)
         g.color = Color(51, 51, 51)
-        g.drawRect(2, 2, size.widthPx - 5, size.heightPx - 5)
+        g.drawRect(border, border, w - border * 2 - 1, h - border * 2 - 1)
 
-        var y = 8
+        val pad = (w * 0.03).toInt()
 
-        // Logo
-        val logoSize = (size.heightPx * 0.14).toInt().coerceIn(20, 48)
+        // Calculate layout: logo takes ~8%, QR takes as much as possible, title takes rest
+        val logoSize = (h * 0.09).toInt().coerceIn(20, 80)
+        val titleFontSize = (h * 0.07).toFloat().coerceIn(12f, 28f)
+        g.font = Font("Serif", Font.BOLD, titleFontSize.toInt())
+        val fm = g.fontMetrics
+        val titleLines = wrapText(title, fm, w - pad * 2)
+        val titleHeight = fm.height * minOf(titleLines.size, 2) + 4
+        val dividerSpace = (h * 0.015).toInt()
+
+        // QR gets all remaining space
+        val qrAvailable = h - pad * 2 - logoSize - 4 - dividerSpace * 2 - titleHeight
+        val qrSize = minOf(qrAvailable, w - pad * 2).coerceAtLeast(60)
+
+        var y = pad
+
+        // Logo centered
         logo?.let {
             val scaled = it.getScaledInstance(logoSize, logoSize, java.awt.Image.SCALE_SMOOTH)
-            g.drawImage(scaled, (size.widthPx - logoSize) / 2, y, null)
-            y += logoSize + 4
+            g.drawImage(scaled, (w - logoSize) / 2, y, null)
+            y += logoSize + 2
         }
 
-        // QR Code
-        val qrSize = (size.heightPx * 0.55).toInt().coerceIn(60, size.widthPx - 20)
+        // QR Code centered
         val qrImage = generateQrCode(bookUrl, qrSize)
-        g.drawImage(qrImage, (size.widthPx - qrSize) / 2, y, null)
-        y += qrSize + 4
+        g.drawImage(qrImage, (w - qrSize) / 2, y, null)
+        y += qrSize + dividerSpace
 
-        // Divider
-        g.color = Color(200, 200, 200)
-        g.drawLine(size.widthPx / 6, y, size.widthPx * 5 / 6, y)
-        y += 6
+        // Divider line
+        g.color = Color(180, 180, 180)
+        val lineInset = (w * 0.08).toInt()
+        g.drawLine(lineInset, y, w - lineInset, y)
+        y += dividerSpace
 
-        // Title
+        // Title centered
         g.color = Color.BLACK
-        val fontSize = (size.heightPx * 0.065).toFloat().coerceIn(8f, 16f)
-        g.font = Font("Serif", Font.BOLD, fontSize.toInt())
-        val fm = g.fontMetrics
-        val maxWidth = size.widthPx - 16
-        val lines = wrapText(title, fm, maxWidth)
-        val maxLines = ((size.heightPx - y - 4) / fm.height).coerceAtLeast(1)
-        for (i in 0 until minOf(lines.size, maxLines)) {
-            val line = if (i == maxLines - 1 && i < lines.size - 1) lines[i].dropLast(3) + "..." else lines[i]
+        g.font = Font("Serif", Font.BOLD, titleFontSize.toInt())
+        val maxLines = 2
+        for (i in 0 until minOf(titleLines.size, maxLines)) {
+            val line = if (i == maxLines - 1 && i < titleLines.size - 1) {
+                val truncated = titleLines[i]
+                if (truncated.length > 3) truncated.dropLast(3) + "..." else truncated
+            } else titleLines[i]
             val tw = fm.stringWidth(line)
-            g.drawString(line, (size.widthPx - tw) / 2, y + fm.ascent)
+            g.drawString(line, (w - tw) / 2, y + fm.ascent)
             y += fm.height
         }
 
