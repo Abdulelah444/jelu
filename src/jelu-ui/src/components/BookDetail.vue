@@ -188,6 +188,26 @@ const uploadDigitalFile = async (event: Event) => {
   }
 }
 
+const downloadQrLabel = async () => {
+  if (!book.value?.id) return
+  try {
+    const response = await dataService.apiClient.get(
+      '/userbooks/' + book.value.id + '/label.png',
+      { params: { widthMm: 40, heightMm: 30 }, responseType: 'blob' }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', (book.value.book.title || 'label') + '.png')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    oruga.notification.open({ message: "Label download failed", variant: "danger", duration: 3000 })
+  }
+}
+
 const printQrLabel = () => {
   const win = window.open('', '_blank', 'width=400,height=500')
   if (!win) return
@@ -1263,6 +1283,7 @@ getBook()
               </div>
               <div class="flex justify-center gap-2 mt-4">
                 <button class="btn btn-sm btn-primary" @click="printQrLabel"><i class="mdi mdi-printer mdi-18px mr-1" /> Print</button>
+                <button class="btn btn-sm btn-secondary" @click="downloadQrLabel"><i class="mdi mdi-download mdi-18px mr-1" /> Download</button>
                 <button class="btn btn-sm btn-outline" onclick="document.getElementById('qr-modal').close()">Close</button>
               </div>
             </div>
