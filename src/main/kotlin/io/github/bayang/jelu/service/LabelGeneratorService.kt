@@ -138,10 +138,10 @@ class LabelGeneratorService {
     fun generateBulkZip(books: List<Pair<String, String>>, size: LabelSize): ByteArray {
         val baos = ByteArrayOutputStream()
         ZipOutputStream(baos).use { zip ->
-            for ((title, url) in books) {
-                val safeTitle = title.replace(Regex("[^a-zA-Z0-9 _-]"), "").trim().take(50)
+            books.forEachIndexed { index, (title, url) ->
+                val safeTitle = title.replace(Regex("[^a-zA-Z0-9\u0600-\u06FF _-]"), "").trim().take(50).ifEmpty { "book" }
                 val label = generateLabel(title, url, size)
-                zip.putNextEntry(ZipEntry("$safeTitle.png"))
+                zip.putNextEntry(ZipEntry("${String.format("%03d", index + 1)}_$safeTitle.png"))
                 zip.write(label)
                 zip.closeEntry()
             }
