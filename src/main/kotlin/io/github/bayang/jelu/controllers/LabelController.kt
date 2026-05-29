@@ -4,6 +4,7 @@ import io.github.bayang.jelu.service.BookService
 import io.github.bayang.jelu.service.LabelGeneratorService
 import io.github.bayang.jelu.service.LabelSize
 import org.springframework.http.HttpHeaders
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder
 import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.Authentication
@@ -26,7 +27,8 @@ class LabelController(
     ): ResponseEntity<ByteArray> {
         val ub = bookService.findUserBookById(userBookId)
         val size = LabelSize(widthMm, heightMm)
-        val url = "/public/book/${ub.book.id}"
+        val baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
+        val url = "$baseUrl/public/book/${ub.book.id}"
         val png = labelService.generateLabel(ub.book.title, url, size)
         return ResponseEntity.ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${ub.book.title}.png\"")
@@ -50,8 +52,9 @@ class LabelController(
             owned = true,
             pageable = org.springframework.data.domain.PageRequest.of(0, 500),
         )
+        val baseUrl = ServletUriComponentsBuilder.fromCurrentContextPath().build().toUriString()
         val books = page.content.map { ub ->
-            ub.book.title to "/public/book/${ub.book.id}"
+            ub.book.title to "$baseUrl/public/book/${ub.book.id}"
         }
         val zip = labelService.generateBulkZip(books, size)
         return ResponseEntity.ok()
