@@ -9,7 +9,23 @@ const oruga = useOruga()
 const { typographyClasses } = useTypography()
 const books: Ref<Array<UserBook>> = ref([])
 const loading: Ref<boolean> = ref(false)
-const origin = window.location.origin
+const bulkLoading: Ref<boolean> = ref(false)
+const labelWidth: Ref<number> = ref(40)
+const labelHeight: Ref<number> = ref(30)
+
+const sizes = [
+  { label: '40 x 30 mm', w: 40, h: 30 },
+  { label: '50 x 30 mm', w: 50, h: 30 },
+  { label: '40 x 40 mm', w: 40, h: 40 },
+  { label: '50 x 40 mm', w: 50, h: 40 },
+  { label: '50 x 50 mm', w: 50, h: 50 },
+  { label: '60 x 40 mm', w: 60, h: 40 },
+]
+
+const setSize = (w: number, h: number) => {
+  labelWidth.value = w
+  labelHeight.value = h
+}
 
 const loadBooks = async () => {
   loading.value = true
@@ -25,37 +41,50 @@ const loadBooks = async () => {
   }
 }
 
-const qrUrl = (bookId: string) => {
-  return "https://api.qrserver.com/v1/create-qr-code/?size=170x170&data=" + encodeURIComponent(origin + "/public/book/" + bookId)
+const labelPreviewUrl = (ubId: string) => {
+  return '/api/v1/userbooks/' + ubId + '/label.png?widthMm=' + labelWidth.value + '&heightMm=' + labelHeight.value
 }
 
-const printAllLabels = () => {
-  const win = window.open('', '_blank')
-  if (!win) return
-  win.document.write('<html><head><title>Book Labels</title>')
-  win.document.write('<style>')
-  win.document.write('body{margin:0;padding:20px;background:#fff;font-family:Georgia,serif;}')
-  win.document.write('.grid{display:flex;flex-wrap:wrap;gap:16px;justify-content:center;}')
-  win.document.write('.label{border:2px solid #333;padding:16px;border-radius:8px;text-align:center;width:220px;page-break-inside:avoid;break-inside:avoid;}')
-  win.document.write('.label .logo{width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:block;}')
-  win.document.write('.label .qr{width:140px;height:140px;}')
-  win.document.write('.label .divider{border-bottom:1px solid #ccc;margin:8px 0;}')
-  win.document.write('.label .title{font-weight:bold;font-size:11px;line-height:1.3;}')
-  win.document.write('@media print{body{padding:5mm;} .grid{gap:8px;} @page{size:A4;margin:5mm;}}')
-  win.document.write('</style></head><body>')
-  win.document.write('<div class="grid">')
-  for (const ub of books.value) {
-    if (!ub.book?.id) continue
-    win.document.write('<div class="label">')
-    win.document.write('<img class="logo" src="' + origin + '/android-chrome-192x192.png" />')
-    win.document.write('<img class="qr" src="' + qrUrl(ub.book.id) + '" />')
-    win.document.write('<div class="divider"></div>')
-    win.document.write('<div class="title">' + (ub.book.title || '') + '</div>')
-    win.document.write('</div>')
+const downloadLabel = async (ub: UserBook) => {
+  if (!ub.id) return
+  try {
+    const response = await dataService.apiClient.get(
+      '/userbooks/' + ub.id + '/label.png',
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value }, responseType: 'blob' }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', (ub.book.title || 'label') + '.png')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    oruga.notification.open({ message: "Download failed", variant: "danger", duration: 3000 })
   }
-  win.document.write('</div></body></html>')
-  win.document.close()
-  win.onload = () => { setTimeout(() => win.print(), 2000) }
+}
+
+const downloadAll = async () => {
+  bulkLoading.value = true
+  try {
+    const response = await dataService.apiClient.get(
+      '/labels/bulk.zip',
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value }, responseType: 'blob' }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'book-labels.zip')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    oruga.notification.open({ message: "Bulk download failed", variant: "danger", duration: 3000 })
+  } finally {
+    bulkLoading.value = false
+  }
 }
 
 loadBooks()
@@ -67,24 +96,36 @@ loadBooks()
       <i class="mdi mdi-qrcode mdi-24px mr-2 text-primary" />
       Book Labels
     </h1>
-    <p class="text-sm text-base-content/60 mb-4">
-      {{ books.length }} owned books — print QR labels to stick on your books
-    </p>
-    <div class="mb-4">
-      <button class="btn btn-primary" :disabled="loading || books.length === 0" @click="printAllLabels">
-        <i class="mdi mdi-printer mdi-18px mr-1" /> Print All Labels
+
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+      <span class="text-sm font-medium">Label size:</span>
+      <div class="flex flex-wrap gap-1">
+        <button v-for="s in sizes" :key="s.label"
+          class="btn btn-xs" :class="labelWidth === s.w && labelHeight === s.h ? 'btn-primary' : 'btn-outline'"
+          @click="setSize(s.w, s.h)">
+          {{ s.label }}
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-3 mb-4">
+      <p class="text-sm text-base-content/60">{{ books.length }} owned books</p>
+      <button class="btn btn-primary btn-sm" :disabled="bulkLoading || books.length === 0" @click="downloadAll">
+        <span v-if="bulkLoading" class="loading loading-spinner loading-xs" />
+        <i v-else class="mdi mdi-download mdi-18px mr-1" /> Download All (ZIP)
       </button>
     </div>
+
     <div v-if="loading" class="flex justify-center py-8">
       <span class="loading loading-spinner loading-lg" />
     </div>
+
     <div v-else class="flex flex-wrap gap-4 justify-center">
-      <div v-for="ub in books" :key="ub.id"
-        class="bg-white text-black p-4 rounded-lg border-2 border-gray-800 text-center" style="width: 220px;">
-        <img src="/android-chrome-192x192.png" alt="logo" style="width: 32px; height: 32px; margin: 0 auto 6px; display: block; border-radius: 50%;" />
-        <img :src="qrUrl(ub.book.id!)" alt="QR" style="width: 140px; height: 140px;" class="mx-auto" />
-        <div class="border-b border-gray-300 mt-2 mb-2" />
-        <div class="font-bold text-xs leading-tight" style="font-family: Georgia, serif;">{{ ub.book.title }}</div>
+      <div v-for="ub in books" :key="ub.id" class="flex flex-col items-center gap-2">
+        <img :src="labelPreviewUrl(ub.id!)" :alt="ub.book.title" class="rounded shadow border" />
+        <button class="btn btn-ghost btn-xs" @click="downloadLabel(ub)">
+          <i class="mdi mdi-download mdi-14px mr-1" /> Download
+        </button>
       </div>
     </div>
   </section>
