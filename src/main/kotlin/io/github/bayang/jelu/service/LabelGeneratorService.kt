@@ -65,13 +65,13 @@ class LabelGeneratorService {
         val leftStart = border + outerPad
         val leftEnd = qrBoxX - leftGap
         val leftWidth = leftEnd - leftStart
-        val leftCenter = leftStart + leftWidth / 2
+        val leftCenter = leftStart + (leftWidth * 0.6).toInt()
 
         // Pre-calculate sizes
-        val logoSize = (h * 0.20).toInt().coerceIn(24, 100)
-        val exLibrisSize = (h * 0.058).toFloat().coerceIn(9f, 22f)
-        val nameSize = (h * 0.07).toFloat().coerceIn(10f, 24f)
-        val titleSize = (h * 0.055).toFloat().coerceIn(9f, 20f)
+        val logoSize = (h * 0.26).toInt().coerceIn(30, 130)
+        val exLibrisSize = (h * 0.08).toFloat().coerceIn(12f, 28f)
+        val nameSize = (h * 0.09).toFloat().coerceIn(13f, 30f)
+        val titleSize = (h * 0.075).toFloat().coerceIn(12f, 26f)
         val gap = (h * 0.015).toInt().coerceAtLeast(2)
         val divGap = (h * 0.02).toInt().coerceAtLeast(3)
 
