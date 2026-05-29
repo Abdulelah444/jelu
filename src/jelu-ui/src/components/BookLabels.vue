@@ -12,6 +12,9 @@ const loading: Ref<boolean> = ref(false)
 const bulkLoading: Ref<boolean> = ref(false)
 const labelWidth: Ref<number> = ref(40)
 const labelHeight: Ref<number> = ref(30)
+const savedBaseUrl = localStorage.getItem('qr_base_url')
+const qrBaseUrl: Ref<string> = ref(savedBaseUrl || window.location.origin)
+const saveBaseUrl = () => { localStorage.setItem('qr_base_url', qrBaseUrl.value) }
 
 const sizes = [
   { label: '40 x 30 mm', w: 40, h: 30 },
@@ -42,7 +45,7 @@ const loadBooks = async () => {
 }
 
 const labelPreviewUrl = (ubId: string) => {
-  return '/api/v1/userbooks/' + ubId + '/label.png?widthMm=' + labelWidth.value + '&heightMm=' + labelHeight.value + '&baseUrl=' + encodeURIComponent(window.location.origin)
+  return '/api/v1/userbooks/' + ubId + '/label.png?widthMm=' + labelWidth.value + '&heightMm=' + labelHeight.value + '&baseUrl=' + encodeURIComponent(qrBaseUrl.value)
 }
 
 const downloadLabel = async (ub: UserBook) => {
@@ -50,7 +53,7 @@ const downloadLabel = async (ub: UserBook) => {
   try {
     const response = await dataService.apiClient.get(
       '/userbooks/' + ub.id + '/label.png',
-      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: window.location.origin }, responseType: 'blob' }
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: qrBaseUrl.value }, responseType: 'blob' }
     )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
@@ -70,7 +73,7 @@ const downloadAll = async () => {
   try {
     const response = await dataService.apiClient.get(
       '/labels/bulk.zip',
-      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: window.location.origin }, responseType: 'blob' }
+      { params: { widthMm: labelWidth.value, heightMm: labelHeight.value, baseUrl: qrBaseUrl.value }, responseType: 'blob' }
     )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
@@ -106,6 +109,11 @@ loadBooks()
           {{ s.label }}
         </button>
       </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-3 mb-4">
+      <span class="text-sm font-medium">QR base URL:</span>
+      <input v-model="qrBaseUrl" type="text" class="input input-sm input-bordered w-64" @change="saveBaseUrl" />
     </div>
 
     <div class="flex items-center gap-3 mb-4">

@@ -193,7 +193,7 @@ const downloadQrLabel = async () => {
   try {
     const response = await dataService.apiClient.get(
       '/userbooks/' + book.value.id + '/label.png',
-      { params: { widthMm: 40, heightMm: 30, baseUrl: window.location.origin }, responseType: 'blob' }
+      { params: { widthMm: 40, heightMm: 30, baseUrl: localStorage.getItem('qr_base_url') || window.location.origin }, responseType: 'blob' }
     )
     const url = window.URL.createObjectURL(new Blob([response.data]))
     const link = document.createElement('a')
