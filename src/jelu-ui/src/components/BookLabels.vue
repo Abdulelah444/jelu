@@ -47,7 +47,7 @@ const printAllLabels = () => {
   for (const ub of books.value) {
     if (!ub.book?.id) continue
     win.document.write('<div class="label">')
-    win.document.write('<img class="logo" src="' + origin + '/logo.png" />')
+    win.document.write('<img class="logo" src="' + origin + '/android-chrome-192x192.png" />')
     win.document.write('<img class="qr" src="' + qrUrl(ub.book.id) + '" />')
     win.document.write('<div class="divider"></div>')
     win.document.write('<div class="title">' + (ub.book.title || '') + '</div>')
@@ -81,7 +81,7 @@ loadBooks()
     <div v-else class="flex flex-wrap gap-4 justify-center">
       <div v-for="ub in books" :key="ub.id"
         class="bg-white text-black p-4 rounded-lg border-2 border-gray-800 text-center" style="width: 220px;">
-        <img src="/logo.png" alt="logo" style="width: 32px; height: 32px; margin: 0 auto 6px; display: block; border-radius: 50%;" />
+        <img src="/android-chrome-192x192.png" alt="logo" style="width: 32px; height: 32px; margin: 0 auto 6px; display: block; border-radius: 50%;" />
         <img :src="qrUrl(ub.book.id!)" alt="QR" style="width: 140px; height: 140px;" class="mx-auto" />
         <div class="border-b border-gray-300 mt-2 mb-2" />
         <div class="font-bold text-xs leading-tight" style="font-family: Georgia, serif;">{{ ub.book.title }}</div>

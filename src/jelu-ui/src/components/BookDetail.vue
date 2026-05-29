@@ -195,7 +195,7 @@ const printQrLabel = () => {
   win.document.write('<html><head><title>' + (book.value?.book?.title || 'Label') + '</title>')
   win.document.write('<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;} .label{border:2px solid #333;padding:20px;border-radius:8px;text-align:center;width:260px;font-family:Georgia,serif;} .label .logo{width:40px;height:40px;border-radius:50%;margin:0 auto 8px;display:block;} .label .qr{width:170px;height:170px;} .label .divider{border-bottom:1px solid #ccc;margin:12px 0;} .label .title{font-weight:bold;font-size:14px;line-height:1.3;} @media print{body{margin:0;} @page{size:auto;margin:10mm;}}</style></head><body>')
   win.document.write('<div class="label">')
-  win.document.write('<img class="logo" src="' + o + '/logo.png" />')
+  win.document.write('<img class="logo" src="' + o + '/android-chrome-192x192.png" />')
   win.document.write('<img class="qr" src="' + qrCodeUrl.value + '" />')
   win.document.write('<div class="divider"></div>')
   win.document.write('<div class="title">' + (book.value?.book?.title || '') + '</div>')
@@ -1256,7 +1256,7 @@ getBook()
           <dialog id="qr-modal" class="modal">
             <div class="modal-box max-w-sm">
               <div class="bg-white text-black p-5 rounded-lg border-2 border-gray-800 text-center mx-auto" style="width: 260px;">
-                <img src="/logo.png" alt="logo" style="width: 40px; height: 40px; margin: 0 auto 8px auto; display: block; border-radius: 50%;">
+                <img src="/android-chrome-192x192.png" alt="logo" style="width: 40px; height: 40px; margin: 0 auto 8px auto; display: block; border-radius: 50%;">
                 <img :src="qrCodeUrl" alt="QR Code" class="mx-auto" style="width: 170px; height: 170px;">
                 <div style="border-bottom: 1px solid #ccc; margin: 12px 0;"></div>
                 <div style="font-weight: bold; font-size: 14px; line-height: 1.3; font-family: Georgia, serif;">{{ book?.book?.title }}</div>
