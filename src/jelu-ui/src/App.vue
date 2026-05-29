@@ -215,100 +215,19 @@ function scanModalClosed() {
             </svg>
           </label>
           <ul
-            tabindex="0"
-            class="menu menu-compact dropdown-content z-50 mt-3 p-2 shadow-sm bg-base-100 rounded-box w-52"
-          >
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                class="font-sans text-base capitalize"
-                :to="{ name: 'my-books' }"
-              >
-                {{ t('nav.my_books') }}
-              </router-link>
-            </li>
-	    <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'library-map' }"
-                class="font-sans text-base capitalize"
-              >
-                {{ t('library_map.title') }}
-              </router-link>
-            </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                class="font-sans text-base capitalize"
-                :to="{ name: 'to-read' }"
-              >
-                {{ t('nav.to_read') }}
-              </router-link>
-            </li>
-
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                class="font-sans text-base capitalize"
-                :to="{ name: 'wishlist' }"
-              >
-                Wishlist
-              </router-link>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                class="font-sans text-base capitalize"
-                :to="{ name: 'lending-history' }"
-              >
-                Lending History
-              </router-link>
-            </li>
-            </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'add-book' }"
-                class="font-sans text-base capitalize"
-              >
-                {{ t('nav.add_book') }}
-              </router-link>
-            </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'history' }"
-                class="font-sans text-base capitalize"
-              >
-                {{ t('nav.history') }}
-              </router-link>
-            </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'reading-dashboard' }"
-                class="font-sans text-base capitalize"
-              >
-                Stats
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'authors' }"
-                class="font-sans capitalize"
-              >
-                {{ t('book.author', 2) }}
-              </router-link>
-            </li>
-            <li @click="collapseDropdown()">
-              <router-link
-                v-if="isLogged"
-                :to="{ name: 'search' }"
-                class="font-sans text-base capitalize"
-              >
-                {{ t('nav.search') }}
-              </router-link>
-            </li>
+          <ul tabindex="0" class="menu menu-compact dropdown-content z-50 mt-3 p-2 shadow-sm bg-base-100 rounded-box w-56">
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'my-books' }"><i class="mdi mdi-book-multiple mdi-18px mr-2" />{{ t('nav.my_books') }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'add-book' }"><i class="mdi mdi-plus-circle mdi-18px mr-2" />{{ t('nav.add_book') }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'digital-library' }"><i class="mdi mdi-book-open-page-variant mdi-18px mr-2" />Digital Library</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'book-labels' }"><i class="mdi mdi-qrcode mdi-18px mr-2" />Book Labels</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-eye mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart mdi-18px mr-2" />Wishlist</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'history' }"><i class="mdi mdi-history mdi-18px mr-2" />{{ t('nav.history') }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'reading-dashboard' }"><i class="mdi mdi-chart-bar mdi-18px mr-2" />Stats</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'authors' }"><i class="mdi mdi-account-group mdi-18px mr-2" />{{ t('book.author', 2) }}</router-link></li>
+            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'search' }"><i class="mdi mdi-magnify mdi-18px mr-2" />{{ t('nav.search') }}</router-link></li>
           </ul>
         </div>
         <router-link
