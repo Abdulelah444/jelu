@@ -15,7 +15,7 @@ const loadBooks = async () => {
   loading.value = true
   try {
     const result = await dataService.findUserBookByCriteria(
-      null, null, null, null, true, null, null, null, 0, 500, "title,asc"
+      null, null, null, null, true, null, 0, 500, "title,asc", null, null
     )
     books.value = result.content || []
   } catch (error) {
