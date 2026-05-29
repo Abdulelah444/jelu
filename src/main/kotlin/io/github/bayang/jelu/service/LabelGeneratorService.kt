@@ -56,13 +56,6 @@ class LabelGeneratorService {
         val qrBoxX = w - border - outerPad - qrBoxSize
         val qrBoxY = (h - qrBoxSize) / 2
 
-        // QR border
-        g.color = Color(100, 100, 100)
-        val qrBorder = (w * 0.004).toInt().coerceAtLeast(1)
-        for (i in 0 until qrBorder) {
-            g.drawRect(qrBoxX + i, qrBoxY + i, qrBoxSize - i * 2 - 1, qrBoxSize - i * 2 - 1)
-        }
-
         // QR code
         val qrImage = generateQrCode(bookUrl, qrSize)
         g.drawImage(qrImage, qrBoxX + qrPad, qrBoxY + qrPad, null)
