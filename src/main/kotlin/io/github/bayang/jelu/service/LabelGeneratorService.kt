@@ -49,8 +49,8 @@ class LabelGeneratorService {
 
         val outerPad = (h * 0.06).toInt().coerceAtLeast(8)
 
-        // Layout: 55% left, 45% right (QR)
-        val rightWidth = (w * 0.45).toInt()
+        // Layout: 50% left, 50% right (QR) with generous left margin
+        val rightWidth = (w * 0.48).toInt()
         val leftWidth = w - rightWidth
 
         // RIGHT SIDE: QR code with border, centered in right area
@@ -60,7 +60,7 @@ class LabelGeneratorService {
         val qrBoxInner = minOf(qrAvailH, qrAvailW)
         val qrPad = (qrBoxInner * 0.04).toInt().coerceAtLeast(4)
         val qrBoxOuter = qrBoxInner + qrPad * 2
-        val qrBoxX = leftWidth + (rightWidth - qrBoxOuter) / 2
+        val qrBoxX = leftWidth + (w * 0.01).toInt()
         val qrBoxY = (h - qrBoxOuter) / 2
 
         // QR border
@@ -75,7 +75,7 @@ class LabelGeneratorService {
         g.drawImage(qrImage, qrBoxX + qrPad, qrBoxY + qrPad, null)
 
         // LEFT SIDE: all content centered in left area
-        val leftPad = outerPad + (w * 0.02).toInt()
+        val leftPad = outerPad + (w * 0.05).toInt()
         val leftContentW = leftWidth - leftPad * 2
         val leftCenterX = leftPad + leftContentW / 2
 
