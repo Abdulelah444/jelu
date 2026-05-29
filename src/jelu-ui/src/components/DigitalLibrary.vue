@@ -43,6 +43,14 @@ const deleteDigital = async (ub: UserBook) => {
   }
 }
 
+const downloadFile = async (ubId: string) => {
+  try {
+    await dataService.downloadDigitalFile(ubId)
+  } catch (error) {
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
+  }
+}
+
 const formatSize = (bytes: number | null | undefined) => {
   if (!bytes) return ''
   return (bytes / 1024 / 1024).toFixed(1) + ' MB'
@@ -95,7 +103,7 @@ getDigitalBooks()
             <td class="text-sm">{{ ub.digitalFileAddedDate ? new Date(ub.digitalFileAddedDate).toLocaleDateString() : '' }}</td>
             <td>
               <div class="flex gap-1">
-                <a :href="'/api/v1/userbooks/' + ub.id + '/digital/download-file'" class="btn btn-ghost btn-xs" download><i class="mdi mdi-download mdi-18px" /></a>
+                <button class="btn btn-ghost btn-xs" @click="downloadFile(ub.id!)"><i class="mdi mdi-download mdi-18px" /></button>
                 <button class="btn btn-ghost btn-xs text-error" :disabled="deleteLoading === ub.id" @click="deleteDigital(ub)">
                   <span v-if="deleteLoading === ub.id" class="loading loading-spinner loading-xs" />
                   <i v-else class="mdi mdi-delete mdi-18px" />

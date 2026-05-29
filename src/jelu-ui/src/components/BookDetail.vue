@@ -188,6 +188,15 @@ const uploadDigitalFile = async (event: Event) => {
   }
 }
 
+const downloadDigital = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.downloadDigitalFile(book.value.id)
+  } catch (error) {
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
+  }
+}
+
 const deleteDigitalFile = async () => {
   if (!book.value?.id) return
   if (!confirm("Remove the digital copy? The file will be deleted.")) return
@@ -1150,10 +1159,10 @@ getBook()
               </span>
             </div>
             <div class="flex flex-wrap gap-2">
-              <a :href="'/api/v1/userbooks/' + book?.id + '/digital/download-file'" class="btn btn-primary btn-sm" download>
+              <button class="btn btn-primary btn-sm" @click="downloadDigital">
                 <i class="mdi mdi-download mdi-18px" />
                 Download
-              </a>
+              </button>
               <button class="btn btn-outline btn-sm btn-error" :disabled="digitalDeleteLoading" @click="deleteDigitalFile">
                 <span v-if="digitalDeleteLoading" class="loading loading-spinner loading-xs"></span>
                 <i v-else class="mdi mdi-delete mdi-18px" />

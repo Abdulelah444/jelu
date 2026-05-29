@@ -2473,6 +2473,31 @@ class DataService {
     }
   }
 
+  downloadDigitalFile = async (userbookId: string) => {
+    try {
+      const response = await this.apiClient.get(`${this.API_USERBOOK}/${userbookId}/digital/download-file`, {
+        responseType: 'blob'
+      })
+      const contentDisposition = response.headers['content-disposition']
+      let filename = 'download'
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+?)"?$/)
+        if (match) filename = match[1]
+      }
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.log("error downloading digital file " + (error as any).code)
+      throw new Error("error downloading digital file " + error)
+    }
+  }
+
   deleteDigitalFile = async (userbookId: string) => {
     try {
       const response = await this.apiClient.delete<any>(`${this.API_USERBOOK}/${userbookId}/digital`)
