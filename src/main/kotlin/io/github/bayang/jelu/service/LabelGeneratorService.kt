@@ -41,56 +41,70 @@ class LabelGeneratorService {
         // White background with border
         g.color = Color.WHITE
         g.fillRect(0, 0, w, h)
-        val border = (w * 0.01).toInt().coerceAtLeast(2)
+        val border = (w * 0.008).toInt().coerceAtLeast(2)
         g.color = Color(51, 51, 51)
         g.drawRect(border, border, w - border * 2 - 1, h - border * 2 - 1)
 
-        val pad = (w * 0.03).toInt()
+        val pad = (h * 0.04).toInt().coerceAtLeast(4)
 
-        // Calculate layout: logo takes ~8%, QR takes as much as possible, title takes rest
-        val logoSize = (h * 0.09).toInt().coerceIn(20, 80)
-        val titleFontSize = (h * 0.07).toFloat().coerceIn(12f, 28f)
-        g.font = Font("Serif", Font.BOLD, titleFontSize.toInt())
-        val fm = g.fontMetrics
-        val titleLines = wrapText(title, fm, w - pad * 2)
-        val titleHeight = fm.height * minOf(titleLines.size, 2) + 4
-        val dividerSpace = (h * 0.015).toInt()
+        // RIGHT SIDE: QR code as large as possible
+        val qrPad = pad + border
+        val qrSize = h - qrPad * 2
+        val qrX = w - qrSize - qrPad
+        val qrImage = generateQrCode(bookUrl, qrSize)
+        g.drawImage(qrImage, qrX, qrPad, null)
 
-        // QR gets all remaining space
-        val qrAvailable = h - pad * 2 - logoSize - 4 - dividerSpace * 2 - titleHeight
-        val qrSize = minOf(qrAvailable, w - pad * 2).coerceAtLeast(60)
+        // LEFT SIDE: everything fits in the space left of the QR
+        val leftWidth = qrX - pad - border
+        val leftCenter = border + pad + leftWidth / 2
 
-        var y = pad
-
-        // Logo centered
+        // Logo
+        val logoSize = (h * 0.22).toInt().coerceIn(30, 120)
+        var y = pad + border + (h * 0.04).toInt()
         logo?.let {
             val scaled = it.getScaledInstance(logoSize, logoSize, java.awt.Image.SCALE_SMOOTH)
-            g.drawImage(scaled, (w - logoSize) / 2, y, null)
-            y += logoSize + 2
+            g.drawImage(scaled, leftCenter - logoSize / 2, y, null)
+            y += logoSize + (h * 0.02).toInt()
         }
 
-        // QR Code centered
-        val qrImage = generateQrCode(bookUrl, qrSize)
-        g.drawImage(qrImage, (w - qrSize) / 2, y, null)
-        y += qrSize + dividerSpace
+        // "Ex Libris" text
+        val exLibrisSize = (h * 0.065).toFloat().coerceIn(10f, 24f)
+        g.color = Color(80, 80, 80)
+        g.font = Font("Serif", Font.ITALIC, exLibrisSize.toInt())
+        var fm = g.fontMetrics
+        val exText = "Ex Libris"
+        g.drawString(exText, leftCenter - fm.stringWidth(exText) / 2, y + fm.ascent)
+        y += fm.height + 1
 
-        // Divider line
+        // "Abdulelah" text
+        val nameSize = (h * 0.075).toFloat().coerceIn(11f, 26f)
+        g.color = Color(40, 40, 40)
+        g.font = Font("Serif", Font.BOLD, nameSize.toInt())
+        fm = g.fontMetrics
+        val nameText = "Abdulelah"
+        g.drawString(nameText, leftCenter - fm.stringWidth(nameText) / 2, y + fm.ascent)
+        y += fm.height + (h * 0.03).toInt()
+
+        // Divider
         g.color = Color(180, 180, 180)
-        val lineInset = (w * 0.08).toInt()
-        g.drawLine(lineInset, y, w - lineInset, y)
-        y += dividerSpace
+        val lineInset = (leftWidth * 0.1).toInt()
+        g.drawLine(border + pad + lineInset, y, border + pad + leftWidth - lineInset, y)
+        y += (h * 0.03).toInt()
 
-        // Title centered
+        // Book title
+        val titleSize = (h * 0.06).toFloat().coerceIn(10f, 22f)
         g.color = Color.BLACK
-        g.font = Font("Serif", Font.BOLD, titleFontSize.toInt())
-        val maxLines = 2
+        g.font = Font("SansSerif", Font.BOLD, titleSize.toInt())
+        fm = g.fontMetrics
+        val titleLines = wrapText(title, fm, leftWidth)
+        val maxLines = ((h - y - pad - border) / fm.height).coerceIn(1, 3)
         for (i in 0 until minOf(titleLines.size, maxLines)) {
             val line = if (i == maxLines - 1 && i < titleLines.size - 1) {
-                val truncated = titleLines[i]
-                if (truncated.length > 3) truncated.dropLast(3) + "..." else truncated
+                val t = titleLines[i]
+                if (t.length > 3) t.dropLast(3) + "..." else t
             } else titleLines[i]
             val tw = fm.stringWidth(line)
-            g.drawString(line, (w - tw) / 2, y + fm.ascent)
+            g.drawString(line, leftCenter - tw / 2, y + fm.ascent)
             y += fm.height
         }
 
@@ -105,7 +119,7 @@ class LabelGeneratorService {
         val baos = ByteArrayOutputStream()
         ZipOutputStream(baos).use { zip ->
             for ((title, url) in books) {
-                val safeTitle = title.replace(Regex("[^\\w\\s-]"), "").trim().take(50)
+                val safeTitle = title.replace(Regex("[^a-zA-Z0-9 _-]"), "").trim().take(50)
                 val label = generateLabel(title, url, size)
                 zip.putNextEntry(ZipEntry("$safeTitle.png"))
                 zip.write(label)
