@@ -41,96 +41,105 @@ class LabelGeneratorService {
         // White background with outer border
         g.color = Color.WHITE
         g.fillRect(0, 0, w, h)
-        val border = (w * 0.008).toInt().coerceAtLeast(2)
+        val border = (w * 0.01).toInt().coerceAtLeast(2)
         g.color = Color(51, 51, 51)
         for (i in 0 until border) {
             g.drawRect(i, i, w - i * 2 - 1, h - i * 2 - 1)
         }
 
-        val pad = (h * 0.05).toInt().coerceAtLeast(6)
-        val innerTop = border + pad
-        val innerBottom = h - border - pad
+        val outerPad = (h * 0.06).toInt().coerceAtLeast(8)
 
-        // RIGHT SIDE: QR code with its own border
-        val qrPad = (h * 0.02).toInt().coerceAtLeast(3)
-        val qrSize = innerBottom - innerTop
-        val qrBoxSize = qrSize + qrPad * 2
-        val qrBoxX = w - border - pad - qrBoxSize
-        val qrBoxY = (h - qrBoxSize) / 2
+        // Layout: 55% left, 45% right (QR)
+        val rightWidth = (w * 0.45).toInt()
+        val leftWidth = w - rightWidth
+
+        // RIGHT SIDE: QR code with border, centered in right area
+        val qrMargin = outerPad
+        val qrAvailH = h - qrMargin * 2
+        val qrAvailW = rightWidth - outerPad - (w * 0.02).toInt()
+        val qrBoxInner = minOf(qrAvailH, qrAvailW)
+        val qrPad = (qrBoxInner * 0.04).toInt().coerceAtLeast(4)
+        val qrBoxOuter = qrBoxInner + qrPad * 2
+        val qrBoxX = leftWidth + (rightWidth - qrBoxOuter) / 2
+        val qrBoxY = (h - qrBoxOuter) / 2
 
         // QR border
-        g.color = Color(100, 100, 100)
-        val qrBorder = (w * 0.004).toInt().coerceAtLeast(1)
-        for (i in 0 until qrBorder) {
-            g.drawRect(qrBoxX + i, qrBoxY + i, qrBoxSize - i * 2 - 1, qrBoxSize - i * 2 - 1)
+        g.color = Color(80, 80, 80)
+        val qrBorderW = (w * 0.005).toInt().coerceAtLeast(2)
+        for (i in 0 until qrBorderW) {
+            g.drawRect(qrBoxX + i, qrBoxY + i, qrBoxOuter - i * 2 - 1, qrBoxOuter - i * 2 - 1)
         }
 
-        // QR code inside the border
-        val qrImage = generateQrCode(bookUrl, qrSize)
+        // QR code
+        val qrImage = generateQrCode(bookUrl, qrBoxInner)
         g.drawImage(qrImage, qrBoxX + qrPad, qrBoxY + qrPad, null)
 
-        // LEFT SIDE: centered vertically in available space
-        val leftWidth = qrBoxX - border - pad * 2
-        val leftCenter = border + pad + leftWidth / 2
+        // LEFT SIDE: all content centered in left area
+        val leftPad = outerPad + (w * 0.02).toInt()
+        val leftContentW = leftWidth - leftPad * 2
+        val leftCenterX = leftPad + leftContentW / 2
 
-        // Pre-calculate all left-side element heights for vertical centering
-        val logoSize = (h * 0.22).toInt().coerceIn(30, 120)
-        val exLibrisSize = (h * 0.065).toFloat().coerceIn(10f, 24f)
-        val nameSize = (h * 0.075).toFloat().coerceIn(11f, 26f)
-        val titleSize = (h * 0.06).toFloat().coerceIn(10f, 22f)
-        val gap = (h * 0.02).toInt().coerceAtLeast(2)
-        val divGap = (h * 0.025).toInt().coerceAtLeast(3)
+        // Size calculations
+        val logoSize = (h * 0.28).toInt().coerceIn(40, 160)
+        val exSize = (h * 0.085).toFloat().coerceIn(14f, 32f)
+        val nameSize = (h * 0.1).toFloat().coerceIn(16f, 36f)
+        val titleSize = (h * 0.08).toFloat().coerceIn(12f, 28f)
+        val gap = (h * 0.015).toInt().coerceAtLeast(2)
 
-        g.font = Font("Serif", Font.ITALIC, exLibrisSize.toInt())
+        g.font = Font("Serif", Font.ITALIC, exSize.toInt())
         val exFm = g.fontMetrics
         g.font = Font("Serif", Font.BOLD, nameSize.toInt())
         val nameFm = g.fontMetrics
         g.font = Font("SansSerif", Font.BOLD, titleSize.toInt())
         val titleFm = g.fontMetrics
-        val titleLines = wrapText(title, titleFm, leftWidth - 8)
-        val maxLines = minOf(titleLines.size, 3)
-        val titleTotalH = titleFm.height * maxLines
+        val titleLines = wrapText(title, titleFm, leftContentW)
+        val maxTitleLines = minOf(titleLines.size, 2)
+        val titleH = titleFm.height * maxTitleLines
+        val divH = (h * 0.02).toInt().coerceAtLeast(3)
 
-        val totalContentH = logoSize + gap + exFm.height + 1 + nameFm.height + divGap + 1 + divGap + titleTotalH
-        var y = (h - totalContentH) / 2
+        val totalH = logoSize + gap + exFm.height + gap / 2 + nameFm.height + divH * 2 + 1 + titleH
+        var y = (h - totalH) / 2
 
         // Logo
         logo?.let {
             val scaled = it.getScaledInstance(logoSize, logoSize, java.awt.Image.SCALE_SMOOTH)
-            g.drawImage(scaled, leftCenter - logoSize / 2, y, null)
+            g.drawImage(scaled, leftCenterX - logoSize / 2, y, null)
             y += logoSize + gap
         }
 
         // "Ex Libris"
         g.color = Color(80, 80, 80)
-        g.font = Font("Serif", Font.ITALIC, exLibrisSize.toInt())
+        g.font = Font("Serif", Font.ITALIC, exSize.toInt())
         val exText = "Ex Libris"
-        g.drawString(exText, leftCenter - exFm.stringWidth(exText) / 2, y + exFm.ascent)
-        y += exFm.height + 1
+        g.drawString(exText, leftCenterX - exFm.stringWidth(exText) / 2, y + exFm.ascent)
+        y += exFm.height + gap / 2
 
         // "Abdulelah"
-        g.color = Color(40, 40, 40)
+        g.color = Color(30, 30, 30)
         g.font = Font("Serif", Font.BOLD, nameSize.toInt())
         val nameText = "Abdulelah"
-        g.drawString(nameText, leftCenter - nameFm.stringWidth(nameText) / 2, y + nameFm.ascent)
-        y += nameFm.height + divGap
+        g.drawString(nameText, leftCenterX - nameFm.stringWidth(nameText) / 2, y + nameFm.ascent)
+        y += nameFm.height + divH
 
         // Divider
-        g.color = Color(180, 180, 180)
-        val lineInset = (leftWidth * 0.08).toInt()
-        g.drawLine(border + pad + lineInset, y, border + pad + leftWidth - lineInset, y)
-        y += divGap
+        g.color = Color(160, 160, 160)
+        val lineInset = (leftContentW * 0.05).toInt()
+        val lineStroke = (h * 0.004).toInt().coerceAtLeast(1)
+        for (i in 0 until lineStroke) {
+            g.drawLine(leftPad + lineInset, y + i, leftPad + leftContentW - lineInset, y + i)
+        }
+        y += divH + lineStroke
 
         // Book title
         g.color = Color.BLACK
         g.font = Font("SansSerif", Font.BOLD, titleSize.toInt())
-        for (i in 0 until maxLines) {
-            val line = if (i == maxLines - 1 && i < titleLines.size - 1) {
+        for (i in 0 until maxTitleLines) {
+            val line = if (i == maxTitleLines - 1 && i < titleLines.size - 1) {
                 val t = titleLines[i]
                 if (t.length > 3) t.dropLast(3) + "..." else t
             } else titleLines[i]
             val tw = titleFm.stringWidth(line)
-            g.drawString(line, leftCenter - tw / 2, y + titleFm.ascent)
+            g.drawString(line, leftCenterX - tw / 2, y + titleFm.ascent)
             y += titleFm.height
         }
 
