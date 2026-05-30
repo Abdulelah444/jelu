@@ -2526,6 +2526,27 @@ class DataService {
       throw new Error("error move shelf " + error)
     }
   }
+
+  // Boox Push
+  booxStatus = async () => {
+    const response = await this.apiClient.get<any>('/boox/status')
+    return response.data
+  }
+
+  booxRequestCode = async (email: string) => {
+    const response = await this.apiClient.post<any>('/boox/request-code', { email, cloud: 'push.boox.com' })
+    return response.data
+  }
+
+  booxObtainToken = async (email: string, code: string) => {
+    const response = await this.apiClient.post<any>('/boox/obtain-token', { email, code, cloud: 'push.boox.com' })
+    return response.data
+  }
+
+  sendToBoox = async (userbookId: string) => {
+    const response = await this.apiClient.post<any>('/boox/send/' + userbookId)
+    return response.data
+  }
 }
 
 export default new DataService()
