@@ -826,43 +826,19 @@ getBook()
           <span>{{ t('labels.edit') }}</span>
         </button>
         <button
-          class="btn btn-error btn-outline btn-sm sm:btn-md mr-1 sm:mr-2 p-1.5 sm:p-2 uppercase"
-          @click="deleteBook"
+          class="btn btn-accent btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
+          @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
         >
-          <span class="icon">
-            <i class="mdi mdi-delete mdi-18px" />
-          </span>
-          <span>{{ t('labels.delete') }}</span>
+          <i class="mdi mdi-book-open-page-variant mdi-18px" />
+          <span class="hidden sm:inline">Progress</span>
         </button>
         <button
-          class="btn btn-info btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase"
+          class="btn btn-info btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
           @click="toggleReadingEventModal(defaultCreateEvent(), false)"
         >
-          <span class="icon">
-            <i class="mdi mdi-plus mdi-18px" />
-          </span>
-          <span>{{ t('labels.event') }}</span>
+          <i class="mdi mdi-plus mdi-18px" />
+          <span class="hidden sm:inline">Event</span>
         </button>
-        <button v-if="!book?.borrowed" class="btn btn-warning btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase" @click="showLendModal = true">
-          <i class="mdi mdi-account-arrow-right mdi-18px mr-1" />
-          <span>Lend</span>
-        </button>
-        <button v-else class="btn btn-success btn-outline btn-sm sm:btn-md p-1.5 sm:p-2 uppercase" @click="returnBook">
-          <i class="mdi mdi-book-check mdi-18px mr-1" />
-          <span>Return</span>
-        </button>
-        <label
-          v-tooltip="t('labels.get_embed_code')"
-          for="my-modal-4"
-          class="btn btn-circle btn-outline ml-0 border-none modal-button"
-        ><svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-        </svg></label>
         <div class="dropdown dropdown-hover bg-transparent">
           <label
             tabindex="0"
@@ -883,91 +859,14 @@ getBook()
               />
             </svg>
           </label>
-          <ul
-            tabindex="0"
-            class="dropdown-content menu p-2 shadow-sm bg-base-100 rounded-box w-52"
-          >
-            <li>
-              <button
-                v-tooltip="t('reviews.create_review')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleReviewModal(book?.book, false, null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('book_merge.fetch_metadata')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleFetchMetadataModal(book?.book)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('labels.set_progress')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('labels.add_quote')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleBookQuoteModal(book?.book, false, null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="size-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
-                  />
-                </svg>
-              </button>
+          <ul tabindex="0" class="dropdown-content menu p-1 shadow-sm bg-base-100 rounded-box w-48 z-50">
+            <li><button class="text-sm" @click="toggleReviewModal(book?.book, false, null)"><i class="mdi mdi-star mdi-18px mr-2" />Write Review</button></li>
+            <li><button class="text-sm" @click="toggleFetchMetadataModal(book?.book)"><i class="mdi mdi-cloud-download mdi-18px mr-2" />Fetch Metadata</button></li>
+            <li><button class="text-sm" @click="toggleBookQuoteModal(book?.book, false, null)"><i class="mdi mdi-bookmark mdi-18px mr-2" />Add Quote</button></li>
+            <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm" v-if="!book?.borrowed" @click="showLendModal = true"><i class="mdi mdi-account-arrow-right mdi-18px mr-2" />Lend Book</button></li>
+            <li v-if="book?.borrowed"><button class="text-sm" @click="returnBook"><i class="mdi mdi-book-check mdi-18px mr-2" />Return Book</button></li>
+            <li><label for="my-modal-4" class="text-sm"><i class="mdi mdi-code-tags mdi-18px mr-2" />Embed Code</label></li>
+            <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm text-error" @click="deleteBook"><i class="mdi mdi-delete mdi-18px mr-2" />Delete</button>
             </li>
           </ul>
         </div>
@@ -1074,7 +973,7 @@ getBook()
             <span class="font-semibold capitalize text-sm">{{ t('book.percent_read') }}</span>
             <span class="text-sm font-bold">{{ Math.round(book?.percentRead ?? 0) }}%</span>
           </div>
-          <progress class="progress progress-primary w-full" :value="Math.round(book?.percentRead ?? 0)" max="100"></progress>
+          <progress class="progress progress-primary w-full cursor-pointer" :value="Math.round(book?.percentRead ?? 0)" max="100" @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"></progress>
           <div v-if="book?.book?.pageCount || book?.currentPageNumber" class="flex justify-between text-xs opacity-70 mt-1">
             <span v-if="book?.currentPageNumber">Page {{ book.currentPageNumber }}<span v-if="book?.book?.pageCount"> / {{ book.book.pageCount }}</span></span>
             <span v-else-if="book?.book?.pageCount">{{ book.book.pageCount }} pages</span>
@@ -1162,9 +1061,11 @@ getBook()
           <i class="mdi mdi-account mdi-18px mr-1 text-info" />
           <span class="text-base-content/60">Owner:</span> {{ book.ownerName }}
         </div>
-        <div v-if="shelfLocation" class="mt-2">
-          <span class="font-semibold capitalize">{{ t('library_map.physical_location') }} :</span>
-          <span class="ml-1">{{ shelfLocation.displayString }}</span>
+        <div v-if="shelfLocation" class="mt-2 flex items-center gap-1 text-sm">
+          <i class="mdi mdi-map-marker mdi-18px text-accent" />
+          <span class="font-medium">{{ shelfLocation.bookcaseName }}</span>
+          <span class="opacity-50">·</span>
+          <span>{{ shelfLocation.shelfLabel || 'Shelf ' + shelfLocation.shelfPosition }}</span>
           <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-2">
             <i class="mdi mdi-map-marker mdi-18px" />
           </router-link>
