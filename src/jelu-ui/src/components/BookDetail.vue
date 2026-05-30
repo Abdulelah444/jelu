@@ -1037,7 +1037,8 @@ getBook()
           <span class="font-semibold capitalize">{{ t('book.price') }} :</span>
           {{ ObjectUtils.amountInLocale(book.price, storedLanguage, currency) }}
         </p>
-        <div v-if="book?.owned || book?.toRead || book?.borrowed">
+        <div class="divider my-1"></div>
+        <div v-if="book?.owned || book?.toRead || book?.borrowed" class="flex gap-2 flex-wrap">
           <span
             v-if="book?.owned"
             class="badge badge-info"
@@ -1069,23 +1070,24 @@ getBook()
           <i class="mdi mdi-account mdi-18px mr-1 text-info" />
           <span class="text-base-content/60">Owner:</span> {{ book.ownerName }}
         </div>
-        <div v-if="shelfLocation" class="mt-2 flex items-center gap-1 text-sm">
+        <div v-if="shelfLocation" class="mt-4 p-2.5 rounded-lg bg-base-200/50 flex items-center gap-2 text-sm">
           <i class="mdi mdi-map-marker mdi-18px text-accent" />
           <span class="font-medium">{{ shelfLocation.bookcaseName }}</span>
-          <span class="opacity-50">·</span>
+          <span class="opacity-40">·</span>
           <span>{{ shelfLocation.shelfLabel || 'Shelf ' + shelfLocation.shelfPosition }}</span>
-          <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-2">
-            <i class="mdi mdi-map-marker mdi-18px" />
+          <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-auto">
+            <i class="mdi mdi-arrow-right mdi-14px" />
           </router-link>
         </div>
-        <div v-else class="mt-2">
-          <span class="text-sm opacity-50 italic">{{ t('library_map.no_location') }}</span>
-          <button class="btn btn-ghost btn-xs ml-1" @click="$router.push({ name: 'library-map' })">
-            {{ t('library_map.assign_to_shelf') }}
+        <div v-else class="mt-4 p-2.5 rounded-lg bg-base-200/30 flex items-center gap-2 text-sm">
+          <i class="mdi mdi-map-marker-off mdi-18px opacity-40" />
+          <span class="opacity-50 italic">{{ t('library_map.no_location') }}</span>
+          <button class="btn btn-ghost btn-xs ml-auto" @click="$router.push({ name: 'library-map' })">
+            {{ t('library_map.assign_to_shelf') }} <i class="mdi mdi-arrow-right mdi-14px" />
           </button>
         </div>
         <!-- Digital Copy Section -->
-        <div class="mt-3 p-3 rounded-lg bg-base-200">
+        <div class="mt-4 p-3 rounded-lg bg-base-200 border border-base-300">
           <div class="flex items-center gap-2 mb-2">
             <i class="mdi mdi-book-open-page-variant mdi-24px text-primary" />
             <span class="font-semibold">Digital Copy</span>
