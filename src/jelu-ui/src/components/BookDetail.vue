@@ -1058,9 +1058,6 @@ getBook()
               <span class="font-medium">{{ serverPace.estimatedFinish }} ({{ serverPace.daysRemaining }} days)</span>
             </template>
           </div>
-          <div v-if="paceUnavailableMsg" class="text-xs opacity-50 mt-2 italic">
-            {{ paceUnavailableMsg }}
-          </div>
         </div>
         <p v-if="book?.book?.publishedDate">
           <span class="font-semibold capitalize">{{ t('book.published_date') }} :</span>
