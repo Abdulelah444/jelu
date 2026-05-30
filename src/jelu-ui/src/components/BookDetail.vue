@@ -224,25 +224,6 @@ const printQrLabel = () => {
   win.onload = () => { win.print() }
 }
 
-const booxSending: Ref<boolean> = ref(false)
-const sendToBoox = async () => {
-  if (!book.value?.id) return
-  booxSending.value = true
-  try {
-    const result = await dataService.sendToBoox(book.value.id)
-    if (result.success) {
-      oruga.notification.open({ message: "Sent to Boox!", variant: "success", duration: 4000 })
-      getBook()
-    } else {
-      oruga.notification.open({ message: "Failed: " + (result.error || "Unknown error"), variant: "danger", duration: 6000 })
-    }
-  } catch (error) {
-    oruga.notification.open({ message: "Send failed: " + error, variant: "danger", duration: 4000 })
-  } finally {
-    booxSending.value = false
-  }
-}
-
 const downloadDigital = async () => {
   if (!book.value?.id) return
   try {
@@ -1129,11 +1110,7 @@ getBook()
                 <i class="mdi mdi-download mdi-18px" />
                 Download
               </button>
-              <button class="btn btn-secondary btn-sm" :disabled="booxSending" @click="sendToBoox">
-                <span v-if="booxSending" class="loading loading-spinner loading-xs" />
-                <i v-else class="mdi mdi-tablet mdi-18px" />
-                Send to Boox
-              </button>
+
               <button class="btn btn-outline btn-sm btn-error" :disabled="digitalDeleteLoading" @click="deleteDigitalFile">
                 <span v-if="digitalDeleteLoading" class="loading loading-spinner loading-xs"></span>
                 <i v-else class="mdi mdi-delete mdi-18px" />
