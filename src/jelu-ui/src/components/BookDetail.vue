@@ -875,7 +875,7 @@ getBook()
     <div
       class="justify-center justify-items-center sm:gap-10 grid grid-cols-1 sm:grid-cols-2 sm:w-10/12 w-full px-4 sm:px-0"
     >
-      <div class="sm:justify-self-end">
+      <div class="sm:justify-self-end flex flex-row sm:flex-col items-start sm:items-center gap-3">
         <figure>
           <img
             v-if="book?.book?.image"
@@ -889,6 +889,14 @@ getBook()
             alt="cover placeholder"
           >
         </figure>
+        <div class="flex gap-2 mt-1">
+          <button class="btn btn-sm btn-outline gap-1" onclick="document.getElementById('qr-modal').showModal()">
+            <i class="mdi mdi-qrcode mdi-18px" /> QR
+          </button>
+          <button class="btn btn-sm btn-ghost" @click="downloadQrLabel">
+            <i class="mdi mdi-download mdi-18px" />
+          </button>
+        </div>
       </div>
       <div class="text-left sm:justify-self-start">
         <p
@@ -1171,9 +1179,7 @@ getBook()
           <div class="modal-backdrop" @click="showDigitalSearchModal = false"></div>
         </dialog>
         <div class="mt-3">
-          <button class="btn btn-outline btn-sm" onclick="document.getElementById('qr-modal').showModal()">
-            <i class="mdi mdi-qrcode mdi-18px mr-1" /> QR Code
-          </button>
+
           <dialog id="qr-modal" class="modal">
             <div class="modal-box max-w-sm">
               <div class="bg-white text-black p-5 rounded-lg border-2 border-gray-800 text-center mx-auto" style="width: 260px;">
