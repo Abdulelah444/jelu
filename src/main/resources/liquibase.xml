@@ -847,4 +847,23 @@
             ALTER TABLE user_book ADD last_sent_to_reader_date timestamp;
         </sql>
     </changeSet>
+    <changeSet id="add_reading_progress_history" author="jelu">
+        <createTable tableName="reading_progress_history">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_book" type="binary(16)" remarks="FK to user_book">
+                <constraints foreignKeyName="fk_progress_history_userbook" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="page_number" type="int" />
+            <column name="percent_read" type="int" />
+            <column name="recorded_at" type="timestamp">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="reading_progress_history" indexName="idx_progress_history_userbook_date">
+            <column name="user_book" />
+            <column name="recorded_at" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

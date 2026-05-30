@@ -1179,6 +1179,15 @@ class BookRepository(
                 found.percentRead = current.times(100).div(total)
             }
         }
+        // Record progress history if page or percent was provided (for pace-over-time tracking)
+        if (book.currentPageNumber != null || book.percentRead != null) {
+            ReadingProgressHistory.new {
+                this.userBook = found
+                this.pageNumber = found.currentPageNumber
+                this.percentRead = found.percentRead
+                this.recordedAt = java.time.OffsetDateTime.now()
+            }
+        }
         if (book.book != null) {
             update(found.book, fromBookCreateDto(book.book))
         }

@@ -2526,6 +2526,13 @@ class DataService {
       throw new Error("error move shelf " + error)
     }
   }
+
+  getReadingPace = async (userbookId: string, period: string) => {
+    const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace', {
+      params: { period }
+    })
+    return response.data
+  }
 }
 
 export default new DataService()
