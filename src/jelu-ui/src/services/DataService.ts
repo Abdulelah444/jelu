@@ -2533,6 +2533,11 @@ class DataService {
     })
     return response.data
   }
+
+  getReadingPaceAll = async (userbookId: string) => {
+    const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace-all')
+    return response.data
+  }
 }
 
 export default new DataService()

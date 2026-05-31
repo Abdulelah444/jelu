@@ -311,15 +311,27 @@ const qrCodeUrl = computed(() => {
   return "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(location.origin + "/public/book/" + book.value.book.id)
 })
 const pacePeriod: Ref<string> = ref("since_start")
-const serverPace: Ref<any> = ref(null)
+const allPaces: Ref<any> = ref({})
+const serverPace = computed(() => allPaces.value?.[pacePeriod.value] ?? null)
+
+const isPaceAvailable = (period: string) => allPaces.value?.[period]?.available === true
 
 const fetchPace = async () => {
+  // Kept for the @click handlers; just re-selects from already-fetched data.
+  if (!isPaceAvailable(pacePeriod.value)) {
+    // snap to an available window
+    const order = ["since_start", "week", "month", "day"]
+    const fallback = order.find((p) => isPaceAvailable(p))
+    if (fallback) pacePeriod.value = fallback
+  }
+}
+
+const fetchAllPaces = async () => {
   if (!book.value?.id) return
   try {
-    const result = await dataService.getReadingPace(book.value.id, pacePeriod.value)
-    serverPace.value = result || null
+    allPaces.value = await dataService.getReadingPaceAll(book.value.id) || {}
   } catch (e) {
-    serverPace.value = null
+    allPaces.value = {}
   }
 }
 
@@ -341,18 +353,18 @@ const paceUnavailableMsg = computed(() => {
   return `${label} available in about ${remaining} day${remaining > 1 ? 's' : ''}. Showing since start for now.`
 })
 
-const initPaceDefault = () => {
-  // Default: under a week reading -> since_start; a week or more -> week
+const initPaceDefault = async () => {
+  await fetchAllPaces()
+  // Default: a week or more reading and 1W available -> week; else since_start
   const currentEvent = book.value?.readingEvents?.find(
     (e: ReadingEvent) => e.eventType === ReadingEventType.CURRENTLY_READING
   )
+  let want = "since_start"
   if (currentEvent?.startDate) {
     const days = dayjs().diff(dayjs(currentEvent.startDate), "day", true)
-    pacePeriod.value = days >= 7 ? "week" : "since_start"
-  } else {
-    pacePeriod.value = "since_start"
+    if (days >= 7 && isPaceAvailable("week")) want = "week"
   }
-  fetchPace()
+  pacePeriod.value = isPaceAvailable(want) ? want : "since_start"
 }
 
 const readingPace = computed(() => {
@@ -1040,10 +1052,10 @@ getBook()
               <span class="font-semibold">Reading Pace</span>
             </div>
             <div class="join">
-              <button class="btn btn-xs join-item" :class="pacePeriod === 'day' ? 'btn-primary' : 'btn-ghost'" @click="pacePeriod = 'day'; fetchPace()">1D</button>
-              <button class="btn btn-xs join-item" :class="pacePeriod === 'week' ? 'btn-primary' : 'btn-ghost'" @click="pacePeriod = 'week'; fetchPace()">1W</button>
-              <button class="btn btn-xs join-item" :class="pacePeriod === 'month' ? 'btn-primary' : 'btn-ghost'" @click="pacePeriod = 'month'; fetchPace()">1M</button>
-              <button class="btn btn-xs join-item" :class="pacePeriod === 'since_start' ? 'btn-primary' : 'btn-ghost'" @click="pacePeriod = 'since_start'; fetchPace()">T0</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'day' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('day')" @click="pacePeriod = 'day'">1D</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'week' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('week')" @click="pacePeriod = 'week'">1W</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'month' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('month')" @click="pacePeriod = 'month'">1M</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'since_start' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('since_start')" @click="pacePeriod = 'since_start'">T0</button>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-x-4 gap-y-1">

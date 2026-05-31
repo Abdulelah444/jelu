@@ -25,4 +25,12 @@ class ReadingPaceController(
         val result = paceService.computePace(userBookId, period)
         return if (result != null) ResponseEntity.ok(result) else ResponseEntity.noContent().build()
     }
+
+    @GetMapping("/userbooks/{id}/pace-all")
+    fun getAllPaces(
+        @PathVariable("id") userBookId: UUID,
+        principal: Authentication,
+    ): ResponseEntity<Map<String, io.github.bayang.jelu.service.PaceResult?>> {
+        return ResponseEntity.ok(paceService.computeAllPaces(userBookId))
+    }
 }
