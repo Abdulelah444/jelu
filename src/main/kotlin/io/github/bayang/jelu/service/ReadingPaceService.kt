@@ -1,15 +1,12 @@
 package io.github.bayang.jelu.service
 
-import io.github.bayang.jelu.dao.ReadingEventType
 import io.github.bayang.jelu.dao.ReadingProgressHistory
 import io.github.bayang.jelu.dao.ReadingProgressHistoryTable
 import io.github.bayang.jelu.dao.UserBook
-import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.OffsetDateTime
-import java.time.temporal.ChronoUnit
 import java.util.UUID
 
 data class PaceResult(
@@ -22,22 +19,19 @@ data class PaceResult(
     val pagesRemaining: Int?,
     val daysRemaining: Int?,
     val estimatedFinish: String?,
-    val fellBackToSinceStart: Boolean,
-    val daysOfHistory: Double,
 )
 
 @Service
 class ReadingPaceService {
 
     @Transactional
-    fun computeAllPaces(userBookId: UUID): Map<String, PaceResult?> {
-        return mapOf(
+    fun computeAllPaces(userBookId: UUID): Map<String, PaceResult?> =
+        mapOf(
             "day" to computePace(userBookId, "day"),
             "week" to computePace(userBookId, "week"),
             "month" to computePace(userBookId, "month"),
             "since_start" to computePace(userBookId, "since_start"),
         )
-    }
 
     @Transactional
     fun computePace(userBookId: UUID, period: String): PaceResult? {
@@ -49,89 +43,56 @@ class ReadingPaceService {
             } else null
         if (currentPage == null || currentPage <= 0) return null
 
-        val currentlyReading = userBook.readingEvents
-            .firstOrNull { it.eventType == ReadingEventType.CURRENTLY_READING }
-        val startDate = currentlyReading?.startDate ?: return null
-
         val now = OffsetDateTime.now()
-
-        val earliestRow = ReadingProgressHistory.find {
-            ReadingProgressHistoryTable.userBook eq userBookId
-        }.orderBy(ReadingProgressHistoryTable.recordedAt to SortOrder.ASC).limit(1).firstOrNull()
-        val daysOfHistory = if (earliestRow != null) {
-            ChronoUnit.MINUTES.between(earliestRow.recordedAt, now) / 1440.0
-        } else 0.0
-
-        val requestedWindowStart: OffsetDateTime? = when (period) {
-            "day" -> now.minusDays(1)
-            "week" -> now.minusWeeks(1)
-            "month" -> now.minusMonths(1)
+        val windowDays: Double? = when (period) {
+            "day" -> 1.0
+            "week" -> 7.0
+            "month" -> 30.0
             "since_start" -> null
             else -> null
         }
 
-        var fellBack = false
-        var available = true
-        // windowCoversFullReading: requested window reaches before the reading start,
-        // so it legitimately caps to since-start (a real number, still "available").
-        val windowCoversFullReading = requestedWindowStart != null && requestedWindowStart.isBefore(startDate)
+        // Window start time
+        val windowStart: OffsetDateTime? = windowDays?.let { now.minusMinutes((it * 1440).toLong()) }
 
-        val effectiveWindowStart: OffsetDateTime = if (requestedWindowStart == null) {
-            startDate
-        } else if (windowCoversFullReading) {
-            fellBack = true
-            startDate
+        // Sum the signed deltas recorded within the window
+        val rows = if (windowStart == null) {
+            ReadingProgressHistory.find { ReadingProgressHistoryTable.userBook eq userBookId }
         } else {
-            requestedWindowStart
-        }
-
-        val pageAtWindowStart: Int = if (effectiveWindowStart == startDate) {
-            0
-        } else {
-            val historyRow = ReadingProgressHistory.find {
+            ReadingProgressHistory.find {
                 (ReadingProgressHistoryTable.userBook eq userBookId) and
-                    (ReadingProgressHistoryTable.recordedAt lessEq effectiveWindowStart)
-            }.orderBy(ReadingProgressHistoryTable.recordedAt to SortOrder.DESC)
-                .limit(1)
-                .firstOrNull()
-            if (historyRow?.pageNumber == null) {
-                // Window is within the reading period but we have no recorded point
-                // from that far back — cannot honestly compute this window.
-                fellBack = true
-                available = false
-                0
-            } else {
-                historyRow.pageNumber!!
+                    (ReadingProgressHistoryTable.recordedAt greaterEq windowStart)
             }
         }
+        val pagesInWindow = rows.sumOf { it.pagesDelta ?: 0 }
 
-        val actualWindowStart = if (fellBack && requestedWindowStart != null) startDate else effectiveWindowStart
-        val daysInWindow = maxOf(
-            ChronoUnit.MINUTES.between(actualWindowStart, now) / 1440.0,
-            0.5,
-        )
-        val pagesInWindow = currentPage - pageAtWindowStart
-        val pace = if (pagesInWindow > 0) pagesInWindow / daysInWindow else 0.0
+        // Span of recorded reading (earliest delta to now), used to cap window length
+        val earliest = ReadingProgressHistory.find {
+            ReadingProgressHistoryTable.userBook eq userBookId
+        }.minByOrNull { it.recordedAt }
+        val spanDays = if (earliest != null) {
+            maxOf(java.time.temporal.ChronoUnit.MINUTES.between(earliest.recordedAt, now) / 1440.0, 1.0)
+        } else 1.0
+        // Cap trailing windows at the actual reading span so longer windows aren't diluted
+        val daysInWindow = if (windowDays == null) spanDays else maxOf(minOf(windowDays, spanDays), 1.0)
+
+        val pace = if (pagesInWindow > 0 && daysInWindow > 0) pagesInWindow / daysInWindow else 0.0
         val pagesRemaining = pageCount?.let { it - currentPage }
         val daysRemaining = if (pagesRemaining != null && pagesRemaining > 0 && pace > 0) {
             Math.ceil(pagesRemaining / pace).toInt()
         } else null
-        val estimatedFinish = daysRemaining?.let {
-            now.plusDays(it.toLong()).toLocalDate().toString()
-        }
+        val estimatedFinish = daysRemaining?.let { now.plusDays(it.toLong()).toLocalDate().toString() }
 
         return PaceResult(
             period = period,
-            available = available,
+            available = true,
             pagesPerDay = Math.round(pace * 10) / 10.0,
             daysInWindow = Math.round(daysInWindow * 10) / 10.0,
-            pagesInWindow = maxOf(pagesInWindow, 0),
+            pagesInWindow = pagesInWindow,
             currentPage = currentPage,
             pagesRemaining = pagesRemaining,
             daysRemaining = daysRemaining,
             estimatedFinish = estimatedFinish,
-            fellBackToSinceStart = fellBack,
-            daysOfHistory = Math.round(daysOfHistory * 10) / 10.0,
         )
     }
 }

@@ -1158,6 +1158,7 @@ class BookRepository(
         if (book.percentRead != null && book.percentRead >= 100) {
             bookFinished = true
         }
+        val previousPageForDelta = found.currentPageNumber ?: 0
         found.percentRead = book.percentRead
         val current = book.currentPageNumber
         found.currentPageNumber = current
@@ -1179,13 +1180,21 @@ class BookRepository(
                 found.percentRead = current.times(100).div(total)
             }
         }
-        // Record progress history if page or percent was provided (for pace-over-time tracking)
+        // Record progress history (signed delta) only while the book is Currently Reading
         if (book.currentPageNumber != null || book.percentRead != null) {
-            ReadingProgressHistory.new {
-                this.userBook = found
-                this.pageNumber = found.currentPageNumber
-                this.percentRead = found.percentRead
-                this.recordedAt = java.time.OffsetDateTime.now()
+            val isCurrentlyReading = found.readingEvents.any {
+                it.eventType == io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING
+            }
+            val newPage = found.currentPageNumber ?: 0
+            val delta = newPage - previousPageForDelta
+            if (isCurrentlyReading && delta != 0) {
+                ReadingProgressHistory.new {
+                    this.userBook = found
+                    this.pageNumber = found.currentPageNumber
+                    this.percentRead = found.percentRead
+                    this.pagesDelta = delta
+                    this.recordedAt = java.time.OffsetDateTime.now()
+                }
             }
         }
         if (book.book != null) {

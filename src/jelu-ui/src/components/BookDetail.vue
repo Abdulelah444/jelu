@@ -336,22 +336,6 @@ const fetchAllPaces = async () => {
 }
 
 
-const paceUnavailableMsg = computed(() => {
-  if (!serverPace.value || !serverPace.value.fellBackToSinceStart || pacePeriod.value === 'since_start') return null
-  const lengths: Record<string, number> = { day: 1, week: 7, month: 30 }
-  const labels: Record<string, string> = { day: '1D', week: '1W', month: '1M' }
-  const windowLen = lengths[pacePeriod.value] ?? 7
-  const label = labels[pacePeriod.value] ?? ''
-  const have = serverPace.value.daysOfHistory ?? 0
-  const remaining = Math.ceil(windowLen - have)
-  if (have < 0.5) {
-    return `${label} needs ~${windowLen} day${windowLen > 1 ? 's' : ''} of tracking — building from your next update. Showing since start for now.`
-  }
-  if (remaining <= 0) {
-    return `Showing since start.`
-  }
-  return `${label} available in about ${remaining} day${remaining > 1 ? 's' : ''}. Showing since start for now.`
-})
 
 const initPaceDefault = async () => {
   await fetchAllPaces()

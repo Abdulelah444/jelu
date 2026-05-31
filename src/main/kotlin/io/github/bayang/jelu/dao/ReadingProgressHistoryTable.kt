@@ -12,6 +12,7 @@ object ReadingProgressHistoryTable : UUIDTable("reading_progress_history") {
     val userBook = reference("user_book", UserBookTable, onDelete = ReferenceOption.CASCADE)
     val pageNumber = integer("page_number").nullable()
     val percentRead = integer("percent_read").nullable()
+    val pagesDelta = integer("pages_delta").nullable()
     val recordedAt = timestampWithTimeZone("recorded_at")
 }
 
@@ -22,5 +23,6 @@ class ReadingProgressHistory(
     var userBook by UserBook referencedOn ReadingProgressHistoryTable.userBook
     var pageNumber by ReadingProgressHistoryTable.pageNumber
     var percentRead by ReadingProgressHistoryTable.percentRead
+    var pagesDelta by ReadingProgressHistoryTable.pagesDelta
     var recordedAt by ReadingProgressHistoryTable.recordedAt
 }

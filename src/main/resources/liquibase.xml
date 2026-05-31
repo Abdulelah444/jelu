@@ -866,4 +866,7 @@
             <column name="recorded_at" />
         </createIndex>
     </changeSet>
+    <changeSet id="add_progress_delta" author="jelu">
+        <sql>ALTER TABLE reading_progress_history ADD pages_delta int;</sql>
+    </changeSet>
 </databaseChangeLog>
