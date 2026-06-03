@@ -1158,7 +1158,6 @@ class BookRepository(
         if (book.percentRead != null && book.percentRead >= 100) {
             bookFinished = true
         }
-        val previousPageForDelta = found.currentPageNumber ?: 0
         found.percentRead = book.percentRead
         val current = book.currentPageNumber
         found.currentPageNumber = current
@@ -1180,17 +1179,26 @@ class BookRepository(
                 found.percentRead = current.times(100).div(total)
             }
         }
-        // Record progress history (signed delta) only while the book is Currently Reading
+        // Record progress history (signed delta) only while the book is Currently Reading.
+        // Baseline is the most recent recorded page for this book (the real prior position),
+        // NOT the in-memory field which is unreliable depending on how the update is sent.
         if (book.currentPageNumber != null || book.percentRead != null) {
-            val isCurrentlyReading = found.readingEvents.any {
-                it.eventType == io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING
-            }
+            val isCurrentlyReading = ReadingEventTable.selectAll().where {
+                (ReadingEventTable.userBook eq found.id) and
+                    (ReadingEventTable.eventType eq io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING)
+            }.empty().not()
             val newPage = found.currentPageNumber ?: 0
-            val delta = newPage - previousPageForDelta
-            if (isCurrentlyReading && delta != 0) {
+            val lastRow = ReadingProgressHistory.find {
+                ReadingProgressHistoryTable.userBook eq found.id
+            }.orderBy(ReadingProgressHistoryTable.recordedAt to org.jetbrains.exposed.sql.SortOrder.DESC)
+                .limit(1)
+                .firstOrNull()
+            // First-ever row just anchors the starting position (delta 0); later rows are real reading
+            val delta = if (lastRow == null) 0 else newPage - (lastRow.pageNumber ?: 0)
+            if (isCurrentlyReading && (lastRow == null || delta != 0)) {
                 ReadingProgressHistory.new {
                     this.userBook = found
-                    this.pageNumber = found.currentPageNumber
+                    this.pageNumber = newPage
                     this.percentRead = found.percentRead
                     this.pagesDelta = delta
                     this.recordedAt = java.time.OffsetDateTime.now()
