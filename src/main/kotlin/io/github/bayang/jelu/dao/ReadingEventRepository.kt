@@ -181,6 +181,7 @@ class ReadingEventRepository {
                 // if we  mark book as read, remove to-read flag from the userbook
                 if (alreadyReadingEvent.userBook.toRead == true) {
                     alreadyReadingEvent.userBook.toRead = null
+                    alreadyReadingEvent.userBook.toReadPosition = null
                 }
                 synchronizeReadingProgress(createReadingEventDto, userBook)
                 return alreadyReadingEvent
@@ -289,6 +290,7 @@ class ReadingEventRepository {
                 this.userBook.readingEvents
                     .maxByOrNull { e -> e.lastEventDate }
             if (updateReadingEventDto.eventType == ReadingEventType.FINISHED && this.userBook.toRead == true) {
+                this.userBook.toReadPosition = null
                 this.userBook.toRead = null
             }
             if (lastEvent == null) {

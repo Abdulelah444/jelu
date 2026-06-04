@@ -211,6 +211,17 @@ class BooksController(
         return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable)
     }
 
+    @PutMapping(path = ["/userbooks/to-read/order"])
+    fun reorderToRead(
+        principal: Authentication,
+        @RequestBody body: io.github.bayang.jelu.dto.ReorderToReadDto,
+    ): ResponseEntity<Void> {
+        assertIsJeluUser(principal.principal)
+        val userId = (principal.principal as JeluUser).user.id!!
+        repository.reorderToRead(userId, body.orderedIds)
+        return ResponseEntity.noContent().build()
+    }
+
     @GetMapping(path = ["/authors"])
     fun authors(
         @RequestParam(name = "name", required = false) name: String?,

@@ -869,4 +869,10 @@
     <changeSet id="add_progress_delta" author="jelu">
         <sql>ALTER TABLE reading_progress_history ADD pages_delta int;</sql>
     </changeSet>
+    <changeSet id="add_to_read_position" author="jelu">
+        <sql>ALTER TABLE user_book ADD to_read_position int;</sql>
+    </changeSet>
+    <changeSet id="add_up_next_count" author="jelu">
+        <sql>ALTER TABLE "user" ADD up_next_count int;</sql>
+    </changeSet>
 </databaseChangeLog>

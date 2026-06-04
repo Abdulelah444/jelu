@@ -120,6 +120,10 @@ class BookService(
         }
 
     @Transactional
+    fun reorderToRead(userId: java.util.UUID, orderedIds: List<java.util.UUID>) =
+        bookRepository.reorderToRead(userId, orderedIds)
+
+    @Transactional
     fun findAllAuthors(
         name: String?,
         role: Role = Role.ANY,

@@ -12,6 +12,7 @@ data class UserDto(
     val modificationDate: Instant?,
     val isAdmin: Boolean,
     val provider: Provider = Provider.JELU_DB,
+    val upNextCount: Int? = null,
 )
 
 data class CreateUserDto(
@@ -25,6 +26,7 @@ data class UpdateUserDto(
     val password: String,
     val isAdmin: Boolean?,
     val provider: Provider?,
+    val upNextCount: Int? = null,
 )
 
 data class AuthenticationDto(

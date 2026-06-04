@@ -1149,7 +1149,17 @@ class BookRepository(
             found.personalNotes = book.personalNotes.trim()
         }
         if (book.toRead != null) {
+            val wasToRead = found.toRead == true
             found.toRead = book.toRead
+            if (book.toRead && !wasToRead) {
+                // newly added to To-Read -> goes to the bottom of the queue
+                val maxPos = UserBook.find {
+                    (UserBookTable.user eq found.user.id) and (UserBookTable.toRead eq true)
+                }.mapNotNull { it.toReadPosition }.maxOrNull()
+                found.toReadPosition = (maxPos ?: -1) + 1
+            } else if (!book.toRead) {
+                found.toReadPosition = null
+            }
         }
         if (book.price != null) {
             found.priceInCents = floatingPriceToLong(book.price)
@@ -1325,6 +1335,15 @@ class BookRepository(
             .find {
                 SeriesRatingTable.series eq seriesId and (SeriesRatingTable.user eq userId)
             }.firstOrNull()
+
+    fun reorderToRead(userId: UUID, orderedIds: List<UUID>) {
+        orderedIds.forEachIndexed { index, ubId ->
+            val ub = UserBook.findById(ubId)
+            if (ub != null && ub.user.id.value == userId && ub.toRead == true) {
+                ub.toReadPosition = index
+            }
+        }
+    }
 
     fun save(book: BookCreateDto): Book {
         val authorsList = mutableListOf<Author>()
@@ -1696,9 +1715,17 @@ class BookRepository(
         } else {
             query.limit(pageable.pageSize)
             query.offset(pageable.offset)
-            val orders: Array<Pair<Expression<*>, SortOrder>> =
-                parseSorts(pageable.sort, Pair(UserBookTable.lastReadingEventDate, SortOrder.DESC_NULLS_LAST), cols)
-            query.orderBy(*orders)
+            if (toRead == true) {
+                // To-Read list: honor the user's manual queue order (nulls last), title as tiebreaker
+                query.orderBy(
+                    UserBookTable.toReadPosition to SortOrder.ASC_NULLS_LAST,
+                    BookTable.title to SortOrder.ASC_NULLS_LAST,
+                )
+            } else {
+                val orders: Array<Pair<Expression<*>, SortOrder>> =
+                    parseSorts(pageable.sort, Pair(UserBookTable.lastReadingEventDate, SortOrder.DESC_NULLS_LAST), cols)
+                query.orderBy(*orders)
+            }
         }
         val res = query.map { resultRow -> wrapUserBookRow(resultRow, ratingAlias, userRatingAlias) }
         return PageImpl(

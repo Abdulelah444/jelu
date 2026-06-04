@@ -27,6 +27,7 @@ object UserBookTable : UUIDTable("user_book") {
     val personalNotes: Column<String?> = varchar("notes", 5000).nullable()
     val owned: Column<Boolean?> = bool("is_owned").nullable()
     val toRead: Column<Boolean?> = bool("to_read").nullable()
+    val toReadPosition: Column<Int?> = integer("to_read_position").nullable()
     val percentRead: Column<Int?> = integer(name = "percent_read").nullable()
     val currentPageNumber: Column<Int?> = integer(name = "current_page_number").nullable()
     val borrowed: Column<Boolean?> = bool("is_borrowed").nullable()
@@ -54,6 +55,7 @@ class UserBook(
     var personalNotes by UserBookTable.personalNotes
     var owned by UserBookTable.owned
     var toRead by UserBookTable.toRead
+    var toReadPosition by UserBookTable.toReadPosition
     val readingEvents by ReadingEvent referrersOn ReadingEventTable.userBook // make sure to use val and referrersOn
     var lastReadingEventDate by UserBookTable.lastReadingEventDate
     var lastReadingEvent by UserBookTable.lastReadingEvent

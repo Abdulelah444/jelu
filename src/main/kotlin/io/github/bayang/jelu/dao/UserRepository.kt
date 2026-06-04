@@ -63,5 +63,8 @@ class UserRepository {
             if (updateUserDto.provider != null) {
                 this.provider = updateUserDto.provider
             }
+            if (updateUserDto.upNextCount != null) {
+                this.upNextCount = updateUserDto.upNextCount
+            }
         }
 }

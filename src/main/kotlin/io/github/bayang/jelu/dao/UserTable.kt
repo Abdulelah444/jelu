@@ -16,6 +16,7 @@ object UserTable : UUIDTable("user") {
     val password: Column<String> = varchar("password", 1000)
     val isAdmin: Column<Boolean> = bool("is_admin")
     val provider = enumerationByName("provider", 200, Provider::class)
+    val upNextCount: Column<Int?> = integer("up_next_count").nullable()
 }
 
 class User(
@@ -30,6 +31,7 @@ class User(
             password = "****",
             isAdmin = this.isAdmin,
             provider = this.provider,
+            upNextCount = this.upNextCount,
         )
 
     companion object : UUIDEntityClass<User>(UserTable)
@@ -40,6 +42,7 @@ class User(
     var password by UserTable.password
     var isAdmin by UserTable.isAdmin
     var provider by UserTable.provider
+    var upNextCount by UserTable.upNextCount
     val userBooks by UserBook referrersOn UserBookTable.book
 }
 
