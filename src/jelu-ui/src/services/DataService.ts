@@ -2538,6 +2538,14 @@ class DataService {
     const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace-all')
     return response.data
   }
+
+  reorderToRead = async (orderedIds: string[]) => {
+    await this.apiClient.put('/userbooks/to-read/order', { orderedIds })
+  }
+
+  setUpNextCount = async (count: number) => {
+    await this.apiClient.put('/users/me/up-next-count', { count })
+  }
 }
 
 export default new DataService()

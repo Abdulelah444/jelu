@@ -79,13 +79,13 @@ const eventText = computed(() => {
 const bannerClass = computed(() => {
   if (props.book.lastReadingEvent) {
     if (props.book.lastReadingEvent === ReadingEventType.FINISHED) {
-      return "bg-success text-success-content";
+      return "bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100";
     } else if (props.book.lastReadingEvent === ReadingEventType.DROPPED) {
-      return "bg-error text-error-content";
+      return "bg-rose-200/70 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100";
     } else if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
-      return "bg-info text-info-content";
+      return "bg-sky-200/70 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100";
     } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
-      return "bg-warning text-warning-content";
+      return "bg-amber-200/70 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100";
     }
   }
   return "";
@@ -145,7 +145,7 @@ const currentTimestamp = ObjectUtils.timestamp()
   >
     <div
       v-if="book.lastReadingEvent"
-      class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
+      class="text-center text-[10px] font-medium py-0.5 uppercase tracking-wider opacity-90"
       :class="bannerClass"
     >{{ eventText }}</div>
     <div>

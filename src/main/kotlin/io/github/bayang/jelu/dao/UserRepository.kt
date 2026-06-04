@@ -50,6 +50,15 @@ class UserRepository {
         return created
     }
 
+    fun updateUpNextCount(
+        userId: UUID,
+        count: Int,
+    ): User =
+        User[userId].apply {
+            this.modificationDate = nowInstant()
+            this.upNextCount = count
+        }
+
     fun updateUser(
         userId: UUID,
         updateUserDto: UpdateUserDto,

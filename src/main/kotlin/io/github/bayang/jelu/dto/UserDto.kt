@@ -33,3 +33,8 @@ data class AuthenticationDto(
     val user: UserDto,
     val token: String?,
 )
+
+
+data class UpNextCountDto(
+    val count: Int,
+)

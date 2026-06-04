@@ -10,6 +10,7 @@ import { UserBook } from '../model/Book';
 import { ReadingEventType } from '../model/ReadingEvent';
 import dataService from "../services/DataService";
 import BookCard from "./BookCard.vue";
+import draggable from "vuedraggable";
 import SortFilterBarVue from "./SortFilterBar.vue";
 import useTypography from '../composables/typography';
 
@@ -21,6 +22,18 @@ const { t } = useI18n({
 useTitle('Jelu | ' + t('nav.to_read'))
 
 const books: Ref<Array<UserBook>> = ref([]);
+
+
+const onReorder = async () => {
+  if (userId.value != null) return  // only reorder your own To-Read list
+  try {
+    const ids = books.value.map(b => b.id).filter((x): x is string => !!x)
+    if (ids.length === 0) return
+    await dataService.reorderToRead(ids)
+  } catch (e) {
+    console.log("failed to persist to-read order: " + e)
+  }
+}
 
 const { total, page, pageAsNumber, perPage, updatePage, getPageIsLoading, updatePageLoading, pageCount } = usePagination()
 
@@ -371,28 +384,46 @@ const { typographyClasses } = useTypography()
     :per-page="perPage"
     @change="updatePage"
   />
-  <div
+  <draggable
     v-if="books.length > 0"
+    v-model="books"
+    item-key="id"
+    handle=".drag-handle"
+    :animation="180"
     class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-0 my-3"
+    @end="onReorder"
   >
-    <div
-      v-for="book in books"
-      :key="book.id"
-      class="books-grid-item m-2"
-    >
-      <book-card
-        :book="book"
-        :force-select="selectAll"
-        :public="false"
-        :show-select="showSelect"
-        :checked-ids="checkedCards"
-        :propose-add="userId == null"
-        class="h-full"
-        @update:modal-closed="modalClosed"
-        @update:checked="cardChecked"
-      />
-    </div>
-  </div>
+    <template #item="{ element: book, index }">
+      <div
+        class="books-grid-item m-2 relative group rounded-lg"
+        :class="(userId == null && index < 2) ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''"
+      >
+        <div
+          v-if="userId == null && index < 2"
+          class="absolute -top-2 -right-2 z-20 badge badge-primary badge-sm font-semibold shadow"
+        >
+          Up Next {{ index + 1 }}
+        </div>
+        <div
+          class="drag-handle absolute top-1 left-1 z-10 cursor-move bg-base-100/80 rounded p-1 opacity-60 hover:opacity-100"
+          title="Drag to reorder"
+        >
+          <i class="mdi mdi-drag" />
+        </div>
+        <book-card
+          :book="book"
+          :force-select="selectAll"
+          :public="false"
+          :show-select="showSelect"
+          :checked-ids="checkedCards"
+          :propose-add="userId == null"
+          class="h-full"
+          @update:modal-closed="modalClosed"
+          @update:checked="cardChecked"
+        />
+      </div>
+    </template>
+  </draggable>
   <div
     v-else-if="getToReadIsLoading"
     class="flex flex-row justify-center justify-items-center gap-3"

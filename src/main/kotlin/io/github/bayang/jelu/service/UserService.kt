@@ -36,6 +36,9 @@ class UserService(
     fun findAll(searchTerm: String?): List<UserDto> = userRepository.findAll(searchTerm).map { it.toUserDto() }
 
     @Transactional
+    fun updateUpNextCount(userId: java.util.UUID, count: Int) = userRepository.updateUpNextCount(userId, count)
+
+    @Transactional
     fun findByLogin(login: String): List<UserDto> = userRepository.findByLogin(login).map { it.toUserDto() }
 
     @Transactional

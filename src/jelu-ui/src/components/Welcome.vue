@@ -55,7 +55,17 @@ const books: Ref<Array<UserBook>> = ref([]);
 const pausedBooks: Ref<Array<UserBook>> = ref([]);
 const pausedIsLoading: Ref<boolean> = ref(false);
 
-const randomBook: Ref<UserBook | null> = ref(null)
+const randomBooks: Ref<Array<UserBook>> = ref([])
+const upNext: Ref<Array<UserBook>> = ref([])
+const getUpNext = async () => {
+  try {
+    const res = await dataService.findUserBookByCriteria(
+      null, null, null, true, null, null, 0, 2, undefined)
+    upNext.value = res.content
+  } catch (error) {
+    console.log("failed get up next : " + error)
+  }
+}
 const showRecentEvents: Ref<boolean> = ref(false)
 const showPaused: Ref<boolean> = ref(false)
 
@@ -127,11 +137,10 @@ const getRandomBook = async () => {
     const res = await dataService.findUserBookByCriteria(
       null, null, null, null, null, null, 0, 10, 'random,desc')
     if (res.content.length > 0) {
-      const eligible = res.content.find(b =>
+      randomBooks.value = res.content.filter(b =>
         b.lastReadingEvent !== ReadingEventType.FINISHED &&
         b.lastReadingEvent !== ReadingEventType.DROPPED
-      )
-      randomBook.value = eligible || null
+      ).slice(0, 2)
     }
   } catch (error) {
     console.log("failed get random book : " + error)
@@ -141,6 +150,7 @@ const getRandomBook = async () => {
 if (isLogged.value) {
   try {
       getCurrentlyReading()
+      getUpNext()
       getPausedBooks()
       getMyEvents()
       getUserReviews()
@@ -156,6 +166,7 @@ watch(() => isLogged.value, (newValue, oldValue) => {
     try {
       initialLoad.value = false
       getCurrentlyReading()
+      getUpNext()
       getMyEvents()
       getPausedBooks()
       getRandomBook()
@@ -217,17 +228,20 @@ const { typographyClasses } = useTypography()
 </script>
 <template>
   <div v-if="isLogged">
-    <div v-if="hasBooks">
-      <div class="flex flex-col lg:flex-row gap-4 sm:gap-6 px-2 sm:px-0">
-        <div class="flex-1">
-          <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
+    <div v-if="hasBooks || upNext.length > 0 || pausedBooks.length > 0 || randomBooks.length > 0">
+
+      <!-- TOP ROW: Continue reading | Up next -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-2 sm:px-0">
+
+        <!-- Continue reading -->
+        <section v-if="books.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-book-open-page-variant text-sky-300" />
             {{ t('home.currently_reading') }}
+            <span class="badge badge-sm bg-sky-200/70 text-sky-900 border-0">{{ books.length }}</span>
           </h2>
-          <div class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3">
-            <div
-              v-for="book in books"
-              :key="book.id"
-            >
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <div v-for="book in books" :key="book.id">
               <book-card
                 :book="book"
                 :public="false"
@@ -249,165 +263,118 @@ const { typographyClasses } = useTypography()
                     class="icon text-info"
                     @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke-width="1.5"
-                      stroke="currentColor"
-                      class="w-6 h-6"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                      />
-                    </svg>
+                    <i class="mdi mdi-progress-check mdi-18px" />
                   </span>
                 </template>
               </book-card>
             </div>
           </div>
-        </div>
-        <div v-if="randomBook" class="lg:w-1/4 flex-shrink-0">
-          <h2 class="text-xl sm:text-2xl font-bold pb-2 sm:pb-4">
-            In Your Library
+        </section>
+        <section v-else-if="currentlyReadingIsLoading">
+          <h2 class="text-lg sm:text-xl font-bold mb-3">{{ t('home.currently_reading') }}</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <o-skeleton height="250px" :animated="true" />
+            <o-skeleton height="250px" :animated="true" />
+          </div>
+        </section>
+        <section v-else>
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-book-open-page-variant-outline text-base-content/50" />
+            {{ t('home.not_reading') }}
           </h2>
-          <book-card
-            :book="randomBook"
-            :public="false"
-            size="xl"
-            :force-select="false"
-            :show-select="false"
-            :propose-add="false"
-            class="h-full"
-          />
-        </div>
+        </section>
+
+        <!-- Up next -->
+        <section v-if="upNext.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-bookmark-multiple text-violet-300" />
+            Up Next
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <div
+              v-for="(book, i) in upNext"
+              :key="book.id"
+              class="relative rounded-lg ring-2 ring-violet-300/70 ring-offset-2 ring-offset-base-100"
+            >
+              <div class="absolute -top-2 -right-2 z-20 badge badge-sm bg-violet-300 text-violet-950 border-0 font-semibold shadow">
+                {{ i + 1 }}
+              </div>
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="false"
+                class="h-full"
+              />
+            </div>
+          </div>
+        </section>
+
       </div>
-    </div>
-    <div
-      v-else-if="currentlyReadingIsLoading"
-      class="flex flex-row justify-center justify-items-center gap-3"
-    >
-      <o-skeleton
-        class="justify-self-center basis-44"
-        height="250px"
-        :animated="true"
-      />
-      <o-skeleton
-        class="justify-self-center basis-44"
-        height="250px"
-        :animated="true"
-      />
-    </div>
-    <div v-else>
-      <h2 class="text-xl sm:text-2xl font-bold">
-        {{ t('home.not_reading') }}
-      </h2>
-      <span class="icon">
-        <i class="mdi mdi-book-open-page-variant-outline mdi-48px" />
-      </span>
-    </div>
-    <!-- Paused books section -->
-    <div v-if="pausedBooks.length > 0" class="mt-6 px-2 sm:px-0">
-      <div class="flex items-center gap-2 cursor-pointer" @click="showPaused = !showPaused">
-        <i :class="showPaused ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
-        <h2 class="text-xl sm:text-2xl font-bold">
-          <i class="mdi mdi-pause-circle mdi-24px mr-1 text-warning" />
-          Paused
-          <span class="badge badge-warning badge-sm ml-2">{{ pausedBooks.length }}</span>
-        </h2>
-      </div>
-      <div v-if="showPaused" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
-        <div v-for="book in pausedBooks" :key="book.id">
-          <book-card
-            :book="book"
-            :public="false"
-            size="xl"
-            :force-select="false"
-            :show-select="false"
-            :propose-add="true"
-          >
-            <template #icon>
-              <span
-                v-tooltip="'Resume reading'"
-                class="icon text-warning"
-                @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+
+      <!-- BOTTOM ROW: Paused | Rediscover -->
+      <div
+        v-if="pausedBooks.length > 0 || randomBooks.length > 0"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-2 sm:px-0 mt-4 sm:mt-6"
+      >
+
+        <!-- Paused -->
+        <section v-if="pausedBooks.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-pause-circle text-amber-300" />
+            Paused
+            <span class="badge badge-sm bg-amber-200/70 text-amber-900 border-0">{{ pausedBooks.length }}</span>
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <div v-for="book in pausedBooks" :key="book.id">
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="true"
               >
-                <i class="mdi mdi-play-circle mdi-18px" />
-              </span>
-            </template>
-          </book-card>
-        </div>
+                <template #icon>
+                  <span
+                    v-tooltip="'Resume reading'"
+                    class="icon text-warning"
+                    @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+                  >
+                    <i class="mdi mdi-play-circle mdi-18px" />
+                  </span>
+                </template>
+              </book-card>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rediscover -->
+        <section v-if="randomBooks.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-shuffle-variant text-violet-300" />
+            Rediscover
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+            <div v-for="book in randomBooks" :key="book.id">
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="false"
+                class="h-full"
+              />
+            </div>
+          </div>
+        </section>
+
       </div>
+
     </div>
-    <div
-      v-if="events.length > 0"
-      class="flex items-center gap-2 py-4 cursor-pointer"
-      @click="showRecentEvents = !showRecentEvents"
-    >
-      <i :class="showRecentEvents ? 'mdi mdi-chevron-down' : 'mdi mdi-chevron-right'" class="mdi-24px" />
-      <h2 class="text-xl sm:text-2xl font-bold">
-        {{ t('home.recent_events') }}
-      </h2>
-      <span class="badge badge-sm">{{ events.length }}</span>
-    </div>
-    <div
-      v-if="events.length > 0 && showRecentEvents"
-      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3"
-    >
-      <div
-        v-for="event in events"
-        :key="event.id"
-      >
-        <div class="h-full relative">
-          <div
-            class="text-center text-xs font-semibold py-1 uppercase tracking-wide"
-            :class="bannerClass(event.eventType)"
-          >{{ eventLabel(event.eventType) }}</div>
-          <book-card
-            :book="event.userBook"
-            :public="false"
-            class="h-full"
-            :force-select="false"
-            :show-select="false"
-            :propose-add="true"
-          />
-        </div>
-      </div>
-    </div>
-    <div
-      v-else-if="recentEventsIsLoading"
-      class="flex flex-row justify-center justify-items-center gap-3"
-    >
-      <o-skeleton
-        class="justify-self-center basis-44"
-        height="250px"
-        :animated="true"
-      />
-    </div>
-    <h2
-      v-if="userReviews.length > 0"
-      class="text-xl sm:text-2xl font-bold py-4 capitalize"
-    >
-      {{ t('reviews.review', 2) }}
-    </h2>
-    <div
-      v-if="userReviews.length > 0"
-      class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 2xl:grid-cols-6 gap-2 sm:gap-3"
-    >
-      <div
-        v-for="review in userReviews"
-        :key="review.id"
-      >
-        <review-book-card
-          :review="review"
-          :book-reviews-link="true"
-          :show-user-name="true"
-        />
-      </div>
-    </div>
-    <quotes-display v-if="isLogged" />
   </div>
   <div v-else>
     <p class="capitalize">
