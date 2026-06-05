@@ -20,7 +20,11 @@ const props = defineProps<{
   showSelect: boolean,
   proposeAdd: boolean,
   seriesId?: string,
-  public: boolean // is it on a public facing page (so hide links etc...)
+  public: boolean, // is it on a public facing page (so hide links etc...)
+  showStats?: boolean,
+  pace?: { pagesPerDay?: number, daysRemaining?: number, currentPage?: number, pagesRemaining?: number } | null,
+  bandLabel?: string,
+  bandClass?: string
 }>();
 const emit = defineEmits<{
   (e: 'update:modalClosed', open: boolean): void,
@@ -118,6 +122,18 @@ const showProgressBar = (book: UserBook) => {
 const progressBarTooltip = computed(() => {
   return props.book.currentPageNumber != null ? `p. ${props.book.currentPageNumber}` : `${props.book.percentRead} %`
 })
+const statsLine = computed(() => {
+  const parts: string[] = []
+  if (props.pace) {
+    if (props.pace.pagesPerDay != null && props.pace.pagesPerDay > 0) {
+      parts.push(`${Math.round(props.pace.pagesPerDay)}/day`)
+    }
+    if (props.pace.daysRemaining != null && props.pace.daysRemaining > 0 && isFinite(props.pace.daysRemaining)) {
+      parts.push(`~${Math.ceil(props.pace.daysRemaining)}d`)
+    }
+  }
+  return parts.join(' · ')
+})
 
 const currentSeries = computed(() => {
   if (props.book.book.series != null &&      props.book.book.series?.length > 0) {
@@ -135,6 +151,12 @@ watch(checked, (newVal, oldVal) => {
   emit("update:checked", props.book.id != null ? props.book.id as string : props.book.book.id as string , checked.value)
 })
 
+const effectiveBandText = computed(() => props.bandLabel ?? (props.book.lastReadingEvent ? eventText.value : null))
+const effectiveBandClass = computed(() => props.bandClass ?? bannerClass.value)
+const pageCountLabel = computed(() => {
+  const total = props.book.book.pageCount
+  return (total != null && total > 0) ? `${total}p` : null
+})
 const currentTimestamp = ObjectUtils.timestamp()
 
 </script>
@@ -144,16 +166,20 @@ const currentTimestamp = ObjectUtils.timestamp()
     class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden h-full flex flex-col"
   >
     <div
-      v-if="book.lastReadingEvent"
+      v-if="effectiveBandText"
       class="text-center text-[10px] font-medium py-0.5 uppercase tracking-wider opacity-90"
-      :class="bannerClass"
-    >{{ eventText }}</div>
-    <div>
+      :class="effectiveBandClass"
+    >{{ effectiveBandText }}</div>
+    <div class="relative">
+      <div
+        v-if="pageCountLabel"
+        class="absolute top-1 right-1 z-10 text-[10px] font-medium px-1.5 py-0.5 rounded bg-base-900/70 text-base-content/80 backdrop-blur-sm"
+      >{{ pageCountLabel }}</div>
       <router-link
         v-if="book.id != null"
         :to="{ name: 'book-detail', params: { bookId: book.id } }"
       >
-        <figure>
+        <figure class="pt-2 px-2 flex justify-center">
           <img
             v-if="book.book.image"
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
@@ -173,7 +199,7 @@ const currentTimestamp = ObjectUtils.timestamp()
         v-else
         :to="{ name: 'book-reviews', params: { bookId: book.book.id } }"
       >
-        <figure>
+        <figure class="pt-2 px-2 flex justify-center">
           <img
             v-if="book.book.image"
             :src="'/files/' + book.book.image"
@@ -206,9 +232,13 @@ const currentTimestamp = ObjectUtils.timestamp()
       <div
         v-if="showProgressBar(book)"
         v-tooltip="progressBarTooltip"
-        class="bg-success absolute h-1.5"
-        :style="{ width: book.percentRead + '%' }"
-      />
+        class="absolute bottom-0 left-0 right-0 h-2 bg-base-content/10"
+      >
+        <div
+          class="bg-emerald-300/80 h-full rounded-r-full transition-all duration-300"
+          :style="{ width: book.percentRead + '%' }"
+        />
+      </div>
       <div
         v-if="props.showSelect"
         class="absolute top-0 left-0 p-3 z-10"
@@ -222,6 +252,12 @@ const currentTimestamp = ObjectUtils.timestamp()
       </div>
     </div>
     <div class="card-body flex-grow">
+      <div
+        v-if="showStats && statsLine"
+        class="text-xs font-medium text-sky-300/90 mb-1"
+      >
+        {{ statsLine }}
+      </div>
       <router-link
         v-if="book.id != null"
         class="grow"
@@ -229,7 +265,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-2 hover:link""
+          class="card-title text-sm line-clamp-2 min-h-[2.5rem] hover:link"
         >
           {{ book.book.title }}
         </h2>
@@ -241,7 +277,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-2 hover:link""
+          class="card-title text-sm line-clamp-2 min-h-[2.5rem] hover:link"
         >
           {{ book.book.title }}
         </h2>

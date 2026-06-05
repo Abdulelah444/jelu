@@ -57,6 +57,16 @@ const pausedIsLoading: Ref<boolean> = ref(false);
 
 const randomBooks: Ref<Array<UserBook>> = ref([])
 const upNext: Ref<Array<UserBook>> = ref([])
+const paceByBook: Ref<Record<string, any>> = ref({})
+const loadPaces = async () => {
+  for (const b of books.value) {
+    if (b.id != null) {
+      try {
+        paceByBook.value[b.id] = await dataService.getReadingPace(b.id, '1W')
+      } catch (e) { /* skip */ }
+    }
+  }
+}
 const getUpNext = async () => {
   try {
     const res = await dataService.findUserBookByCriteria(
@@ -86,6 +96,7 @@ const getCurrentlyReading = async () => {
       books.value = res.content.slice(0,6)
     }
     currentlyReadingIsLoading.value = false
+    loadPaces()
   } catch (error) {
     console.log("failed get books : " + error)
     currentlyReadingIsLoading.value = false
@@ -234,16 +245,18 @@ const { typographyClasses } = useTypography()
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-2 sm:px-0">
 
         <!-- Continue reading -->
-        <section v-if="books.length > 0">
+        <section v-if="books.length > 0" class="flex flex-col">
           <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
             <i class="mdi mdi-book-open-page-variant text-sky-300" />
             {{ t('home.currently_reading') }}
             <span class="badge badge-sm bg-sky-200/70 text-sky-900 border-0">{{ books.length }}</span>
           </h2>
-          <div class="grid grid-cols-2 gap-2 sm:gap-3">
-            <div v-for="book in books" :key="book.id">
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr flex-grow">
+            <div v-for="book in books" :key="book.id" class="h-full">
               <book-card
                 :book="book"
+                :show-stats="true"
+                :pace="paceByBook[book.id!!]"
                 :public="false"
                 size="xl"
                 :force-select="false"
@@ -285,20 +298,17 @@ const { typographyClasses } = useTypography()
         </section>
 
         <!-- Up next -->
-        <section v-if="upNext.length > 0">
+        <section v-if="upNext.length > 0" class="flex flex-col">
           <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
             <i class="mdi mdi-bookmark-multiple text-violet-300" />
             Up Next
           </h2>
-          <div class="grid grid-cols-2 gap-2 sm:gap-3">
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr flex-grow">
             <div
               v-for="(book, i) in upNext"
               :key="book.id"
-              class="relative rounded-lg ring-2 ring-violet-300/70 ring-offset-2 ring-offset-base-100"
+              class="relative rounded-lg ring-1 ring-violet-300/40 h-full"
             >
-              <div class="absolute -top-2 -right-2 z-20 badge badge-sm bg-violet-300 text-violet-950 border-0 font-semibold shadow">
-                {{ i + 1 }}
-              </div>
               <book-card
                 :book="book"
                 :public="false"
@@ -306,6 +316,8 @@ const { typographyClasses } = useTypography()
                 :force-select="false"
                 :show-select="false"
                 :propose-add="false"
+                :band-label="`UP NEXT · ${i + 1}`"
+                band-class="bg-violet-200/70 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100"
                 class="h-full"
               />
             </div>
@@ -327,8 +339,8 @@ const { typographyClasses } = useTypography()
             Paused
             <span class="badge badge-sm bg-amber-200/70 text-amber-900 border-0">{{ pausedBooks.length }}</span>
           </h2>
-          <div class="grid grid-cols-2 gap-2 sm:gap-3">
-            <div v-for="book in pausedBooks" :key="book.id">
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr">
+            <div v-for="book in pausedBooks" :key="book.id" class="h-full">
               <book-card
                 :book="book"
                 :public="false"
@@ -357,8 +369,8 @@ const { typographyClasses } = useTypography()
             <i class="mdi mdi-shuffle-variant text-violet-300" />
             Rediscover
           </h2>
-          <div class="grid grid-cols-2 gap-2 sm:gap-3">
-            <div v-for="book in randomBooks" :key="book.id">
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr">
+            <div v-for="book in randomBooks" :key="book.id" class="h-full">
               <book-card
                 :book="book"
                 :public="false"
@@ -366,6 +378,8 @@ const { typographyClasses } = useTypography()
                 :force-select="false"
                 :show-select="false"
                 :propose-add="false"
+                band-label="IN LIBRARY"
+                band-class="bg-slate-200/70 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200"
                 class="h-full"
               />
             </div>
