@@ -153,6 +153,21 @@ watch(checked, (newVal, oldVal) => {
 
 const effectiveBandText = computed(() => props.bandLabel ?? (props.book.lastReadingEvent ? eventText.value : null))
 const effectiveBandClass = computed(() => props.bandClass ?? bannerClass.value)
+const localToRead = ref(props.book.toRead)
+const toggleToRead = async () => {
+  if (props.book.id == null) return  // only for books already in library
+  const next = !localToRead.value
+  localToRead.value = next  // optimistic
+  try {
+    const full = await dataService.getUserBookById(props.book.id)
+    full.toRead = next
+    await dataService.updateUserBook(full)
+    emit('update:modalClosed', true)  // trigger parent refresh
+  } catch (e) {
+    localToRead.value = !next  // revert on failure
+    console.log('toggle toRead failed: ' + e)
+  }
+}
 const pageCountLabel = computed(() => {
   const total = props.book.book.pageCount
   return (total != null && total > 0) ? `${total}p` : null
@@ -338,11 +353,13 @@ const currentTimestamp = ObjectUtils.timestamp()
           </span>
 
           <span
-            v-if="book.toRead"
-            v-tooltip="t('book.in_read_list')"
-            class="icon text-info"
+            v-if="book.id != null && !public"
+            v-tooltip="localToRead ? 'Remove from To Read' : 'Add to To Read'"
+            class="icon cursor-pointer"
+            :class="localToRead ? 'text-violet-300' : 'text-base-content/50'"
+            @click.prevent.stop="toggleToRead"
           >
-            <i class="mdi mdi-eye mdi-18px" />
+            <i :class="localToRead ? 'mdi mdi-bookmark' : 'mdi mdi-bookmark-outline'" class="mdi-18px" />
           </span>
           <span
             v-if="proposeAdd === true && book.id == null"
