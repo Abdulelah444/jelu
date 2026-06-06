@@ -21,8 +21,77 @@ data class PaceResult(
     val estimatedFinish: String?,
 )
 
+data class ProgressEntryDto(
+    val id: UUID?,
+    val pageNumber: Int?,
+    val pagesDelta: Int?,
+    val recordedAt: OffsetDateTime,
+)
+
+data class ProgressEntryInput(
+    val pageNumber: Int,
+    val recordedAt: OffsetDateTime,
+)
+
+data class ReplaceProgressDto(
+    val entries: List<ProgressEntryInput>,
+)
+
 @Service
 class ReadingPaceService {
+
+    @Transactional
+    fun getHistory(userBookId: UUID): List<ProgressEntryDto> =
+        ReadingProgressHistory.find { ReadingProgressHistoryTable.userBook eq userBookId }
+            .sortedBy { it.recordedAt }
+            .map { ProgressEntryDto(it.id.value, it.pageNumber, it.pagesDelta, it.recordedAt) }
+
+    @Transactional
+    fun pagesReadForBookSince(userBookId: UUID, since: OffsetDateTime): Int {
+        return ReadingProgressHistory.find {
+            (ReadingProgressHistoryTable.userBook eq userBookId) and
+                (ReadingProgressHistoryTable.recordedAt greaterEq since) and
+                (ReadingProgressHistoryTable.pagesDelta greater 0)
+        }.sumOf { it.pagesDelta ?: 0 }
+    }
+
+    @Transactional
+    fun pagesReadSince(userId: UUID, since: OffsetDateTime): Int {
+        // Sum positive page deltas for this user's books recorded on/after `since`
+        return ReadingProgressHistory.find {
+            (ReadingProgressHistoryTable.recordedAt greaterEq since) and
+                (ReadingProgressHistoryTable.pagesDelta greater 0)
+        }
+            .filter { it.userBook.user.id.value == userId }
+            .sumOf { it.pagesDelta ?: 0 }
+    }
+
+    @Transactional
+    fun replaceHistory(userBookId: UUID, dto: ReplaceProgressDto): List<ProgressEntryDto> {
+        val userBook = UserBook[userBookId]
+        // Delete existing rows for this userbook
+        ReadingProgressHistory.find { ReadingProgressHistoryTable.userBook eq userBookId }
+            .forEach { it.delete() }
+        // Sort incoming by date, recompute deltas (first = 0, rest = page - prevPage)
+        val sorted = dto.entries.sortedBy { it.recordedAt }
+        var prev: Int? = null
+        for (e in sorted) {
+            val delta = if (prev == null) 0 else e.pageNumber - prev!!
+            ReadingProgressHistory.new {
+                this.userBook = userBook
+                this.pageNumber = e.pageNumber
+                this.percentRead = null
+                this.pagesDelta = delta
+                this.recordedAt = e.recordedAt
+            }
+            prev = e.pageNumber
+        }
+        // Sync the userbook's current page to the latest entry
+        if (sorted.isNotEmpty()) {
+            userBook.currentPageNumber = sorted.last().pageNumber
+        }
+        return getHistory(userBookId)
+    }
 
     @Transactional
     fun computeAllPaces(userBookId: UUID): Map<String, PaceResult?> =
@@ -48,6 +117,8 @@ class ReadingPaceService {
             "day" -> 1.0
             "week" -> 7.0
             "month" -> 30.0
+            "quarter" -> 90.0
+            "year" -> 365.0
             "since_start" -> null
             else -> null
         }
