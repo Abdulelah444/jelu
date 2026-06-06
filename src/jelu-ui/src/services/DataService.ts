@@ -2546,6 +2546,26 @@ class DataService {
   setUpNextCount = async (count: number) => {
     await this.apiClient.put('/users/me/up-next-count', { count })
   }
+
+  getProgressHistory = async (userBookId: string) => {
+    const response = await this.apiClient.get<Array<{id: string, pageNumber: number|null, pagesDelta: number|null, recordedAt: string}>>('/userbooks/' + userBookId + '/progress-history')
+    return response.data
+  }
+
+  saveProgressHistory = async (userBookId: string, entries: Array<{pageNumber: number, recordedAt: string}>) => {
+    const response = await this.apiClient.put('/userbooks/' + userBookId + '/progress-history', { entries })
+    return response.data
+  }
+
+  pagesReadSince = async (sinceIso: string) => {
+    const response = await this.apiClient.get<{pages: number}>('/userbooks/pages-read-since', { params: { since: sinceIso } })
+    return response.data.pages
+  }
+
+  pagesReadForBookSince = async (userBookId: string, sinceIso: string) => {
+    const response = await this.apiClient.get<{pages: number}>('/userbooks/' + userBookId + '/pages-read-since', { params: { since: sinceIso } })
+    return response.data.pages
+  }
 }
 
 export default new DataService()

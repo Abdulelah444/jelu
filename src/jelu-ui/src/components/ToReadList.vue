@@ -396,10 +396,10 @@ const { typographyClasses } = useTypography()
     <template #item="{ element: book, index }">
       <div
         class="books-grid-item m-2 relative group rounded-lg"
-        :class="(userId == null && index < 2) ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''"
+        :class="(userId == null && page === '1' && index < 2) ? 'ring-2 ring-primary ring-offset-2 ring-offset-base-100' : ''"
       >
         <div
-          v-if="userId == null && index < 2"
+          v-if="userId == null && page === '1' && index < 2"
           class="absolute -top-2 -right-2 z-20 badge badge-primary badge-sm font-semibold shadow"
         >
           Up Next {{ index + 1 }}

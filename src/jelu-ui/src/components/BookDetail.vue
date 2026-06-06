@@ -25,6 +25,7 @@ import EditBookModal from "./EditBookModal.vue"
 import MergeBookModal from './MergeBookModal.vue'
 import ReadingEventModalVue from './ReadingEventModal.vue'
 import ReadProgressModal from './ReadProgressModal.vue'
+import ProgressHistoryModal from './ProgressHistoryModal.vue'
 import ReviewCard from "./ReviewCard.vue"
 import ReviewModalVue from './ReviewModal.vue'
 import useTypography from "../composables/typography"
@@ -435,6 +436,20 @@ function toggleReadingEventModal(currentEvent: ReadingEvent, edit: boolean) {
   });
 }
 
+function toggleProgressHistoryModal() {
+  oruga.modal.open({
+    component: ProgressHistoryModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+    props: {
+      "userBookId": book.value?.id,
+      "pageCount": book.value?.book?.pageCount ?? null,
+    },
+    onClose: modalClosed
+  });
+}
 function toggleReviewModal(currentBook: Book|undefined, edit: boolean, review: Review|null) {
   if (currentBook != null && currentBook != undefined) {
     oruga.modal.open({
@@ -873,6 +888,13 @@ getBook()
         >
           <i class="mdi mdi-book-open-page-variant mdi-18px" />
           <span class="hidden sm:inline">Progress</span>
+        </button>
+        <button
+          class="btn btn-success btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
+          @click="toggleProgressHistoryModal()"
+        >
+          <i class="mdi mdi-chart-line mdi-18px" />
+          <span class="hidden sm:inline">History</span>
         </button>
         <button
           class="btn btn-info btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
