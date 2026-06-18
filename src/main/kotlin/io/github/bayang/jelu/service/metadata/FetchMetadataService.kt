@@ -29,16 +29,41 @@ class FetchMetadataService(
         var pluginsToUse = if (metadataRequestDto.plugins.isNullOrEmpty()) pluginInfoHolder.plugins() else metadataRequestDto.plugins
         pluginsToUse = pluginsToUse.toMutableList()
         pluginsToUse.sortWith(PluginInfoComparator)
+        val allResults = mutableListOf<MetadataDto>()
+        val seenKeys = mutableSetOf<String>()
+        // Fan out to all providers that support searchMetadata
         for (plugin in pluginsToUse) {
             val provider = providers.find { plugin.name.equals(it.name(), true) }
             if (provider != null) {
-                val results = provider.searchMetadata(metadataRequestDto, config)
-                if (results.isNotEmpty()) {
-                    return results.take(limit)
+                try {
+                    val results = provider.searchMetadata(metadataRequestDto, config)
+                    for (result in results) {
+                        val key = result.isbn13 ?: result.isbn10 ?: result.title ?: continue
+                        if (seenKeys.add(key)) {
+                            allResults.add(result)
+                        }
+                    }
+                } catch (e: Exception) {
+                    logger.warn { "provider \${provider.name()} search failed: \${e.message}" }
                 }
             }
         }
-        return emptyList()
+        // Also always try openlibrary directly since it may not be in plugins list
+        val olProvider = providers.find { it.name().equals("openlibrary", true) }
+        if (olProvider != null) {
+            try {
+                val results = olProvider.searchMetadata(metadataRequestDto, config)
+                for (result in results) {
+                    val key = result.isbn13 ?: result.isbn10 ?: result.title ?: continue
+                    if (seenKeys.add(key)) {
+                        allResults.add(result)
+                    }
+                }
+            } catch (e: Exception) {
+                logger.warn { "openlibrary search failed: \${e.message}" }
+            }
+        }
+        return allResults.take(limit)
     }
 
 
