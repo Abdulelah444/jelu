@@ -859,6 +859,26 @@ class DataService {
     }
   }
 
+
+
+  searchMetadata = async (query: string): Promise<Metadata[]> => {
+    try {
+      const response = await this.apiClient.get<Metadata[]>(`${this.API_METADATA}/search`, {
+        params: { q: query }
+      })
+      console.log("called metadata search", response.data)
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log("error metadata search " + error.response.status + " " + error.response.data)
+        throw new Error("Error searching books: " + error.response.data.message)
+      }
+      console.log("error metadata search " + (error as AxiosError).code)
+      throw new Error("error metadata search " + error)
+    }
+  }
+  
+  
   fetchMetadata = async (isbn?: string, title?: string, authors?: string) => {
     try {
       const response = await this.apiClient.get<Metadata>(`${this.API_METADATA}`, {

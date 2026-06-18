@@ -15,6 +15,33 @@ class FetchMetadataService(
     private val providers: List<IMetaDataProvider>,
     private val pluginInfoHolder: PluginInfoHolder,
 ) {
+
+
+
+
+
+
+    fun searchMetadata(
+        metadataRequestDto: MetadataRequestDto,
+        config: Map<String, String> = mapOf(),
+        limit: Int = 20,
+    ): List<MetadataDto> {
+        var pluginsToUse = if (metadataRequestDto.plugins.isNullOrEmpty()) pluginInfoHolder.plugins() else metadataRequestDto.plugins
+        pluginsToUse = pluginsToUse.toMutableList()
+        pluginsToUse.sortWith(PluginInfoComparator)
+        for (plugin in pluginsToUse) {
+            val provider = providers.find { plugin.name.equals(it.name(), true) }
+            if (provider != null) {
+                val results = provider.searchMetadata(metadataRequestDto, config)
+                if (results.isNotEmpty()) {
+                    return results.take(limit)
+                }
+            }
+        }
+        return emptyList()
+    }
+
+
     fun fetchMetadata(
         metadataRequestDto: MetadataRequestDto,
         config: Map<String, String> = mapOf(),

@@ -37,6 +37,26 @@ class MetadataController(
     private val fileMetadataService: FileMetadataService,
     private val bookEnrichmentService: io.github.bayang.jelu.service.BookEnrichmentService,
 ) {
+
+
+
+    @Operation(description = "search metadata providers and return multiple results")
+    @GetMapping(path = ["/metadata/search"])
+    fun searchMetadata(
+        @RequestParam(name = "q", required = true) query: String,
+    ): List<MetadataDto> {
+        if (pluginInfoHolder.plugins().isEmpty()) {
+            throw JeluException("Automatic fetching of metadata is disabled, install calibre or configure a metadata plugin")
+        }
+        val (title, authors) = if (query.startsWith("author:", ignoreCase = true)) {
+            null to query.removePrefix("author:").removePrefix("Author:").trim()
+        } else {
+            query to null
+        }
+        return metadataService.searchMetadata(MetadataRequestDto(null, title, authors, listOf()))
+    }
+
+
     @Operation(description = "fetch metadata from the configured providers")
     @GetMapping(path = ["/metadata"])
     fun fetchMetadata(

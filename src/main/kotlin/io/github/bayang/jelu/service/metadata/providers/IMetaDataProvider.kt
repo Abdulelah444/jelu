@@ -11,4 +11,9 @@ interface IMetaDataProvider {
     ): Optional<MetadataDto>?
 
     fun name(): String
+
+    fun searchMetadata(
+        metadataRequestDto: MetadataRequestDto,
+        config: Map<String, String> = mapOf(),
+    ): List<MetadataDto> = emptyList()
 }
