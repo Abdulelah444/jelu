@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, Ref, ref, watch } from "vue";
+import { computed, Ref, ref, watch, onMounted } from "vue";
 import { useI18n } from 'vue-i18n';
 import { UserBook } from "../model/Book";
 import { ReadingEventType } from "../model/ReadingEvent";
@@ -168,6 +168,45 @@ const toggleToRead = async () => {
     console.log('toggle toRead failed: ' + e)
   }
 }
+const goalPace = ref<any>(null)
+
+onMounted(async () => {
+  if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+    try {
+      goalPace.value = await dataService.getPaceStatus(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+})
+
+const goalStatusLabel = computed(() => {
+  if (!goalPace.value) return ''
+  const s = goalPace.value.status
+  if (s === 'AHEAD') return 'Ahead'
+  if (s === 'ON_PACE') return 'On pace'
+  if (s === 'BEHIND') return 'Behind'
+  return ''
+})
+
+const goalStatusClass = computed(() => {
+  if (!goalPace.value) return ''
+  const s = goalPace.value.status
+  if (s === 'AHEAD') return 'badge-success'
+  if (s === 'ON_PACE') return 'badge-info'
+  if (s === 'BEHIND') return 'badge-warning'
+  return 'badge-ghost'
+})
+
+const goalLine = computed(() => {
+  if (!goalPace.value) return ''
+  const diff = goalPace.value.pagesAheadBehind
+  const target = goalPace.value.dailyTargetPages
+  let line = `${target}/day`
+  if (diff < 0) line += ` · ${Math.abs(diff)}p behind`
+  else if (diff > 0) line += ` · ${diff}p ahead`
+  else line += ' · on target'
+  return line
+})
+
 const pageCountLabel = computed(() => {
   const total = props.book.book.pageCount
   return (total != null && total > 0) ? `${total}p` : null
@@ -267,11 +306,17 @@ const currentTimestamp = ObjectUtils.timestamp()
       </div>
     </div>
     <div class="card-body flex-grow">
+      <!-- Actual window pace + ETA -->
       <div
         v-if="showStats && statsLine"
         class="text-xs font-medium text-sky-300/90 mb-1"
       >
         {{ statsLine }}
+      </div>
+      <!-- Goal-based pace badge (shown in addition when a daily goal is set) -->
+      <div v-if="goalPace" class="flex items-center gap-1.5 flex-wrap mb-1">
+        <span class="badge badge-xs" :class="goalStatusClass">{{ goalStatusLabel }}</span>
+        <span class="text-xs opacity-60">{{ goalLine }}</span>
       </div>
       <router-link
         v-if="book.id != null"

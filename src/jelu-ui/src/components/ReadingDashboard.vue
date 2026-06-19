@@ -284,6 +284,12 @@ function paceStatusLabel(status: string): string {
   return 'Not started'
 }
 
+function daysUntil(iso: string | null | undefined): number | null {
+  if (!iso) return null
+  const diff = new Date(iso).getTime() - Date.now()
+  return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
 function paceStatusClass(status: string): string {
   if (status === 'AHEAD') return 'badge-success'
   if (status === 'ON_PACE') return 'badge-info'
@@ -482,47 +488,45 @@ const changeIndicator = (current: number, previous: number) => {
                     <span>{{ book.percent }}%</span>
                     <span v-if="book.pageCount">Page {{ book.currentPage }} / {{ book.pageCount }}</span>
                   </div>
-                  <div class="mt-2 text-xs">
-                    <span class="opacity-60">Pace · {{ windowLabel }}:</span>
-                    <span class="text-violet-300 font-semibold">{{ bookPaceByWindow[book.id] ?? 0 }}</span> pages/day
-                    <template v-if="bookEta(book.id, book.pagesRemaining)">
-                      <span class="opacity-60 ml-2">&middot; ETA:
-                        <span class="font-semibold text-primary">{{ bookEta(book.id, book.pagesRemaining)!.date }}</span>
-                        <span class="opacity-40">({{ bookEta(book.id, book.pagesRemaining)!.days }}d)</span>
+
+                  <!-- GOAL VIEW: shown when a daily goal is set -->
+                  <template v-if="paceStatuses[book.id]">
+                    <div class="flex items-center gap-2 flex-wrap mt-2">
+                      <span class="badge badge-sm" :class="paceStatusClass(paceStatuses[book.id].status)">
+                        {{ paceStatusLabel(paceStatuses[book.id].status) }}
                       </span>
-                    </template>
-                    <span v-else class="opacity-40 ml-2">&middot; no recent reading in this window</span>
-                  </div>
-                  <div v-if="book.pagesRemaining > 0" class="text-xs opacity-50 mt-1">
-                    {{ book.pagesRemaining }} pages remaining
-                  </div>
-                  <!-- Daily goal / pace status -->
-                  <div class="mt-2 pt-2 border-t border-base-300">
-                    <template v-if="paceStatuses[book.id]">
-                      <div class="flex items-center gap-2 flex-wrap">
-                        <span class="badge badge-sm" :class="paceStatusClass(paceStatuses[book.id].status)">
-                          {{ paceStatusLabel(paceStatuses[book.id].status) }}
-                        </span>
-                        <span class="text-xs opacity-60">{{ paceTargets[book.id]?.dailyTargetPages }} pg/day goal</span>
-                      </div>
-                      <div class="text-xs opacity-50 mt-1">
-                        <template v-if="paceStatuses[book.id].pagesAheadBehind > 0">
-                          {{ paceStatuses[book.id].pagesAheadBehind }} pages ahead
-                        </template>
-                        <template v-else-if="paceStatuses[book.id].pagesAheadBehind < 0">
-                          {{ Math.abs(paceStatuses[book.id].pagesAheadBehind) }} pages behind
-                        </template>
-                        <template v-else>right on target</template>
-                      </div>
-                      <div class="flex gap-2 mt-1">
-                        <button class="text-xs text-primary hover:underline" @click="setGoal(book.id, book.pageCount)">Edit goal</button>
-                        <button class="text-xs opacity-40 hover:underline" @click="clearGoal(book.id)">Remove</button>
-                      </div>
-                    </template>
-                    <button v-else class="btn btn-xs btn-outline btn-primary" @click="setGoal(book.id, book.pageCount)">
+                      <span class="text-xs opacity-60">{{ paceTargets[book.id]?.dailyTargetPages }} pg/day</span>
+                    </div>
+                    <div class="text-xs opacity-70 mt-1">
+                      <span v-if="daysUntil(paceTargets[book.id]?.plannedFinishDate) !== null">
+                        Finish in <span class="font-semibold text-primary">{{ daysUntil(paceTargets[book.id].plannedFinishDate) }} days</span>
+                      </span>
+                      <span v-if="paceStatuses[book.id].pagesAheadBehind < 0" class="opacity-60">
+                        &middot; {{ Math.abs(paceStatuses[book.id].pagesAheadBehind) }} pages behind
+                      </span>
+                      <span v-else-if="paceStatuses[book.id].pagesAheadBehind > 0" class="opacity-60">
+                        &middot; {{ paceStatuses[book.id].pagesAheadBehind }} pages ahead
+                      </span>
+                      <span v-else class="opacity-60">&middot; on target</span>
+                    </div>
+                    <div class="flex gap-3 mt-1">
+                      <button class="text-xs text-primary hover:underline" @click="setGoal(book.id, book.pageCount)">Edit goal</button>
+                      <button class="text-xs opacity-40 hover:underline" @click="clearGoal(book.id)">Remove</button>
+                    </div>
+                  </template>
+
+                  <!-- WINDOW VIEW: shown when no goal set -->
+                  <template v-else>
+                    <div class="mt-2 text-xs opacity-60">
+                      {{ book.pagesRemaining }} pages remaining
+                      <template v-if="bookEta(book.id, book.pagesRemaining)">
+                        &middot; ETA <span class="font-semibold text-primary">{{ bookEta(book.id, book.pagesRemaining)!.date }}</span>
+                      </template>
+                    </div>
+                    <button class="btn btn-xs btn-outline btn-primary mt-2" @click="setGoal(book.id, book.pageCount)">
                       <i class="mdi mdi-target mdi-16px mr-1" /> Set daily goal
                     </button>
-                  </div>
+                  </template>
                 </div>
               </div>
             </div>
