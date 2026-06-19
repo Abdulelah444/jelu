@@ -861,6 +861,18 @@ class DataService {
 
 
 
+  searchMetadataSource = async (query: string, source: string): Promise<Metadata[]> => {
+    try {
+      const response = await this.apiClient.get<Metadata[]>(`${this.API_METADATA}/search`, {
+        params: { q: query, source }
+      })
+      return response.data
+    } catch (error) {
+      console.log("error metadata search " + source + " " + (error as AxiosError).code)
+      return []
+    }
+  }
+
   searchMetadata = async (query: string): Promise<Metadata[]> => {
     try {
       const response = await this.apiClient.get<Metadata[]>(`${this.API_METADATA}/search`, {

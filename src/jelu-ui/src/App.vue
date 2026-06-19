@@ -221,7 +221,7 @@ function scanModalClosed() {
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'digital-library' }"><i class="mdi mdi-book-open-page-variant mdi-18px mr-2" />Digital Library</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'book-labels' }"><i class="mdi mdi-qrcode mdi-18px mr-2" />Book Labels</router-link></li>
-	    <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'discover' }">Discover</router-link></li>
+	    <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'discover' }"><i class="mdi mdi-compass mdi-18px mr-2" />Discover</router-link></li>
 	    <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-eye mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart mdi-18px mr-2" />Wishlist</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
@@ -341,7 +341,7 @@ function scanModalClosed() {
             <i class="mdi mdi-dots-horizontal mdi-18px" /> More
           </label>
           <ul tabindex="0" class="dropdown-content z-50 menu menu-sm p-2 shadow-lg bg-base-200 rounded-box w-52 mt-2 border border-base-content/20">
-            <li><router-link v-if="isLogged" class="font-sans text-sm capitalize" :to="{ name: 'discover' }">Discover</router-link></li>
+            <li><router-link v-if="isLogged" class="font-sans text-sm capitalize" :to="{ name: 'discover' }"><i class="mdi mdi-compass mdi-18px mr-2" />Discover</router-link></li>
 	    <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-bookmark-outline mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart-outline mdi-18px mr-2" />Wishlist</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
@@ -364,6 +364,14 @@ function scanModalClosed() {
         </div>
       </div>
       <div class="navbar-end">
+        <router-link
+          v-if="isLogged"
+          :to="{ name: 'discover' }"
+          class="btn btn-ghost btn-circle"
+          title="Discover"
+        >
+          <i class="mdi mdi-compass mdi-24px" />
+        </router-link>
         <div class="dropdown dropdown-end">
           <label
             tabindex="0"

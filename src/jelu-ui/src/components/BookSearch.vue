@@ -1,20 +1,49 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { Metadata } from '../model/Metadata'
+import { UserBook } from '../model/Book'
 import dataService from '../services/DataService'
 import useTypography from '../composables/typography'
 
 const { t } = useI18n({ inheritLocale: true, useScope: 'global' })
+const router = useRouter()
 const { typographyClasses } = useTypography()
 
 const query = ref('')
 const results = ref<Metadata[]>([])
 const loading = ref(false)
+const loadingSecondary = ref(false)
 const searched = ref(false)
 const errorMessage = ref('')
 const addingId = ref<string | null>(null)
 const addedIds = ref<Set<string>>(new Set())
+const wishlistItems = ref<Array<any>>([])
+const wishlistTitles = ref<Set<string>>(new Set())
+
+async function loadWishlist() {
+  try {
+    wishlistItems.value = await dataService.getWishlistItems('BOOK')
+    wishlistTitles.value = new Set(
+      wishlistItems.value.map((item: any) =>
+        (item.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+      )
+    )
+  } catch (e) { /* ignore */ }
+}
+
+function isInWishlist(book: Metadata): boolean {
+  const key = (book.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+  return key !== '' && wishlistTitles.value.has(key)
+}
+
+function wishlistItemForBook(book: Metadata): any {
+  const key = (book.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+  return wishlistItems.value.find((item: any) =>
+    (item.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim() === key
+  )
+}
 
 // Normalize title for grouping: lowercase, remove subtitles after ':', strip punctuation
 function normalizeTitle(title: string): string {
@@ -70,15 +99,27 @@ function scoreBook(book: Metadata, query: string): number {
 interface BookGroup {
   primary: Metadata
   editions: Metadata[]
-  expanded: boolean
+}
+
+function isArabicQuery(q: string): boolean {
+  return /[\u0600-\u06FF]/.test(q)
 }
 
 const groupedResults = computed((): BookGroup[] => {
   if (results.value.length === 0) return []
 
-  // Score and sort first
   const q = query.value.trim().toLowerCase()
-  const scored = [...results.value]
+  const arabic = isArabicQuery(query.value)
+
+  // Auto language filter based on query script
+  let filtered = [...results.value]
+  if (arabic) {
+    const arResults = filtered.filter(b => b.language === 'ar')
+    if (arResults.length > 0) filtered = arResults
+  }
+
+  // Score and sort
+  const scored = filtered
     .map(b => ({ book: b, score: scoreBook(b, q) }))
     .sort((a, b) => b.score - a.score)
     .map(s => s.book)
@@ -88,7 +129,7 @@ const groupedResults = computed((): BookGroup[] => {
   for (const book of scored) {
     const key = normalizeTitle(book.title ?? '') + '|' + normalizeAuthor(book.authors)
     if (!groups.has(key)) {
-      groups.set(key, { primary: book, editions: [], expanded: false })
+      groups.set(key, { primary: book, editions: [] })
     } else {
       groups.get(key)!.editions.push(book)
     }
@@ -100,8 +141,32 @@ const groupedResults = computed((): BookGroup[] => {
 const hasResults = computed(() => groupedResults.value.length > 0)
 const noResults = computed(() => searched.value && !loading.value && groupedResults.value.length === 0)
 
+const expandedGroups = ref<Set<string>>(new Set())
+const expandedCards = ref<Set<string>>(new Set())
+
+function toggleCard(key: string) {
+  if (expandedCards.value.has(key)) {
+    expandedCards.value.delete(key)
+  } else {
+    expandedCards.value.add(key)
+  }
+}
+
+function isCardExpanded(key: string): boolean {
+  return expandedCards.value.has(key)
+}
+
 function toggleEditions(group: BookGroup) {
-  group.expanded = !group.expanded
+  const key = bookKey(group.primary)
+  if (expandedGroups.value.has(key)) {
+    expandedGroups.value.delete(key)
+  } else {
+    expandedGroups.value.add(key)
+  }
+}
+
+function isExpanded(group: BookGroup): boolean {
+  return expandedGroups.value.has(bookKey(group.primary))
 }
 
 
@@ -109,16 +174,37 @@ async function search() {
   const q = query.value.trim()
   if (!q) return
   loading.value = true
+  loadingSecondary.value = true
   searched.value = false
   errorMessage.value = ''
   results.value = []
+  loadWishlist()
+
+  // Fire both sources in parallel, render Google first when it arrives
+  const googlePromise = dataService.searchMetadataSource(q, 'google')
+  const olPromise = dataService.searchMetadataSource(q, 'openlibrary')
+
   try {
-    results.value = await dataService.searchMetadata(q)
+    const googleResults = await googlePromise
+    results.value = googleResults
     searched.value = true
+    loading.value = false
+
+    // Merge OpenLibrary results when they arrive
+    const olResults = await olPromise
+    const seenKeys = new Set(results.value.map(b => b.isbn13 ?? b.isbn10 ?? b.googleId ?? b.title))
+    const newItems = olResults.filter(b => {
+      const key = b.isbn13 ?? b.isbn10 ?? b.title
+      return key && !seenKeys.has(key)
+    })
+    if (newItems.length > 0) {
+      results.value = [...results.value, ...newItems]
+    }
   } catch (e: any) {
     errorMessage.value = e?.message ?? 'Search failed'
-  } finally {
     loading.value = false
+  } finally {
+    loadingSecondary.value = false
   }
 }
 
@@ -127,28 +213,77 @@ function authorSearch(authorName: string) {
   search()
 }
 
+function buildUserBook(book: Metadata, extra: object = {}): UserBook {
+  return {
+    ...extra,
+    book: {
+      title: book.title ?? '',
+      isbn10: book.isbn10 ?? undefined,
+      isbn13: book.isbn13 ?? undefined,
+      authors: book.authors ? [...book.authors].map(name => ({ name })) : [],
+      image: book.image ?? undefined,
+      summary: book.summary ?? undefined,
+      publishedDate: book.publishedDate ?? undefined,
+      publisher: book.publisher ?? undefined,
+      pageCount: book.pageCount ?? undefined,
+      language: book.language ?? undefined,
+      googleId: book.googleId ?? undefined,
+    },
+  } as UserBook
+}
+
 async function addToLibrary(book: Metadata) {
   const key = bookKey(book)
-  addingId.value = key
+  addingId.value = key + '_lib'
   try {
-    await dataService.saveUserBook({
-      book: {
-        title: book.title ?? '',
-        isbn10: book.isbn10 ?? undefined,
-        isbn13: book.isbn13 ?? undefined,
-        authors: book.authors ? [...book.authors].map(name => ({ name })) : [],
-        image: book.image ?? undefined,
-        summary: book.summary ?? undefined,
-        publishedDate: book.publishedDate ?? undefined,
-        publisher: book.publisher ?? undefined,
-        pageCount: book.pageCount ?? undefined,
-        language: book.language ?? undefined,
-        googleId: book.googleId ?? undefined,
-      },
-    })
+    const saved = await dataService.saveUserBookImage(buildUserBook(book, { owned: true }), null, () => {})
     addedIds.value.add(key)
+    // If book was in wishlist, delete it
+    const wishlistItem = wishlistItemForBook(book)
+    if (wishlistItem) {
+      try {
+        await dataService.deleteWishlistItem(wishlistItem.id)
+        wishlistTitles.value.delete(
+          (book.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+        )
+      } catch (e) { /* ignore */ }
+    }
+    if (saved?.id) {
+      router.push({ name: 'book-detail', params: { bookId: saved.id } })
+    }
   } catch (e: any) {
     alert('Could not add book: ' + (e?.message ?? 'unknown error'))
+  } finally {
+    addingId.value = null
+  }
+}
+
+async function addToWishlist(book: Metadata) {
+  const key = bookKey(book)
+  // Check if already in wishlist
+  if (isInWishlist(book)) {
+    alert('This book is already in your wishlist')
+    return
+  }
+  addingId.value = key + '_wish'
+  try {
+    await dataService.createWishlistItem({
+      itemType: 'BOOK',
+      title: book.title ?? '',
+      isbn: book.isbn13 ?? book.isbn10 ?? '',
+      authors: book.authors ? [...book.authors].join(', ') : '',
+      image: book.image ?? '',
+      pageCount: book.pageCount ?? null,
+      publisher: book.publisher ?? '',
+      language: book.language ?? '',
+      description: book.summary ?? '',
+    })
+    addedIds.value.add(key)
+    wishlistTitles.value.add(
+      (book.title ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+    )
+  } catch (e: any) {
+    alert('Could not add to wishlist: ' + (e?.message ?? 'unknown error'))
   } finally {
     addingId.value = null
   }
@@ -162,8 +297,12 @@ function isAdded(book: Metadata): boolean {
   return addedIds.value.has(bookKey(book))
 }
 
-function isAdding(book: Metadata): boolean {
-  return addingId.value === bookKey(book)
+function isAddingLib(book: Metadata): boolean {
+  return addingId.value === bookKey(book) + '_lib'
+}
+
+function isAddingWish(book: Metadata): boolean {
+  return addingId.value === bookKey(book) + '_wish'
 }
 
 function coverUrl(book: Metadata): string | null {
@@ -236,14 +375,17 @@ function truncate(text: string | undefined, maxLen = 300): string {
     </div>
 
     <div v-else-if="hasResults" class="w-full max-w-3xl flex flex-col gap-4">
-      <p class="text-base-content/50 text-xs mb-1">{{ groupedResults.length }} title{{ groupedResults.length !== 1 ? "s" : "" }} · {{ results.length }} editions total</p>
+      <div class="flex items-center gap-2 mb-1">
+        <p class="text-base-content/50 text-xs">{{ groupedResults.length }} title{{ groupedResults.length !== 1 ? "s" : "" }} · {{ results.length }} editions total</p>
+        <span v-if="loadingSecondary" class="loading loading-dots loading-xs text-primary"></span>
+      </div>
 
       <div
         v-for="group in groupedResults"
         :key="bookKey(group.primary)"
         class="flex flex-col bg-base-200 hover:bg-base-300 transition-colors rounded-xl overflow-hidden"
       >
-        <div class="flex gap-4 p-4">
+        <div class="flex gap-4 p-4 cursor-pointer" @click="toggleCard(bookKey(group.primary))">
           <div class="shrink-0 w-20">
             <img
               v-if="coverUrl(group.primary)"
@@ -278,23 +420,60 @@ function truncate(text: string | undefined, maxLen = 300): string {
               <span v-if="group.primary.language && group.primary.language !== 'en'" class="uppercase">{{ group.primary.language }}</span>
               <span v-if="group.primary.isbn13" class="font-mono">{{ group.primary.isbn13 }}</span>
             </div>
-            <p v-if="group.primary.summary" class="text-xs text-base-content/70 mt-1 leading-relaxed line-clamp-3">
-              {{ truncate(group.primary.summary) }}
-            </p>
+            <div v-if="group.primary.summary" class="mt-1">
+              <p class="text-xs text-base-content/70 leading-relaxed"
+                :class="{ 'line-clamp-3': !isCardExpanded(bookKey(group.primary)) }">
+                {{ group.primary.summary }}
+              </p>
+            </div>
+            <!-- Expanded details -->
+            <div v-if="isCardExpanded(bookKey(group.primary))" class="mt-2 flex flex-col gap-1" @click.stop>
+              <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-base-content/50">
+                <span v-if="group.primary.isbn13" class="font-mono">ISBN: {{ group.primary.isbn13 }}</span>
+                <span v-if="group.primary.isbn10" class="font-mono">ISBN10: {{ group.primary.isbn10 }}</span>
+                <span v-if="group.primary.googleId">
+                  <a :href="`https://books.google.com/books?id=${group.primary.googleId}`" target="_blank" class="text-primary hover:underline" @click.stop>Google Books</a>
+                </span>
+              </div>
+            </div>
+            <div class="mt-1">
+              <span class="text-xs text-base-content/30 italic">
+                {{ isCardExpanded(bookKey(group.primary)) ? 'Click to collapse' : 'Click to expand' }}
+              </span>
+            </div>
           </div>
-          <div class="shrink-0 flex flex-col justify-start pt-1">
-            <button
-              v-if="!isAdded(group.primary)"
-              class="btn btn-sm btn-outline btn-primary"
-              :class="{ 'loading': isAdding(group.primary) }"
-              :disabled="isAdding(group.primary)"
-              @click="addToLibrary(group.primary)"
-            >
-              <svg v-if="!isAdding(group.primary)" xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-              </svg>
-              {{ isAdding(group.primary) ? '' : 'Add' }}
-            </button>
+          <div class="shrink-0 flex flex-col gap-1 justify-start pt-1">
+            <template v-if="!isAdded(group.primary)">
+              <button
+                class="btn btn-xs btn-primary"
+                :class="{ 'loading': isAddingLib(group.primary) }"
+                :disabled="isAddingLib(group.primary) || isAddingWish(group.primary)"
+                @click="addToLibrary(group.primary)"
+              >
+                <svg v-if="!isAddingLib(group.primary)" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                </svg>
+                {{ isAddingLib(group.primary) ? '' : 'Library' }}
+              </button>
+              <button
+                v-if="!isInWishlist(group.primary)"
+                class="btn btn-xs btn-outline btn-secondary"
+                :class="{ 'loading': isAddingWish(group.primary) }"
+                :disabled="isAddingLib(group.primary) || isAddingWish(group.primary)"
+                @click="addToWishlist(group.primary)"
+              >
+                <svg v-if="!isAddingWish(group.primary)" xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                {{ isAddingWish(group.primary) ? '' : 'Wishlist' }}
+              </button>
+              <div v-else class="text-xs text-secondary font-medium flex items-center gap-1">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                </svg>
+                Wishlisted
+              </div>
+            </template>
             <div v-else class="flex items-center gap-1 text-success text-xs font-medium">
               <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
@@ -309,9 +488,9 @@ function truncate(text: string | undefined, maxLen = 300): string {
             class="text-xs text-primary hover:underline"
             @click="toggleEditions(group)"
           >
-            {{ group.expanded ? 'Hide' : 'Show' }} {{ group.editions.length }} other edition{{ group.editions.length !== 1 ? 's' : '' }}
+            {{ isExpanded(group) ? 'Hide' : 'Show' }} {{ group.editions.length }} other edition{{ group.editions.length !== 1 ? 's' : '' }}
           </button>
-          <div v-if="group.expanded" class="mt-2 flex flex-col gap-2">
+          <div v-if="isExpanded(group)" class="mt-2 flex flex-col gap-2">
             <div
               v-for="ed in group.editions"
               :key="bookKey(ed)"

@@ -45,6 +45,22 @@ const filteredItems = computed(() => {
 const bookItems = computed(() => items.value.filter((i: any) => i.itemType === "BOOK"))
 const conceptItems = computed(() => items.value.filter((i: any) => i.itemType === "CONCEPT"))
 
+const libraryTitles = ref<Set<string>>(new Set())
+
+const normalizeTitle = (t: string) =>
+  (t ?? '').toLowerCase().replace(/&/g, 'and').replace(/[^a-z0-9]/g, '').trim()
+
+function isInLibrary(item: any): boolean {
+  return libraryTitles.value.has(normalizeTitle(item.title ?? ''))
+}
+
+const loadLibraryTitles = async () => {
+  try {
+    const myBooks = await dataService.findUserBookByCriteria(null, null, null, null, null, null, 0, 500)
+    libraryTitles.value = new Set(myBooks.content.map((ub: any) => normalizeTitle(ub.book?.title ?? '')))
+  } catch (e) { /* ignore */ }
+}
+
 const loadItems = async () => {
   isLoading.value = true
   try {
@@ -73,6 +89,7 @@ const addBook = async () => {
     bookForm.value = { title: "", isbn: "", authors: "", image: "", pageCount: null, publisher: "", language: "", description: "" }
     showAddBook.value = false
     loadItems()
+loadLibraryTitles()
   } catch (e) {
     ObjectUtils.toast(oruga, "danger", "Failed to add: " + e, 3000)
   }
@@ -268,7 +285,10 @@ loadItems()
               <i class="mdi mdi-book-outline mdi-24px text-base-content/30" />
             </div>
             <div class="flex-grow min-w-0">
-              <h3 class="font-medium text-sm truncate">{{ item.title || 'Untitled' }}</h3>
+              <div class="flex items-center gap-2 flex-wrap">
+                <h3 class="font-medium text-sm truncate">{{ item.title || 'Untitled' }}</h3>
+                <span v-if="isInLibrary(item)" class="badge badge-info badge-xs">In Library</span>
+              </div>
               <p v-if="item.authors" class="text-xs text-base-content/60">{{ item.authors }}</p>
               <p v-if="item.publisher" class="text-xs text-base-content/40">{{ item.publisher }}</p>
               <p v-if="item.pageCount" class="text-xs text-base-content/40">{{ item.pageCount }} pages</p>

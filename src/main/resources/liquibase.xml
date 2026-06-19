@@ -875,4 +875,28 @@
     <changeSet id="add_up_next_count" author="jelu">
         <sql>ALTER TABLE "user" ADD up_next_count int;</sql>
     </changeSet>
+    <changeSet id="add_book_pace_target" author="jelu">
+        <createTable tableName="book_pace_target">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_book_id" type="binary(16)" remarks="UserBook ID">
+                <constraints foreignKeyName="fk_pace_target_userbook_id" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="daily_target_pages" type="int" remarks="Pages per day target">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_date" type="timestamp" remarks="When the target started">
+                <constraints nullable="false" />
+            </column>
+            <column name="planned_finish_date" type="timestamp" remarks="Computed planned finish">
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="book_pace_target" indexName="idx_pace_target_userbook">
+            <column name="user_book_id" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

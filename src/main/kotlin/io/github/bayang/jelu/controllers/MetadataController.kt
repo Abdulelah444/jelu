@@ -44,6 +44,7 @@ class MetadataController(
     @GetMapping(path = ["/metadata/search"])
     fun searchMetadata(
         @RequestParam(name = "q", required = true) query: String,
+        @RequestParam(name = "source", required = false) source: String?,
     ): List<MetadataDto> {
         if (pluginInfoHolder.plugins().isEmpty()) {
             throw JeluException("Automatic fetching of metadata is disabled, install calibre or configure a metadata plugin")
@@ -53,7 +54,7 @@ class MetadataController(
         } else {
             query to null
         }
-        return metadataService.searchMetadata(MetadataRequestDto(null, title, authors, listOf()))
+        return metadataService.searchMetadata(MetadataRequestDto(null, title, authors, listOf()), source = source)
     }
 
 
