@@ -39,13 +39,32 @@ const emit = defineEmits<{
 
 const create = () => {
   progress.value = true
-  if (currentCreateEvent.value.eventType === ReadingEventType.CURRENTLY_READING) {
+  const isStartingToRead = currentCreateEvent.value.eventType === ReadingEventType.CURRENTLY_READING
+  if (isStartingToRead) {
     console.log("cleaning event date if currently reading")
     currentCreateEvent.value.eventDate = undefined
   }
   dataService.createReadingEvent(currentCreateEvent.value)
-    .then(res => {
+    .then(async res => {
       progress.value = false
+      if (isStartingToRead && res?.userBook?.id) {
+        const existing = await dataService.getPaceTarget(res.userBook.id)
+        if (!existing) {
+          const input = window.prompt('How many pages a day do you want to read for this book? (leave blank to skip)', '20')
+          if (input) {
+            const pages = parseInt(input)
+            if (!isNaN(pages) && pages > 0) {
+              try {
+                const target = await dataService.setPaceTarget(res.userBook.id, pages)
+                if (target?.plannedFinishDate) {
+                  const finish = new Date(target.plannedFinishDate).toLocaleDateString()
+                  alert(`Goal set! At ${pages} pages/day you'll finish around ${finish}.`)
+                }
+              } catch (e) { console.log('failed to set pace target', e) }
+            }
+          }
+        }
+      }
       emit('close')
     })
     .catch(e => {

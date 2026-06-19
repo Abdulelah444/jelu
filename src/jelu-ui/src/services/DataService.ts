@@ -2566,6 +2566,42 @@ class DataService {
     return response.data
   }
 
+  setPaceTarget = async (userBookId: string, dailyTargetPages: number) => {
+    try {
+      const response = await this.apiClient.post(`/userbooks/${userBookId}/pace-target`, { userBookId, dailyTargetPages })
+      return response.data
+    } catch (error) {
+      console.log("error set pace target " + (error as AxiosError).code)
+      throw new Error("error set pace target " + error)
+    }
+  }
+
+  getPaceTarget = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/pace-target`)
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  getPaceStatus = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/pace-status`)
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  deletePaceTarget = async (userBookId: string) => {
+    try {
+      await this.apiClient.delete(`/userbooks/${userBookId}/pace-target`)
+    } catch (error) {
+      console.log("error delete pace target " + (error as AxiosError).code)
+    }
+  }
+
   getReadingPaceAll = async (userbookId: string) => {
     const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace-all')
     return response.data

@@ -22,6 +22,8 @@ const currentYearMonths: Ref<Array<MonthStats>> = ref([])
 const lastYearMonths: Ref<Array<MonthStats>> = ref([])
 const yearStats: Ref<Array<YearStats>> = ref([])
 const currentlyReading: Ref<Array<UserBook>> = ref([])
+const paceStatuses = ref<Record<string, any>>({})
+const paceTargets = ref<Record<string, any>>({})
 const recentFinished: Ref<Array<any>> = ref([])
 const allFinishedEvents: Ref<Array<any>> = ref([])
 
@@ -129,6 +131,7 @@ onMounted(async () => {
     currentYearMonths.value = cym
     lastYearMonths.value = lym
     currentlyReading.value = cr.content
+    loadPaceStatuses()
     allFinishedEvents.value = finished.content
     recentFinished.value = finished.content.slice(0, 5)
     await loadPagesInWindow()
@@ -243,6 +246,50 @@ const streakData = computed(() => {
   
   return { current, best }
 })
+
+async function loadPaceStatuses() {
+  const statuses: Record<string, any> = {}
+  const targets: Record<string, any> = {}
+  await Promise.all(currentlyReading.value.map(async (ub) => {
+    if (!ub.id) return
+    const [status, target] = await Promise.all([
+      dataService.getPaceStatus(ub.id),
+      dataService.getPaceTarget(ub.id),
+    ])
+    if (status) statuses[ub.id] = status
+    if (target) targets[ub.id] = target
+  }))
+  paceStatuses.value = statuses
+  paceTargets.value = targets
+}
+
+async function setGoal(bookId: string, pageCount: number | null) {
+  const input = window.prompt('How many pages per day do you want to read?', '20')
+  if (!input) return
+  const pages = parseInt(input)
+  if (isNaN(pages) || pages <= 0) { alert('Please enter a valid number'); return }
+  await dataService.setPaceTarget(bookId, pages)
+  await loadPaceStatuses()
+}
+
+async function clearGoal(bookId: string) {
+  await dataService.deletePaceTarget(bookId)
+  await loadPaceStatuses()
+}
+
+function paceStatusLabel(status: string): string {
+  if (status === 'AHEAD') return 'Ahead of pace'
+  if (status === 'ON_PACE') return 'On pace'
+  if (status === 'BEHIND') return 'Behind pace'
+  return 'Not started'
+}
+
+function paceStatusClass(status: string): string {
+  if (status === 'AHEAD') return 'badge-success'
+  if (status === 'ON_PACE') return 'badge-info'
+  if (status === 'BEHIND') return 'badge-warning'
+  return 'badge-ghost'
+}
 
 // ═══ CURRENTLY READING INSIGHTS ═══
 const readingInsights = computed(() => {
@@ -448,6 +495,33 @@ const changeIndicator = (current: number, previous: number) => {
                   </div>
                   <div v-if="book.pagesRemaining > 0" class="text-xs opacity-50 mt-1">
                     {{ book.pagesRemaining }} pages remaining
+                  </div>
+                  <!-- Daily goal / pace status -->
+                  <div class="mt-2 pt-2 border-t border-base-300">
+                    <template v-if="paceStatuses[book.id]">
+                      <div class="flex items-center gap-2 flex-wrap">
+                        <span class="badge badge-sm" :class="paceStatusClass(paceStatuses[book.id].status)">
+                          {{ paceStatusLabel(paceStatuses[book.id].status) }}
+                        </span>
+                        <span class="text-xs opacity-60">{{ paceTargets[book.id]?.dailyTargetPages }} pg/day goal</span>
+                      </div>
+                      <div class="text-xs opacity-50 mt-1">
+                        <template v-if="paceStatuses[book.id].pagesAheadBehind > 0">
+                          {{ paceStatuses[book.id].pagesAheadBehind }} pages ahead
+                        </template>
+                        <template v-else-if="paceStatuses[book.id].pagesAheadBehind < 0">
+                          {{ Math.abs(paceStatuses[book.id].pagesAheadBehind) }} pages behind
+                        </template>
+                        <template v-else>right on target</template>
+                      </div>
+                      <div class="flex gap-2 mt-1">
+                        <button class="text-xs text-primary hover:underline" @click="setGoal(book.id, book.pageCount)">Edit goal</button>
+                        <button class="text-xs opacity-40 hover:underline" @click="clearGoal(book.id)">Remove</button>
+                      </div>
+                    </template>
+                    <button v-else class="btn btn-xs btn-outline btn-primary" @click="setGoal(book.id, book.pageCount)">
+                      <i class="mdi mdi-target mdi-16px mr-1" /> Set daily goal
+                    </button>
                   </div>
                 </div>
               </div>

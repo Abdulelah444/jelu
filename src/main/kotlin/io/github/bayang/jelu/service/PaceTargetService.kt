@@ -2,6 +2,7 @@ package io.github.bayang.jelu.service
 
 import io.github.bayang.jelu.dao.BookPaceTarget
 import io.github.bayang.jelu.dao.BookPaceTargetTable
+import io.github.bayang.jelu.dao.ReadingEventType
 import io.github.bayang.jelu.dao.UserBook
 import io.github.bayang.jelu.dto.CreatePaceTargetDto
 import io.github.bayang.jelu.dto.PaceStatus
@@ -74,8 +75,16 @@ class PaceTargetService {
         val currentPage = userBook.currentPageNumber ?: 0
         val now = nowDateTime()
 
-        // Days elapsed since start (inclusive of day 1)
-        val daysElapsed = max(1, Duration.between(target.startDate, now).toDays().toInt() + 1)
+        // Anchor pace to the actual reading start date (the CURRENTLY_READING event),
+        // falling back to the target creation date if none exists.
+        val readingStart = userBook.readingEvents
+            .filter { it.eventType == ReadingEventType.CURRENTLY_READING }
+            .maxByOrNull { it.startDate }
+            ?.startDate
+            ?: target.startDate
+
+        // Days elapsed since reading start (inclusive of day 1)
+        val daysElapsed = max(1, Duration.between(readingStart, now).toDays().toInt() + 1)
         val expectedPage = target.dailyTargetPages * daysElapsed
         val expectedCapped = if (pageCount != null) minOf(expectedPage, pageCount) else expectedPage
         val diff = currentPage - expectedCapped
