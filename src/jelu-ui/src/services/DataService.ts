@@ -2654,6 +2654,15 @@ class DataService {
     }
   }
 
+  getTimeline = async (from?: string, to?: string) => {
+    try {
+      const response = await this.apiClient.get('/userbooks/streaks/timeline', { params: { from, to } })
+      return response.data
+    } catch (error) {
+      return { books: [] }
+    }
+  }
+
   rebuildStreaks = async () => {
     try {
       await this.apiClient.post(`/userbooks/streaks/rebuild`)

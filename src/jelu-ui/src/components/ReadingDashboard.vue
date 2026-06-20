@@ -11,6 +11,7 @@ import { useOruga } from '@oruga-ui/oruga-next'
 import WeeklyReportModal from './WeeklyReportModal.vue'
 import ReadingGoalModal from './ReadingGoalModal.vue'
 import FinishedBooksModal from './FinishedBooksModal.vue'
+import ReadingTimeline from './ReadingTimeline.vue'
 import dataService from '../services/DataService'
 import useTypography from '../composables/typography'
 
@@ -30,6 +31,8 @@ const oruga = useOruga()
 const paceStatuses = ref<Record<string, any>>({})
 const streaks = ref<any>(null)
 const readingGoal = ref<any>(null)
+const timelineBooks = ref<any[]>([])
+const timelineLoading = ref(true)
 const paceTargets = ref<Record<string, any>>({})
 const recentFinished: Ref<Array<any>> = ref([])
 const allFinishedEvents: Ref<Array<any>> = ref([])
@@ -328,6 +331,12 @@ async function loadPaceStatuses() {
   try {
     readingGoal.value = await dataService.getReadingGoal()
   } catch (e) { /* ignore */ }
+  try {
+    const from = dayjs().subtract(3, 'year').format('YYYY-MM-DD')
+    const to = dayjs().format('YYYY-MM-DD')
+    const tl = await dataService.getTimeline(from, to)
+    timelineBooks.value = tl.books ?? []
+  } catch (e) { /* ignore */ } finally { timelineLoading.value = false }
 }
 
 async function setGoal(bookId: string, pageCount: number | null) {
@@ -587,6 +596,13 @@ const changeIndicator = (current: number, previous: number) => {
         <button v-else class="btn btn-outline btn-primary btn-sm" @click="setReadingGoal">
           <i class="mdi mdi-target mdi-18px mr-1" /> Set a reading goal
         </button>
+      </div>
+
+      <!-- ═══ READING TIMELINE ═══ -->
+      <div class="mb-6 card bg-base-200 border border-base-300">
+        <div class="card-body p-4">
+          <ReadingTimeline :books="timelineBooks" :loading="timelineLoading" />
+        </div>
       </div>
 
       <!-- ═══ CURRENTLY READING ═══ -->

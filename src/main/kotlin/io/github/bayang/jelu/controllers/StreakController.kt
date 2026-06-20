@@ -3,6 +3,7 @@ package io.github.bayang.jelu.controllers
 import io.github.bayang.jelu.dto.HeatmapDto
 import io.github.bayang.jelu.dto.JeluUser
 import io.github.bayang.jelu.dto.StreakDto
+import io.github.bayang.jelu.dto.TimelineDto
 import io.github.bayang.jelu.dto.WeeklyReportDto
 import io.github.bayang.jelu.dto.assertIsJeluUser
 import io.github.bayang.jelu.service.StreakService
@@ -63,5 +64,18 @@ class StreakController(
     ): Map<String, Int> {
         assertIsJeluUser(principal.principal)
         return mapOf("streak" to streakService.getBookDailyStreak(userBookId))
+    }
+
+    @Operation(description = "get the reading timeline for a date range")
+    @GetMapping(path = ["/userbooks/streaks/timeline"])
+    fun timeline(
+        @RequestParam(name = "from", required = false) from: String?,
+        @RequestParam(name = "to", required = false) to: String?,
+        principal: Authentication,
+    ): TimelineDto {
+        assertIsJeluUser(principal.principal)
+        val toDate = if (to != null) LocalDate.parse(to) else LocalDate.now()
+        val fromDate = if (from != null) LocalDate.parse(from) else toDate.minusYears(1)
+        return streakService.getTimeline((principal.principal as JeluUser).user.id!!, fromDate, toDate)
     }
 }

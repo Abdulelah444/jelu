@@ -3,6 +3,9 @@ package io.github.bayang.jelu.service
 import io.github.bayang.jelu.dao.BookPaceTarget
 import io.github.bayang.jelu.dao.BookPaceTargetTable
 import io.github.bayang.jelu.dao.DailyReadingLog
+import io.github.bayang.jelu.dao.ReadingEvent
+import io.github.bayang.jelu.dao.ReadingEventTable
+import io.github.bayang.jelu.dao.ReadingEventType
 import io.github.bayang.jelu.dao.DailyReadingLogTable
 import io.github.bayang.jelu.dao.ReadingProgressHistory
 import io.github.bayang.jelu.dao.ReadingProgressHistoryTable
@@ -14,6 +17,9 @@ import io.github.bayang.jelu.dto.HeatmapDto
 import io.github.bayang.jelu.dto.PaceStatus
 import io.github.bayang.jelu.dto.StreakDto
 import io.github.bayang.jelu.dto.WeeklyBookReportDto
+import io.github.bayang.jelu.dto.TimelineBookDto
+import io.github.bayang.jelu.dto.TimelineDayDto
+import io.github.bayang.jelu.dto.TimelineDto
 import io.github.bayang.jelu.dto.WeeklyReportDto
 import io.github.bayang.jelu.utils.nowDateTime
 import org.jetbrains.exposed.sql.SortOrder
@@ -297,5 +303,60 @@ class StreakService {
             books = books,
             streak = getStreaks(userId),
         )
+    }
+
+    /**
+     * Build a reading timeline for all books with logged reading in the date range.
+     * Each book gets its first logged day (start), per-day pages, and finish date.
+     */
+    @Transactional
+    fun getTimeline(userId: UUID, fromDate: LocalDate, toDate: LocalDate): TimelineDto {
+        val logs = DailyReadingLog.find {
+            (DailyReadingLogTable.user eq userId) and
+                (DailyReadingLogTable.logDate greaterEq fromDate) and
+                (DailyReadingLogTable.logDate lessEq toDate)
+        }.toList()
+
+        // Group logs by userbook
+        val byBook = logs.groupBy { it.userBook.id.value }
+
+        val result = mutableListOf<TimelineBookDto>()
+        for ((ubId, bookLogs) in byBook) {
+            val ub = bookLogs.first().userBook
+            val days = bookLogs
+                .groupBy { it.logDate }
+                .map { (date, entries) -> TimelineDayDto(date, entries.sumOf { it.pagesRead }) }
+                .sortedBy { it.date }
+            if (days.isEmpty()) continue
+
+            val start = days.first().date
+
+            // Finish date = most recent FINISHED event for this book, if any
+            val finishEvent = ReadingEvent.find {
+                (ReadingEventTable.userBook eq ubId) and (ReadingEventTable.eventType eq ReadingEventType.FINISHED)
+            }.maxByOrNull { it.endDate ?: it.startDate ?: it.creationDate }
+            val finishDate = finishEvent?.let {
+                (it.endDate ?: it.startDate)?.toLocalDate()
+            }
+
+            val status = ub.lastReadingEvent?.name ?: "NONE"
+
+            result.add(
+                TimelineBookDto(
+                    userBookId = ubId,
+                    title = ub.book.title,
+                    image = ub.book.image,
+                    startDate = start,
+                    finishDate = finishDate,
+                    status = status,
+                    days = days,
+                    pageCount = ub.book.pageCount,
+                ),
+            )
+        }
+
+        // Sort by start date
+        result.sortBy { it.startDate }
+        return TimelineDto(result)
     }
 }

@@ -52,6 +52,12 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
+            path: '/timeline',
+            component: () => import('./components/ReadingTimeline.vue'),
+            name: 'reading-timeline',
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/discover',
             component: () => import(/* webpackChunkName: "recommend" */ './components/BookSearch.vue'),
             name: 'discover',
