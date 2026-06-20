@@ -899,4 +899,34 @@
             <column name="user_book_id" />
         </createIndex>
     </changeSet>
+    <changeSet id="add_daily_reading_log" author="jelu">
+        <createTable tableName="daily_reading_log">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_id" type="binary(16)" remarks="User ID">
+                <constraints foreignKeyName="fk_daily_log_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="user_book_id" type="binary(16)" remarks="UserBook ID">
+                <constraints foreignKeyName="fk_daily_log_userbook_id" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="log_date" type="date" remarks="The calendar day">
+                <constraints nullable="false" />
+            </column>
+            <column name="pages_read" type="int" remarks="Pages read that day for that book">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="daily_reading_log" indexName="idx_daily_log_user_date">
+            <column name="user_id" />
+            <column name="log_date" />
+        </createIndex>
+        <createIndex tableName="daily_reading_log" indexName="idx_daily_log_userbook_date">
+            <column name="user_book_id" />
+            <column name="log_date" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>
