@@ -929,4 +929,27 @@
             <column name="log_date" />
         </createIndex>
     </changeSet>
+    <changeSet id="add_reading_goal" author="jelu">
+        <createTable tableName="reading_goal">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_id" type="binary(16)" remarks="User ID">
+                <constraints foreignKeyName="fk_reading_goal_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="year" type="int" remarks="Calendar year">
+                <constraints nullable="false" />
+            </column>
+            <column name="target_books" type="int" remarks="Target number of books">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="reading_goal" indexName="idx_reading_goal_user_year">
+            <column name="user_id" />
+            <column name="year" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>
