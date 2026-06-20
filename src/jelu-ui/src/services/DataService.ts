@@ -2585,6 +2585,48 @@ class DataService {
     }
   }
 
+  getBookDailyStreak = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/daily-streak`)
+      return response.data
+    } catch (error) {
+      return { streak: 0 }
+    }
+  }
+
+  getStreaks = async () => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks`)
+      return response.data
+    } catch (error) {
+      return null
+    }
+  }
+
+  getWeeklyReport = async () => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks/weekly-report`)
+      return response.data
+    } catch (error) {
+      return null
+    }
+  }
+
+  getHeatmap = async (from?: string, to?: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks/heatmap`, { params: { from, to } })
+      return response.data
+    } catch (error) {
+      return { entries: [] }
+    }
+  }
+
+  rebuildStreaks = async () => {
+    try {
+      await this.apiClient.post(`/userbooks/streaks/rebuild`)
+    } catch (error) { /* ignore */ }
+  }
+
   getPaceStatus = async (userBookId: string) => {
     try {
       const response = await this.apiClient.get(`/userbooks/${userBookId}/pace-status`)

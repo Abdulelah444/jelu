@@ -169,11 +169,16 @@ const toggleToRead = async () => {
   }
 }
 const goalPace = ref<any>(null)
+const dailyStreak = ref<number>(0)
 
 onMounted(async () => {
   if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
     try {
       goalPace.value = await dataService.getPaceStatus(props.book.id)
+    } catch (e) { /* ignore */ }
+    try {
+      const s = await dataService.getBookDailyStreak(props.book.id)
+      dailyStreak.value = s?.streak ?? 0
     } catch (e) { /* ignore */ }
   }
 })
@@ -282,6 +287,13 @@ const currentTimestamp = ObjectUtils.timestamp()
         class="absolute top-1 left-1 z-10 bg-success/90 rounded-full p-0.5"
       >
         <i class="mdi mdi-book-open-page-variant mdi-14px text-success-content" />
+      </div>
+      <div
+        v-if="dailyStreak > 0"
+        v-tooltip="'Daily reading streak'"
+        class="absolute bottom-3 left-1 z-10 flex items-center gap-0.5 bg-base-900/75 backdrop-blur-sm text-orange-400 text-xs font-bold px-1.5 py-0.5 rounded-full"
+      >
+        <i class="mdi mdi-fire" />{{ dailyStreak }}
       </div>
       <div
         v-if="showProgressBar(book)"

@@ -7,6 +7,8 @@ import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, Title
 import { ReadingEventType } from '../model/ReadingEvent'
 import { UserBook } from '../model/Book'
 import { MonthStats, TotalsStats, YearStats } from '../model/YearStats'
+import { useOruga } from '@oruga-ui/oruga-next'
+import WeeklyReportModal from './WeeklyReportModal.vue'
 import dataService from '../services/DataService'
 import useTypography from '../composables/typography'
 
@@ -22,7 +24,9 @@ const currentYearMonths: Ref<Array<MonthStats>> = ref([])
 const lastYearMonths: Ref<Array<MonthStats>> = ref([])
 const yearStats: Ref<Array<YearStats>> = ref([])
 const currentlyReading: Ref<Array<UserBook>> = ref([])
+const oruga = useOruga()
 const paceStatuses = ref<Record<string, any>>({})
+const streaks = ref<any>(null)
 const paceTargets = ref<Record<string, any>>({})
 const recentFinished: Ref<Array<any>> = ref([])
 const allFinishedEvents: Ref<Array<any>> = ref([])
@@ -247,6 +251,16 @@ const streakData = computed(() => {
   return { current, best }
 })
 
+function openWeeklyReport() {
+  oruga.modal.open({
+    component: WeeklyReportModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+  })
+}
+
 async function loadPaceStatuses() {
   const statuses: Record<string, any> = {}
   const targets: Record<string, any> = {}
@@ -261,6 +275,9 @@ async function loadPaceStatuses() {
   }))
   paceStatuses.value = statuses
   paceTargets.value = targets
+  try {
+    streaks.value = await dataService.getStreaks()
+  } catch (e) { /* ignore */ }
 }
 
 async function setGoal(bookId: string, pageCount: number | null) {
@@ -401,10 +418,15 @@ const changeIndicator = (current: number, previous: number) => {
 
 <template>
   <div class="p-4 sm:p-6 max-w-6xl mx-auto">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2" :class="typographyClasses">
-      <i class="mdi mdi-chart-box text-sky-300" />
-      Reading Dashboard
-    </h1>
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="text-2xl font-bold flex items-center gap-2" :class="typographyClasses">
+        <i class="mdi mdi-chart-box text-sky-300" />
+        Reading Dashboard
+      </h1>
+      <button class="btn btn-sm btn-outline btn-primary" @click="openWeeklyReport">
+        <i class="mdi mdi-calendar-week mdi-18px mr-1" /> Weekly report
+      </button>
+    </div>
 
     <!-- Time window selector + window stats -->
     <div class="mb-6">
@@ -454,12 +476,21 @@ const changeIndicator = (current: number, previous: number) => {
         </div>
         <div class="card bg-base-200 border border-base-300">
           <div class="card-body p-4">
-            <p class="text-xs opacity-60 uppercase">Reading Streak</p>
-            <p class="text-2xl font-bold">{{ streakData.current }} <span class="text-sm font-normal opacity-60">months</span></p>
-            <p class="text-xs opacity-60">
-              Best: {{ streakData.best }} months
-              <span v-if="streakData.current >= streakData.best && streakData.current > 0" class="text-warning">⭐ New record!</span>
-            </p>
+            <p class="text-xs opacity-60 uppercase">Reading Streaks</p>
+            <div class="flex gap-4 mt-1">
+              <div>
+                <p class="text-2xl font-bold text-orange-400 flex items-center gap-1">
+                  <i class="mdi mdi-fire text-xl" />{{ streaks?.currentDailyStreak ?? 0 }}
+                </p>
+                <p class="text-xs opacity-60">day streak · best {{ streaks?.longestDailyStreak ?? 0 }}</p>
+              </div>
+              <div>
+                <p class="text-2xl font-bold text-violet-300 flex items-center gap-1">
+                  <i class="mdi mdi-calendar-week text-xl" />{{ streaks?.currentWeeklyStreak ?? 0 }}
+                </p>
+                <p class="text-xs opacity-60">week streak · best {{ streaks?.longestWeeklyStreak ?? 0 }}</p>
+              </div>
+            </div>
           </div>
         </div>
       </div>

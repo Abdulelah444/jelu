@@ -14,6 +14,7 @@ import BookCard from "./BookCard.vue"
 import QuotesDisplay from './QuotesDisplay.vue'
 import ReadingEventModalVue from './ReadingEventModal.vue'
 import ReadProgressModal from './ReadProgressModal.vue'
+import WeeklyReportModal from './WeeklyReportModal.vue'
 import ReviewBookCard from './ReviewBookCard.vue';
 import useTypography from "../composables/typography"
 
@@ -158,6 +159,32 @@ const getRandomBook = async () => {
   }
 }
 
+function getMonday(d: Date): string {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(date.setDate(diff))
+  return monday.toISOString().slice(0, 10)
+}
+
+function maybeShowWeeklyReport() {
+  const today = new Date()
+  const dow = today.getDay() // 0 = Sunday
+  // Only prompt on Sunday or later perception: show if it is Sunday
+  if (dow !== 0) return
+  const thisMonday = getMonday(today)
+  const lastSeen = localStorage.getItem('weeklyReportSeenWeek')
+  if (lastSeen === thisMonday) return
+  localStorage.setItem('weeklyReportSeenWeek', thisMonday)
+  oruga.modal.open({
+    component: WeeklyReportModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+  })
+}
+
 if (isLogged.value) {
   try {
       getCurrentlyReading()
@@ -166,6 +193,7 @@ if (isLogged.value) {
       getMyEvents()
       getUserReviews()
       getRandomBook()
+      maybeShowWeeklyReport()
   } catch (error) {
     console.log("failed get books : " + error);
   }
