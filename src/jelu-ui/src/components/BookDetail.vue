@@ -542,6 +542,43 @@ const toggleReadProgressModal = (userBookId: string, bookId: string, pageCount: 
   });
 }
 
+const deleteReadingEvent = async (eventId: string) => {
+  if (!confirm('Delete this reading event?')) return
+  try {
+    await dataService.deleteReadingEvent(eventId)
+    ObjectUtils.toast(oruga, 'success', 'Event deleted', 2000)
+    await getBook()
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not delete event', 2000)
+  }
+}
+
+const resetBook = async () => {
+  if (!book.value?.id) return
+  if (!confirm('Reset this book? This will delete ALL reading events, progress history, pace targets and streak data for this book. This cannot be undone.')) return
+  try {
+    // Delete all reading events
+    if (book.value.readingEvents) {
+      for (const ev of book.value.readingEvents) {
+        await dataService.deleteReadingEvent(ev.id)
+      }
+    }
+    // Delete pace target
+    await dataService.deletePaceTarget(book.value.id)
+    // Reset progress
+    const full = await dataService.getUserBookById(book.value.id)
+    full.currentPageNumber = 0
+    full.percentRead = 0
+    full.lastReadingEvent = null
+    full.lastReadingEventDate = null
+    await dataService.updateUserBook(full)
+    ObjectUtils.toast(oruga, 'success', 'Book reset to library', 2000)
+    await getBook()
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not reset book: ' + e, 3000)
+  }
+}
+
 const deleteBook = async () => {
   let deleteForUserOnly = true
   let abort = false
@@ -930,6 +967,7 @@ getBook()
             <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm" v-if="!book?.borrowed" @click="showLendModal = true"><i class="mdi mdi-account-arrow-right mdi-18px mr-2" />Lend Book</button></li>
             <li v-if="book?.borrowed"><button class="text-sm" @click="returnBook"><i class="mdi mdi-book-check mdi-18px mr-2" />Return Book</button></li>
             <li><label for="my-modal-4" class="text-sm"><i class="mdi mdi-code-tags mdi-18px mr-2" />Embed Code</label></li>
+            <li><button class="text-sm text-warning" @click="resetBook"><i class="mdi mdi-restore mdi-18px mr-2" />Reset to Library</button></li>
             <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm text-error" @click="deleteBook"><i class="mdi mdi-delete mdi-18px mr-2" />Delete</button>
             </li>
           </ul>
@@ -1521,12 +1559,22 @@ getBook()
                 {{ eventLabel(event.eventType) }}
               </p>
             </div>
-            <button
-              class="sm:hidden btn btn-xs btn-circle btn-outline mb-0 border-0"
-              @click="toggleReadingEventModal(event, true)"
-            >
-              <i class="mdi mdi-pencil mdi-18px" />
-            </button>
+            <div class="flex gap-1 mt-1">
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0"
+                @click="toggleReadingEventModal(event, true)"
+                title="Edit event"
+              >
+                <i class="mdi mdi-pencil mdi-16px" />
+              </button>
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0 text-error hover:btn-error"
+                @click="deleteReadingEvent(event.id)"
+                title="Delete event"
+              >
+                <i class="mdi mdi-delete mdi-16px" />
+              </button>
+            </div>
           </div>
           <div
             v-if="index % 2 === 0"
@@ -1595,12 +1643,22 @@ getBook()
                 {{ eventLabel(event.eventType) }}
               </p>
             </div>
-            <button
-              class="sm:hidden btn btn-xs btn-circle btn-outline mb-0 border-0"
-              @click="toggleReadingEventModal(event, true)"
-            >
-              <i class="mdi mdi-pencil mdi-18px" />
-            </button>
+            <div class="flex gap-1 mt-1">
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0"
+                @click="toggleReadingEventModal(event, true)"
+                title="Edit event"
+              >
+                <i class="mdi mdi-pencil mdi-16px" />
+              </button>
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0 text-error hover:btn-error"
+                @click="deleteReadingEvent(event.id)"
+                title="Delete event"
+              >
+                <i class="mdi mdi-delete mdi-16px" />
+              </button>
+            </div>
           </div>
         </div>
         <div class="col-start-5 mt-3 p-2 font-semibold timeline-item capitalize">

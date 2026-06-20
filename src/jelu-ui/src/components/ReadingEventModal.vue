@@ -33,44 +33,76 @@ watch(() => currentCreateEvent.value.eventType, (newValue, oldValue) => {
 })
 
 const progress: Ref<boolean> = ref(false)
+const showWipeDialog = ref(false)
+
+function selectInLibrary() {
+  currentCreateEvent.value.eventType = ReadingEventType.NONE
+  showWipeDialog.value = true
+}
 
 const emit = defineEmits<{
   (e: 'close'): void
 }>()
 
-const create = () => {
+const create = async (wipeHistory: boolean = false) => {
   progress.value = true
   const isStartingToRead = currentCreateEvent.value.eventType === ReadingEventType.CURRENTLY_READING
+  const isInLibrary = currentCreateEvent.value.eventType === ReadingEventType.NONE
   if (isStartingToRead) {
     console.log("cleaning event date if currently reading")
     currentCreateEvent.value.eventDate = undefined
   }
-  dataService.createReadingEvent(currentCreateEvent.value)
-    .then(async res => {
+  try {
+    if (isInLibrary) {
+      const userBookId = props.readingEvent.bookId
+      if (userBookId && wipeHistory) {
+        const ub = await dataService.getUserBookById(userBookId)
+        if (ub?.readingEvents) {
+          for (const ev of ub.readingEvents) {
+            try { await dataService.deleteReadingEvent(ev.id) } catch (e) {}
+          }
+        }
+        await dataService.deletePaceTarget(userBookId)
+        const fresh = await dataService.getUserBookById(userBookId)
+        fresh.currentPageNumber = 0
+        fresh.percentRead = 0
+        fresh.lastReadingEvent = null
+        fresh.lastReadingEventDate = null
+        await dataService.updateUserBook(fresh)
+      } else if (userBookId) {
+        const fresh = await dataService.getUserBookById(userBookId)
+        fresh.lastReadingEvent = null
+        fresh.lastReadingEventDate = null
+        await dataService.updateUserBook(fresh)
+      }
       progress.value = false
-      if (isStartingToRead && res?.userBook?.id) {
-        const existing = await dataService.getPaceTarget(res.userBook.id)
-        if (!existing) {
-          const input = window.prompt('How many pages a day do you want to read for this book? (leave blank to skip)', '20')
-          if (input) {
-            const pages = parseInt(input)
-            if (!isNaN(pages) && pages > 0) {
-              try {
-                const target = await dataService.setPaceTarget(res.userBook.id, pages)
-                if (target?.plannedFinishDate) {
-                  const finish = dayjs(target.plannedFinishDate).format('DD/MM/YYYY')
-                  alert(`Goal set! At ${pages} pages/day you'll finish around ${finish}.`)
-                }
-              } catch (e) { console.log('failed to set pace target', e) }
-            }
+      emit('close')
+      return
+    }
+    const res = await dataService.createReadingEvent(currentCreateEvent.value)
+    progress.value = false
+    if (isStartingToRead && res?.userBook?.id) {
+      const existing = await dataService.getPaceTarget(res.userBook.id)
+      if (!existing) {
+        const input = window.prompt('How many pages a day do you want to read for this book? (leave blank to skip)', '20')
+        if (input) {
+          const pages = parseInt(input)
+          if (!isNaN(pages) && pages > 0) {
+            try {
+              const target = await dataService.setPaceTarget(res.userBook.id, pages)
+              if (target?.plannedFinishDate) {
+                const finish = dayjs(target.plannedFinishDate).format('DD/MM/YYYY')
+                alert('Goal set! At ' + pages + ' pages/day you will finish around ' + finish + '.')
+              }
+            } catch (e) { console.log('failed to set pace target', e) }
           }
         }
       }
-      emit('close')
-    })
-    .catch(e => {
-      progress.value = false
-    })
+    }
+    emit('close')
+  } catch (e) {
+    progress.value = false
+  }
 }
 
 const update = () => {
@@ -128,6 +160,9 @@ const { typographyClasses } = useTypography()
           </div>
           <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'DROPPED' ? 'bg-error/20 text-error font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="currentCreateEvent.eventType = ReadingEventType.DROPPED">
             {{ t('reading_events.dropped') }}
+          </div>
+          <div class="px-4 py-2 text-sm cursor-pointer border-l border-base-content/30 transition-colors" :class="currentCreateEvent.eventType === 'NONE' ? 'bg-base-content/20 text-base-content font-medium' : 'bg-base-100 text-base-content/60 hover:bg-base-300'" @click="selectInLibrary()">
+            In Library
           </div>
         </div>
       </div>
