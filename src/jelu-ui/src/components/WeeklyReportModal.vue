@@ -90,7 +90,7 @@ const close = () => emit('close')
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2">
                 <span class="font-semibold text-sm line-clamp-1">{{ b.title }}</span>
-                <span class="badge badge-xs" :class="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
+                <span class="badge badge-xs rounded-md" :class="statusClass(b.status)">{{ statusLabel(b.status) }}</span>
               </div>
               <progress class="progress progress-primary w-full mt-1" :value="Math.min(b.compliancePercent, 100)" max="100" />
               <p class="text-xs opacity-60 mt-0.5">

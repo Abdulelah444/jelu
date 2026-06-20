@@ -47,8 +47,11 @@ class StreakService {
         val user = User[userId]
         val now = nowDateTime()
 
-        // Get all userbooks for this user
-        val userBookIds = UserBook.find { UserBookTable.user eq userId }.map { it.id.value }
+        // Only process books that have at least one reading event (finished/reading/paused/dropped)
+        // This avoids iterating over hundreds of unread library books
+        val userBookIds = UserBook.find { UserBookTable.user eq userId }
+            .filter { ub -> ub.lastReadingEvent != null }
+            .map { it.id.value }
 
         for (ubId in userBookIds) {
             val history = ReadingProgressHistory

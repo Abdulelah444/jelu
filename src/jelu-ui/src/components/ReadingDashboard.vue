@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, Ref, ref, watch } from 'vue'
+import { computed, onMounted, onActivated, Ref, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import dayjs from 'dayjs'
 import { Bar, Doughnut } from 'vue-chartjs'
@@ -130,6 +130,16 @@ const bookEta = (id: string, pagesRemaining: number) => {
 watch(selectedWindow, () => { loadPagesInWindow(); loadBookPaces() })
 
 // ═══ LOAD DATA ═══
+onActivated(async () => {
+  // Refresh timeline when navigating back to dashboard
+  try {
+    const from = dayjs().subtract(3, 'year').format('YYYY-MM-DD')
+    const to = dayjs().format('YYYY-MM-DD')
+    const tl = await dataService.getTimeline(from, to)
+    timelineBooks.value = tl.books ?? []
+  } catch (e) { /* ignore */ }
+})
+
 onMounted(async () => {
   try {
     const [t, ys, cym, lym, cr, finished] = await Promise.all([
@@ -601,7 +611,18 @@ const changeIndicator = (current: number, previous: number) => {
       <!-- ═══ READING TIMELINE ═══ -->
       <div class="mb-6 card bg-base-200 border border-base-300">
         <div class="card-body p-4">
-          <ReadingTimeline :books="timelineBooks" :loading="timelineLoading" />
+          <ReadingTimeline
+            :books="timelineBooks"
+            :loading="timelineLoading"
+            @refresh="async () => {
+              timelineLoading = true
+              try {
+                await dataService.rebuildStreaks()
+                const tl = await dataService.getTimeline(dayjs().subtract(3, 'year').format('YYYY-MM-DD'), dayjs().format('YYYY-MM-DD'))
+                timelineBooks.value = tl.books ?? []
+              } catch (e) { /* ignore */ } finally { timelineLoading.value = false }
+            }"
+          />
         </div>
       </div>
 
@@ -634,7 +655,7 @@ const changeIndicator = (current: number, previous: number) => {
                   <!-- GOAL VIEW: shown when a daily goal is set -->
                   <template v-if="paceStatuses[book.id]">
                     <div class="flex items-center gap-2 flex-wrap mt-2">
-                      <span class="badge badge-sm" :class="paceStatusClass(paceStatuses[book.id].status)">
+                      <span class="badge badge-sm rounded-md" :class="paceStatusClass(paceStatuses[book.id].status)">
                         {{ paceStatusLabel(paceStatuses[book.id].status) }}
                       </span>
                       <span class="text-xs opacity-60">{{ paceTargets[book.id]?.dailyTargetPages }} pg/day</span>

@@ -5,6 +5,7 @@ import dayjs from 'dayjs'
 import dataService from '../services/DataService'
 
 const router = useRouter()
+const emit = defineEmits<{ (e: 'refresh'): void }>()
 
 const props = defineProps<{ books: any[], loading: boolean }>()
 
@@ -175,6 +176,9 @@ function dotR(pages: number, book: any) {
         </div>
         <button v-if="showGoToday" class="btn btn-xs btn-primary" @click="goToToday">
           Go to today
+        </button>
+        <button class="btn btn-xs btn-ghost" @click="emit('refresh')" title="Refresh timeline">
+          <i class="mdi mdi-refresh" />
         </button>
       </div>
     </div>

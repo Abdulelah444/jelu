@@ -1281,7 +1281,7 @@ getBook()
                   </div>
                 </div>
                 <div class="flex items-center gap-2 ml-3 shrink-0">
-                  <span class="badge badge-sm">{{ release.format }}</span>
+                  <span class="badge badge-sm rounded-md">{{ release.format }}</span>
                   <span class="badge badge-ghost badge-sm">{{ release.size }}</span>
                   <span v-if="release.language" class="badge badge-outline badge-sm uppercase">{{ release.language }}</span>
                 </div>

@@ -327,7 +327,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       </div>
       <!-- Goal-based pace badge (shown in addition when a daily goal is set) -->
       <div v-if="goalPace" class="flex items-center gap-1.5 flex-wrap mb-1">
-        <span class="badge badge-xs" :class="goalStatusClass">{{ goalStatusLabel }}</span>
+        <span class="badge badge-xs rounded-md" :class="goalStatusClass">{{ goalStatusLabel }}</span>
         <span class="text-xs opacity-60">{{ goalLine }}</span>
       </div>
       <router-link

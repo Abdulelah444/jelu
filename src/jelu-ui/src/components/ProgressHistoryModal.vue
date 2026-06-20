@@ -77,6 +77,8 @@ const save = async () => {
   try {
     const entries = sortedRows.value.map(r => ({ pageNumber: Number(r.pageNumber), recordedAt: toIso(r.dateStr, r.isoTime) }))
     await dataService.saveProgressHistory(props.userBookId, entries)
+    // Rebuild daily reading log so timeline + streaks reflect the new history
+    try { await dataService.rebuildStreaks() } catch (e) { /* ignore */ }
     emit('close')
   } catch (e) {
     errorMessage.value = 'Failed to save'
