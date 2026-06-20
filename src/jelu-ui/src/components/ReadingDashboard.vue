@@ -27,6 +27,7 @@ const currentlyReading: Ref<Array<UserBook>> = ref([])
 const oruga = useOruga()
 const paceStatuses = ref<Record<string, any>>({})
 const streaks = ref<any>(null)
+const readingGoal = ref<any>(null)
 const paceTargets = ref<Record<string, any>>({})
 const recentFinished: Ref<Array<any>> = ref([])
 const allFinishedEvents: Ref<Array<any>> = ref([])
@@ -251,6 +252,27 @@ const streakData = computed(() => {
   return { current, best }
 })
 
+async function setReadingGoal() {
+  const input = window.prompt('How many books do you want to read this year?', '24')
+  if (!input) return
+  const target = parseInt(input)
+  if (isNaN(target) || target <= 0) { alert('Enter a valid number'); return }
+  const year = new Date().getFullYear()
+  try {
+    readingGoal.value = await dataService.setReadingGoal(year, target)
+  } catch (e) { alert('Could not set goal') }
+}
+
+async function removeReadingGoal() {
+  await dataService.deleteReadingGoal()
+  readingGoal.value = null
+}
+
+const goalRingStyle = computed(() => {
+  const pct = Math.min(100, readingGoal.value?.percentComplete ?? 0)
+  return { background: `conic-gradient(var(--fallback-p,oklch(var(--p))) ${pct * 3.6}deg, var(--fallback-b3,oklch(var(--b3))) 0deg)` }
+})
+
 function openWeeklyReport() {
   oruga.modal.open({
     component: WeeklyReportModal,
@@ -277,6 +299,9 @@ async function loadPaceStatuses() {
   paceTargets.value = targets
   try {
     streaks.value = await dataService.getStreaks()
+  } catch (e) { /* ignore */ }
+  try {
+    readingGoal.value = await dataService.getReadingGoal()
   } catch (e) { /* ignore */ }
 }
 
@@ -494,6 +519,51 @@ const changeIndicator = (current: number, previous: number) => {
           </div>
         </div>
       </div>
+      <!-- ═══ YEARLY GOAL ═══ -->
+      <div class="mb-6">
+        <div v-if="readingGoal" class="card bg-base-200 border border-base-300">
+          <div class="card-body p-5">
+            <div class="flex items-center gap-5">
+              <div class="radial-progress-wrapper relative flex items-center justify-center" style="width:96px;height:96px;">
+                <div class="rounded-full flex items-center justify-center" :style="goalRingStyle" style="width:96px;height:96px;">
+                  <div class="rounded-full bg-base-200 flex flex-col items-center justify-center" style="width:76px;height:76px;">
+                    <span class="text-xl font-bold">{{ readingGoal.booksFinished }}</span>
+                    <span class="text-xs opacity-60">of {{ readingGoal.targetBooks }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex-1">
+                <div class="flex items-center justify-between">
+                  <h3 class="font-bold text-lg" :class="typographyClasses">{{ new Date().getFullYear() }} Reading Challenge</h3>
+                  <div class="flex gap-2">
+                    <button class="text-xs text-primary hover:underline" @click="setReadingGoal">Edit</button>
+                    <button class="text-xs opacity-40 hover:underline" @click="removeReadingGoal">Remove</button>
+                  </div>
+                </div>
+                <p class="text-sm mt-1">
+                  <span class="font-semibold" :class="readingGoal.percentComplete >= 100 ? 'text-success' : 'text-primary'">{{ readingGoal.percentComplete }}%</span>
+                  complete
+                  <span v-if="readingGoal.percentComplete >= 100" class="text-success">· Goal reached! 🎉</span>
+                </p>
+                <p class="text-xs opacity-60 mt-1">
+                  <template v-if="readingGoal.percentComplete < 100">
+                    On pace to finish <span class="font-semibold text-primary">{{ readingGoal.onTrackProjection }}</span> books this year
+                    <template v-if="readingGoal.behindBy > 0"> · {{ readingGoal.behindBy }} behind schedule</template>
+                    <template v-else> · on track</template>
+                  </template>
+                  <template v-else>
+                    {{ readingGoal.booksFinished }} books finished · projected {{ readingGoal.onTrackProjection }} by year end
+                  </template>
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button v-else class="btn btn-outline btn-primary btn-sm" @click="setReadingGoal">
+          <i class="mdi mdi-target mdi-18px mr-1" /> Set a {{ new Date().getFullYear() }} reading goal
+        </button>
+      </div>
+
       <!-- ═══ CURRENTLY READING ═══ -->
       <div v-if="readingInsights.length > 0" class="mb-6">
         <h2 class="text-lg font-bold mb-3 flex items-center gap-2" :class="typographyClasses">

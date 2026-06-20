@@ -2594,6 +2594,30 @@ class DataService {
     }
   }
 
+  getReadingGoal = async (year?: number) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/reading-goal`, { params: { year } })
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  setReadingGoal = async (year: number, targetBooks: number) => {
+    try {
+      const response = await this.apiClient.post(`/userbooks/reading-goal`, { year, targetBooks })
+      return response.data
+    } catch (error) {
+      throw new Error("error set reading goal " + error)
+    }
+  }
+
+  deleteReadingGoal = async (year?: number) => {
+    try {
+      await this.apiClient.delete(`/userbooks/reading-goal`, { params: { year } })
+    } catch (error) { /* ignore */ }
+  }
+
   getStreaks = async () => {
     try {
       const response = await this.apiClient.get(`/userbooks/streaks`)

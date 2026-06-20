@@ -952,4 +952,16 @@
             <column name="year" />
         </createIndex>
     </changeSet>
+    <changeSet id="add_reading_goal_period_fields" author="jelu">
+        <addColumn tableName="reading_goal">
+            <column name="period_type" type="varchar(20)" defaultValue="ANNUAL">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_date" type="date" />
+            <column name="end_date" type="date" />
+            <column name="repeating" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
 </databaseChangeLog>

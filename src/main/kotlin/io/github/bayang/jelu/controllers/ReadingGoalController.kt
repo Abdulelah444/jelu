@@ -13,16 +13,14 @@ import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDate
 
 @RestController
 @RequestMapping("/api/v1")
 class ReadingGoalController(
     private val readingGoalService: ReadingGoalService,
 ) {
-    @Operation(description = "set or update the yearly reading goal")
+    @Operation(description = "set or update the reading goal")
     @PostMapping(path = ["/userbooks/reading-goal"])
     fun setGoal(
         @RequestBody dto: CreateReadingGoalDto,
@@ -32,27 +30,23 @@ class ReadingGoalController(
         return readingGoalService.setGoal((principal.principal as JeluUser).user.id!!, dto)
     }
 
-    @Operation(description = "get the yearly reading goal with progress")
+    @Operation(description = "get the reading goal with progress")
     @GetMapping(path = ["/userbooks/reading-goal"])
     fun getGoal(
-        @RequestParam(name = "year", required = false) year: Int?,
         principal: Authentication,
     ): ResponseEntity<ReadingGoalDto> {
         assertIsJeluUser(principal.principal)
-        val y = year ?: LocalDate.now().year
-        val goal = readingGoalService.getGoal((principal.principal as JeluUser).user.id!!, y)
+        val goal = readingGoalService.getGoal((principal.principal as JeluUser).user.id!!)
         return if (goal != null) ResponseEntity.ok(goal) else ResponseEntity.noContent().build()
     }
 
-    @Operation(description = "delete the yearly reading goal")
+    @Operation(description = "delete the reading goal")
     @DeleteMapping(path = ["/userbooks/reading-goal"])
     fun deleteGoal(
-        @RequestParam(name = "year", required = false) year: Int?,
         principal: Authentication,
     ): ResponseEntity<Void> {
         assertIsJeluUser(principal.principal)
-        val y = year ?: LocalDate.now().year
-        readingGoalService.deleteGoal((principal.principal as JeluUser).user.id!!, y)
+        readingGoalService.deleteGoal((principal.principal as JeluUser).user.id!!)
         return ResponseEntity.noContent().build()
     }
 }
