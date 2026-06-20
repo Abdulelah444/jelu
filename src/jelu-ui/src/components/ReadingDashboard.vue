@@ -10,6 +10,7 @@ import { MonthStats, TotalsStats, YearStats } from '../model/YearStats'
 import { useOruga } from '@oruga-ui/oruga-next'
 import WeeklyReportModal from './WeeklyReportModal.vue'
 import ReadingGoalModal from './ReadingGoalModal.vue'
+import FinishedBooksModal from './FinishedBooksModal.vue'
 import dataService from '../services/DataService'
 import useTypography from '../composables/typography'
 
@@ -281,6 +282,22 @@ const goalRingStyle = computed(() => {
   return { background: `conic-gradient(var(--fallback-p,oklch(var(--p))) ${pct * 3.6}deg, var(--fallback-b3,oklch(var(--b3))) 0deg)` }
 })
 
+function openFinishedBooks() {
+  const since = windowSince.value
+  const evs = since
+    ? allFinishedEvents.value.filter(ev =>
+        dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate).isAfter(since))
+    : allFinishedEvents.value
+  oruga.modal.open({
+    component: FinishedBooksModal,
+    props: { events: evs, windowLabel: windowLabel.value },
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+  })
+}
+
 function openWeeklyReport() {
   oruga.modal.open({
     component: WeeklyReportModal,
@@ -475,7 +492,7 @@ const changeIndicator = (current: number, previous: number) => {
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="rounded-xl bg-base-200 border border-base-300 p-4">
           <p class="text-xs uppercase tracking-wide opacity-60 mb-1">Books finished · {{ windowLabel }}</p>
-          <p class="text-3xl font-bold text-emerald-300">{{ booksFinishedInWindow }}</p>
+          <p class="text-3xl font-bold text-emerald-300 cursor-pointer hover:underline" @click="openFinishedBooks">{{ booksFinishedInWindow }}</p>
         </div>
         <div class="rounded-xl bg-base-200 border border-base-300 p-4">
           <p class="text-xs uppercase tracking-wide opacity-60 mb-1">Pages read · {{ windowLabel }}</p>
