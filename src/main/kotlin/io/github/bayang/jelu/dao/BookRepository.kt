@@ -1213,6 +1213,25 @@ class BookRepository(
                     this.pagesDelta = delta
                     this.recordedAt = java.time.OffsetDateTime.now()
                 }
+                // Update the daily reading log for streaks/heatmap (only positive reading)
+                if (delta > 0) {
+                    val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+                    val existing = DailyReadingLog.find {
+                        (DailyReadingLogTable.userBook eq found.id) and
+                            (DailyReadingLogTable.logDate eq today)
+                    }.firstOrNull()
+                    if (existing != null) {
+                        existing.pagesRead = existing.pagesRead + delta
+                    } else {
+                        DailyReadingLog.new {
+                            this.user = found.user
+                            this.userBook = found
+                            this.logDate = today
+                            this.pagesRead = delta
+                            this.creationDate = java.time.OffsetDateTime.now()
+                        }
+                    }
+                }
             }
         }
         if (book.book != null) {

@@ -121,6 +121,31 @@ class StreakService {
     }
 
     /**
+     * Per-book daily streak: consecutive days (ending today or yesterday) with
+     * any logged reading for this specific book. Tracks presence, not amount.
+     */
+    @Transactional
+    fun getBookDailyStreak(userBookId: UUID): Int {
+        val today = LocalDate.now(ZoneId.systemDefault())
+        fun hasRead(day: LocalDate): Boolean =
+            DailyReadingLog.find {
+                (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq day)
+            }.any { it.pagesRead > 0 }
+
+        var streak = 0
+        var cursor = today
+        // today unlogged shouldn't break the streak yet
+        if (!hasRead(cursor)) {
+            cursor = cursor.minusDays(1)
+        }
+        while (hasRead(cursor)) {
+            streak++
+            cursor = cursor.minusDays(1)
+        }
+        return streak
+    }
+
+    /**
      * Compute streaks. Daily streak = consecutive days with any reading.
      * Weekly streak = consecutive Mon-Sun weeks where total pages met the combined weekly goal.
      */

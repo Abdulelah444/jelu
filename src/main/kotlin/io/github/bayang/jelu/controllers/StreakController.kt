@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import java.time.LocalDate
+import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1")
@@ -52,5 +53,15 @@ class StreakController(
     fun weeklyReport(principal: Authentication): WeeklyReportDto {
         assertIsJeluUser(principal.principal)
         return streakService.getWeeklyReport((principal.principal as JeluUser).user.id!!)
+    }
+
+    @Operation(description = "get the per-book daily reading streak")
+    @GetMapping(path = ["/userbooks/{userBookId}/daily-streak"])
+    fun bookDailyStreak(
+        @org.springframework.web.bind.annotation.PathVariable userBookId: UUID,
+        principal: Authentication,
+    ): Map<String, Int> {
+        assertIsJeluUser(principal.principal)
+        return mapOf("streak" to streakService.getBookDailyStreak(userBookId))
     }
 }
