@@ -9,6 +9,7 @@ import { UserBook } from '../model/Book'
 import { MonthStats, TotalsStats, YearStats } from '../model/YearStats'
 import { useOruga } from '@oruga-ui/oruga-next'
 import WeeklyReportModal from './WeeklyReportModal.vue'
+import ReadingGoalModal from './ReadingGoalModal.vue'
 import dataService from '../services/DataService'
 import useTypography from '../composables/typography'
 
@@ -63,7 +64,7 @@ const booksFinishedInWindow = computed(() => {
   const since = windowSince.value
   if (!since) return allFinishedEvents.value.length
   return allFinishedEvents.value.filter(ev =>
-    dayjs(ev.modificationDate || ev.creationDate).isAfter(since)).length
+    dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate).isAfter(since)).length
 })
 const paceInWindow = computed(() => {
   const opt = windowOptions.find(o => o.key === selectedWindow.value)
@@ -72,7 +73,7 @@ const paceInWindow = computed(() => {
   if (days == null) {
     if (allFinishedEvents.value.length > 0) {
       const earliest = allFinishedEvents.value
-        .map(ev => dayjs(ev.modificationDate || ev.creationDate))
+        .map(ev => dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate))
         .reduce((a, b) => (a.isBefore(b) ? a : b))
       days = Math.max(1, now.diff(earliest, 'day'))
     } else {
@@ -90,7 +91,7 @@ const windowDaysForPace = (): number => {
   if (days == null) {
     if (allFinishedEvents.value.length > 0) {
       const earliest = allFinishedEvents.value
-        .map(ev => dayjs(ev.modificationDate || ev.creationDate))
+        .map(ev => dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate))
         .reduce((a, b) => (a.isBefore(b) ? a : b))
       days = Math.max(1, now.diff(earliest, 'day'))
     } else { days = 1 }
@@ -116,7 +117,7 @@ const bookEta = (id: string, pagesRemaining: number) => {
   const pace = bookPaceByWindow.value[id] ?? 0
   if (pace <= 0 || pagesRemaining <= 0) return null
   const days = Math.ceil(pagesRemaining / pace)
-  return { days, date: now.add(days, 'day').format('MMM D, YYYY') }
+  return { days, date: now.add(days, 'day').format('D MMM YYYY') }
 }
 watch(selectedWindow, () => { loadPagesInWindow(); loadBookPaces() })
 
@@ -195,7 +196,7 @@ const weeklyPace = computed(() => {
   const sevenDaysAgo = now.subtract(7, 'day')
   let pages = 0
   for (const ev of allFinishedEvents.value) {
-    const evDate = dayjs(ev.modificationDate || ev.creationDate)
+    const evDate = dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate)
     if (evDate.isAfter(sevenDaysAgo)) {
       pages += ev.userBook?.book?.pageCount ?? 0
     }
@@ -220,7 +221,7 @@ const streakData = computed(() => {
   // Build a set of year-month strings that have at least one finished book
   const monthsWithFinish = new Set<string>()
   for (const ev of allFinishedEvents.value) {
-    const d = dayjs(ev.modificationDate || ev.creationDate)
+    const d = dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate)
     monthsWithFinish.add(d.format('YYYY-MM'))
   }
   
@@ -252,15 +253,18 @@ const streakData = computed(() => {
   return { current, best }
 })
 
-async function setReadingGoal() {
-  const input = window.prompt('How many books do you want to read this year?', '24')
-  if (!input) return
-  const target = parseInt(input)
-  if (isNaN(target) || target <= 0) { alert('Enter a valid number'); return }
-  const year = new Date().getFullYear()
-  try {
-    readingGoal.value = await dataService.setReadingGoal(year, target)
-  } catch (e) { alert('Could not set goal') }
+function setReadingGoal() {
+  oruga.modal.open({
+    component: ReadingGoalModal,
+    props: { existing: readingGoal.value },
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+    events: {
+      saved: (goal: any) => { readingGoal.value = goal },
+    },
+  })
 }
 
 async function removeReadingGoal() {
@@ -359,7 +363,7 @@ const readingInsights = computed(() => {
       pagesPerDay = currentPage / daysReading
       if (pagesPerDay > 0 && pagesRemaining > 0) {
         etaDays = Math.ceil(pagesRemaining / pagesPerDay)
-        etaDate = now.add(etaDays, 'day').format('MMM D, YYYY')
+        etaDate = now.add(etaDays, 'day').format('D MMM YYYY')
       }
     }
     
@@ -534,7 +538,7 @@ const changeIndicator = (current: number, previous: number) => {
               </div>
               <div class="flex-1">
                 <div class="flex items-center justify-between">
-                  <h3 class="font-bold text-lg" :class="typographyClasses">{{ new Date().getFullYear() }} Reading Challenge</h3>
+                  <h3 class="font-bold text-lg" :class="typographyClasses">{{ readingGoal.periodLabel }}</h3>
                   <div class="flex gap-2">
                     <button class="text-xs text-primary hover:underline" @click="setReadingGoal">Edit</button>
                     <button class="text-xs opacity-40 hover:underline" @click="removeReadingGoal">Remove</button>
@@ -560,7 +564,7 @@ const changeIndicator = (current: number, previous: number) => {
           </div>
         </div>
         <button v-else class="btn btn-outline btn-primary btn-sm" @click="setReadingGoal">
-          <i class="mdi mdi-target mdi-18px mr-1" /> Set a {{ new Date().getFullYear() }} reading goal
+          <i class="mdi mdi-target mdi-18px mr-1" /> Set a reading goal
         </button>
       </div>
 
@@ -672,7 +676,7 @@ const changeIndicator = (current: number, previous: number) => {
                 <span class="text-xs text-center px-1 opacity-50">{{ ev.userBook?.book?.title }}</span>
               </div>
             </router-link>
-            <p class="text-xs opacity-50 mt-1 w-20 truncate">{{ dayjs(ev.modificationDate || ev.creationDate).format('MMM D') }}</p>
+            <p class="text-xs opacity-50 mt-1 w-20 truncate">{{ dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate).format('D MMM') }}</p>
           </div>
         </div>
       </div>

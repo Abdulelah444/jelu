@@ -372,7 +372,7 @@ const readingPace = computed(() => {
     pagesPerDay: Math.round(pace * 10) / 10,
     daysReading: Math.round(daysReading),
     daysRemaining,
-    estimatedFinish: estimatedFinish.format("MMM D, YYYY"),
+    estimatedFinish: estimatedFinish.format('D MMM YYYY'),
     pagesRead,
     pagesRemaining,
   }
@@ -1133,10 +1133,10 @@ getBook()
             <span class="font-medium">Lent to {{ book.borrowerName }}</span>
           </div>
           <div v-if="book?.borrowDate" class="text-xs text-base-content/50 mt-1 ml-6">
-            Since {{ new Date(book.borrowDate).toLocaleDateString() }}
+            Since {{ dayjs(book.borrowDate).format('DD/MM/YYYY') }}
           </div>
           <div v-if="book?.expectedReturnDate" class="text-xs text-base-content/50 ml-6">
-            Expected return: {{ new Date(book.expectedReturnDate).toLocaleDateString() }}
+            Expected return: {{ dayjs(book.expectedReturnDate).format('DD/MM/YYYY') }}
           </div>
         </div>
         <!-- Owner name -->
@@ -1173,10 +1173,10 @@ getBook()
               <span class="badge badge-primary badge-sm">{{ book?.digitalFileFormat?.toUpperCase() }}</span>
               <span class="text-base-content/60">{{ book?.digitalFileSizeBytes ? (book.digitalFileSizeBytes / 1024 / 1024).toFixed(1) + ' MB' : '' }}</span>
               <span v-if="book?.digitalFileAddedDate" class="text-base-content/60 text-xs">
-                Added {{ new Date(book.digitalFileAddedDate).toLocaleDateString() }}
+                Added {{ dayjs(book.digitalFileAddedDate).format('DD/MM/YYYY') }}
               </span>
               <span v-if="book?.lastSentToReaderDate" class="text-base-content/60 text-xs">
-                | Sent {{ new Date(book.lastSentToReaderDate).toLocaleDateString() }}
+                | Sent {{ dayjs(book.lastSentToReaderDate).format('DD/MM/YYYY') }}
               </span>
             </div>
             <div class="flex flex-wrap gap-2">

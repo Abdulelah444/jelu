@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { Ref, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useOruga } from "@oruga-ui/oruga-next"
@@ -100,7 +101,7 @@ getDigitalBooks()
             <td class="text-sm">{{ ub.book.authors && ub.book.authors.length > 0 ? ub.book.authors[0].name : '' }}</td>
             <td><span class="badge badge-primary badge-sm">{{ ub.digitalFileFormat ? ub.digitalFileFormat.toUpperCase() : '' }}</span></td>
             <td class="text-sm">{{ formatSize(ub.digitalFileSizeBytes) }}</td>
-            <td class="text-sm">{{ ub.digitalFileAddedDate ? new Date(ub.digitalFileAddedDate).toLocaleDateString() : '' }}</td>
+            <td class="text-sm">{{ ub.digitalFileAddedDate ? dayjs(ub.digitalFileAddedDate).format('DD/MM/YYYY') : '' }}</td>
             <td>
               <div class="flex gap-1">
                 <button class="btn btn-ghost btn-xs" @click="downloadFile(ub.id!)"><i class="mdi mdi-download mdi-18px" /></button>

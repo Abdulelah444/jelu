@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { ref, computed, onMounted } from "vue"
 import { useTitle } from "@vueuse/core"
 import dataService from "../services/DataService"
@@ -92,8 +93,8 @@ onMounted(() => loadHistory())
               </span>
             </div>
             <div class="text-xs text-base-content/40 mt-1">
-              Lent: {{ new Date(item.lendDate).toLocaleDateString() }}
-              <span v-if="item.returnDate"> · Returned: {{ new Date(item.returnDate).toLocaleDateString() }}</span>
+              Lent: {{ dayjs(item.lendDate).format('DD/MM/YYYY') }}
+              <span v-if="item.returnDate"> · Returned: {{ dayjs(item.returnDate).format('DD/MM/YYYY') }}</span>
             </div>
           </div>
           <div v-if="!item.returnDate" class="flex-shrink-0">

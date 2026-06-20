@@ -2594,9 +2594,9 @@ class DataService {
     }
   }
 
-  getReadingGoal = async (year?: number) => {
+  getReadingGoal = async () => {
     try {
-      const response = await this.apiClient.get(`/userbooks/reading-goal`, { params: { year } })
+      const response = await this.apiClient.get(`/userbooks/reading-goal`)
       return response.data || null
     } catch (error) {
       return null
@@ -2612,9 +2612,18 @@ class DataService {
     }
   }
 
-  deleteReadingGoal = async (year?: number) => {
+  setReadingGoal2 = async (payload: any) => {
     try {
-      await this.apiClient.delete(`/userbooks/reading-goal`, { params: { year } })
+      const response = await this.apiClient.post(`/userbooks/reading-goal`, payload)
+      return response.data
+    } catch (error) {
+      throw new Error("error set reading goal " + error)
+    }
+  }
+
+  deleteReadingGoal = async () => {
+    try {
+      await this.apiClient.delete(`/userbooks/reading-goal`)
     } catch (error) { /* ignore */ }
   }
 

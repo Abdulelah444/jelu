@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import dayjs from 'dayjs'
 import { Ref, ref, watch } from "vue";
 import { CreateReadingEvent, ReadingEvent, ReadingEventType } from "../model/ReadingEvent";
 import dataService from "../services/DataService";
@@ -57,7 +58,7 @@ const create = () => {
               try {
                 const target = await dataService.setPaceTarget(res.userBook.id, pages)
                 if (target?.plannedFinishDate) {
-                  const finish = new Date(target.plannedFinishDate).toLocaleDateString()
+                  const finish = dayjs(target.plannedFinishDate).format('DD/MM/YYYY')
                   alert(`Goal set! At ${pages} pages/day you'll finish around ${finish}.`)
                 }
               } catch (e) { console.log('failed to set pace target', e) }
