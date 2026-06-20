@@ -62,9 +62,13 @@ const loadPagesInWindow = async () => {
 }
 const booksFinishedInWindow = computed(() => {
   const since = windowSince.value
-  if (!since) return allFinishedEvents.value.length
-  return allFinishedEvents.value.filter(ev =>
-    dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate).isAfter(since)).length
+  const inWindow = since
+    ? allFinishedEvents.value.filter(ev =>
+        dayjs(ev.endDate || ev.startDate || ev.modificationDate || ev.creationDate).isAfter(since))
+    : allFinishedEvents.value
+  // Count unique books, not raw events (a book can have duplicate finish events)
+  const uniqueBookIds = new Set(inWindow.map(ev => ev.userBook?.id).filter(Boolean))
+  return uniqueBookIds.size
 })
 const paceInWindow = computed(() => {
   const opt = windowOptions.find(o => o.key === selectedWindow.value)
