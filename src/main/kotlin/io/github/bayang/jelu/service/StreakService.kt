@@ -129,6 +129,13 @@ class StreakService {
             .sumOf { it.pagesRead }
     }
 
+    @Transactional
+    fun getPagesForBookOnDate(userBookId: UUID, date: LocalDate): Int {
+        return DailyReadingLog.find {
+            (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq date)
+        }.sumOf { it.pagesRead }
+    }
+
     /**
      * Per-book daily streak: consecutive days (ending today or yesterday) with
      * any logged reading for this specific book. Tracks presence, not amount.

@@ -2585,6 +2585,15 @@ class DataService {
     }
   }
 
+  getTodayPages = async (userBookId: string): Promise<number> => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/today-pages`)
+      return response.data?.pages ?? 0
+    } catch (error) {
+      return 0
+    }
+  }
+
   getBookDailyStreak = async (userBookId: string) => {
     try {
       const response = await this.apiClient.get(`/userbooks/${userBookId}/daily-streak`)

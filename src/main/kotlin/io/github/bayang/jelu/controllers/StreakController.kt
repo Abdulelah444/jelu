@@ -56,6 +56,18 @@ class StreakController(
         return streakService.getWeeklyReport((principal.principal as JeluUser).user.id!!)
     }
 
+    @Operation(description = "get pages read today for a specific book")
+    @GetMapping(path = ["/userbooks/{userBookId}/today-pages"])
+    fun todayPages(
+        @org.springframework.web.bind.annotation.PathVariable userBookId: UUID,
+        principal: Authentication,
+    ): Map<String, Int> {
+        assertIsJeluUser(principal.principal)
+        val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+        val pages = streakService.getPagesForBookOnDate(userBookId, today)
+        return mapOf("pages" to pages)
+    }
+
     @Operation(description = "get the per-book daily reading streak")
     @GetMapping(path = ["/userbooks/{userBookId}/daily-streak"])
     fun bookDailyStreak(

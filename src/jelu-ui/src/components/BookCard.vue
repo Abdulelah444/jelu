@@ -170,6 +170,7 @@ const toggleToRead = async () => {
 }
 const goalPace = ref<any>(null)
 const dailyStreak = ref<number>(0)
+const todayPages = ref<number>(0)
 
 onMounted(async () => {
   if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
@@ -179,6 +180,18 @@ onMounted(async () => {
     try {
       const s = await dataService.getBookDailyStreak(props.book.id)
       dailyStreak.value = s?.streak ?? 0
+    } catch (e) { /* ignore */ }
+    try {
+      todayPages.value = await dataService.getTodayPages(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+})
+
+// Refresh today's pages when progress is logged
+watch(() => props.book.currentPageNumber, async () => {
+  if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+    try {
+      todayPages.value = await dataService.getTodayPages(props.book.id)
     } catch (e) { /* ignore */ }
   }
 })
@@ -329,6 +342,13 @@ const currentTimestamp = ObjectUtils.timestamp()
       <div v-if="goalPace" class="flex items-center gap-1.5 flex-wrap mb-1">
         <span class="badge badge-xs rounded-md" :class="goalStatusClass">{{ goalStatusLabel }}</span>
         <span class="text-xs opacity-60">{{ goalLine }}</span>
+      </div>
+      <!-- Today's pages vs daily target -->
+      <div v-if="goalPace" class="text-xs mb-1">
+        <span :class="todayPages >= goalPace.dailyTargetPages ? 'text-success font-medium' : 'text-base-content/50'">
+          Today: {{ todayPages }} / {{ goalPace.dailyTargetPages }}p
+        </span>
+        <span v-if="todayPages >= goalPace.dailyTargetPages" class="text-success ml-1">✓</span>
       </div>
       <router-link
         v-if="book.id != null"
