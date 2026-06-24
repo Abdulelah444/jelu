@@ -4,7 +4,7 @@ import IsbnVerify from '@w0s/isbn-verify';
 import { useTitle } from '@vueuse/core';
 import { computed, reactive, Ref, ref, watch } from "vue";
 import { useI18n } from 'vue-i18n';
-import { useRouter, onBeforeRouteLeave } from 'vue-router';
+import { useRouter, useRoute, onBeforeRouteLeave } from 'vue-router';
 import { useStore } from 'vuex';
 import { Author } from "../model/Author";
 import { Wrapper } from "../model/autocomplete-wrapper";
@@ -36,6 +36,7 @@ useTitle('Jelu | ' + t('nav.add_book'))
 
 const store = useStore(key)
 const router = useRouter()
+const route = useRoute()
 onBeforeRouteLeave(() => {
   navigator.mediaDevices?.getUserMedia({ video: true }).then(s => s.getTracks().forEach(t => t.stop())).catch(() => {})
   oruga.modal.closeAll()
@@ -160,6 +161,44 @@ const loadShelfOptions = async () => {
 }
 loadShelfOptions()
 
+// Pre-populate form from query params (e.g. when adding from wishlist)
+const prefillFromQuery = async () => {
+  const qIsbn = route.query.isbn13 ? String(route.query.isbn13) : (route.query.isbn10 ? String(route.query.isbn10) : '')
+  // Fill the basics immediately so the user sees something even if metadata fetch fails
+  if (route.query.title) form.title = String(route.query.title)
+  if (route.query.isbn13) form.isbn13 = String(route.query.isbn13)
+  if (route.query.isbn10) form.isbn10 = String(route.query.isbn10)
+  if (route.query.publisher) form.publisher = String(route.query.publisher)
+  if (route.query.authors) {
+    String(route.query.authors).split(/[,&]/).map(s => s.trim()).filter(Boolean).forEach(name => {
+      authors.value.push({ name })
+    })
+  }
+  // Auto-fetch full metadata (cover, summary, pages, etc.)
+  // Prefer ISBN; fall back to title + authors search.
+  const qTitle = route.query.title ? String(route.query.title) : ''
+  const qAuthors = route.query.authors ? String(route.query.authors) : ''
+  if (StringUtils.isNotBlank(qIsbn) || StringUtils.isNotBlank(qTitle)) {
+    try {
+      progress.value = true
+      const res: Metadata = await dataService.fetchMetadata(
+        StringUtils.isNotBlank(qIsbn) ? qIsbn : undefined,
+        StringUtils.isNotBlank(qTitle) ? qTitle : undefined,
+        StringUtils.isNotBlank(qAuthors) ? qAuthors : undefined
+      )
+      if (res) {
+        metadata.value = res
+        mergeMetadata()
+      }
+    } catch (e) {
+      console.log('wishlist auto-fetch metadata failed: ' + e)
+    } finally {
+      progress.value = false
+    }
+  }
+}
+prefillFromQuery()
+
 const importBook = async () => {
   console.log("import book");
   if (StringUtils.isNotBlank(form.title)) {
@@ -238,6 +277,60 @@ const importBook = async () => {
           await dataService.assignBookToShelf(selectedShelfId.value, { userBookId: res.id })
         } catch (e) {
           console.log('Failed to assign to shelf: ' + e)
+        }
+      }
+      // Check ebooks folder for an already-downloaded file matching this title
+      if (res.id && res.book.title) {
+        try {
+          const files = await dataService.listEbooks()
+          const words = res.book.title.toLowerCase()
+            .replace(/[^a-z0-9 ]/g, '')
+            .split(' ')
+            .filter((w: string) => w.length > 3)
+          const needed = Math.max(1, Math.ceil(words.length * 0.7))
+          const matches = files.filter((f: any) => {
+            const fn = f.filename.toLowerCase()
+            return words.filter((w: string) => fn.includes(w)).length >= needed
+          })
+          if (matches.length === 1) {
+            const m = matches[0]
+            await ObjectUtils.swalYesNoMixin.fire({
+              html: `<p>Found a digital file that may match this book:<br><b>${m.filename}</b><br>Link it to your library copy?</p>`,
+              showDenyButton: false,
+              confirmButtonText: 'Link file',
+              cancelButtonText: "Don't link"
+            }).then(async (result: any) => {
+              if (result.isConfirmed) {
+                try {
+                  await dataService.linkDigitalFile(res.id!, m.serverPath)
+                  ObjectUtils.toast(oruga, 'success', 'Digital file linked', 3000)
+                } catch (e) {
+                  ObjectUtils.toast(oruga, 'danger', 'Could not link file: ' + e, 3000)
+                }
+              }
+            })
+          } else if (matches.length > 1) {
+            const list = matches.map((m: any, i: number) => `${i + 1}. ${m.filename}`).join('<br>')
+            const { value: pick } = await ObjectUtils.baseSwalMixin.fire({
+              title: 'Multiple files found',
+              html: `<p>Pick a file to link, or cancel:</p><p style="text-align:left">${list}</p>`,
+              input: 'number',
+              inputAttributes: { min: '1', max: String(matches.length) },
+              showCancelButton: true,
+              confirmButtonText: 'Link',
+            })
+            const idx = pick ? parseInt(pick) - 1 : -1
+            if (idx >= 0 && idx < matches.length) {
+              try {
+                await dataService.linkDigitalFile(res.id!, matches[idx].serverPath)
+                ObjectUtils.toast(oruga, 'success', 'Digital file linked', 3000)
+              } catch (e) {
+                ObjectUtils.toast(oruga, 'danger', 'Could not link file: ' + e, 3000)
+              }
+            }
+          }
+        } catch (e) {
+          // No file match or scan failed — proceed silently
         }
       }
       clearForm();

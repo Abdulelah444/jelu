@@ -41,6 +41,17 @@ class WishlistController(
         return ResponseEntity.noContent().build()
     }
 
+    @PutMapping("/wishlist/{id}")
+    fun update(
+        @org.springframework.web.bind.annotation.PathVariable id: java.util.UUID,
+        @org.springframework.web.bind.annotation.RequestBody dto: io.github.bayang.jelu.dto.CreateWishlistItemDto,
+        principal: org.springframework.security.core.Authentication,
+    ): io.github.bayang.jelu.dto.WishlistItemDto {
+        io.github.bayang.jelu.dto.assertIsJeluUser(principal.principal)
+        val user = principal.principal as io.github.bayang.jelu.dto.JeluUser
+        return wishlistService.update(id, dto, user.user.id!!)
+    }
+
     @GetMapping("/wishlist/{id}")
     fun getById(
         @PathVariable id: UUID,

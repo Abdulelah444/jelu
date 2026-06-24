@@ -54,6 +54,22 @@ class WishlistService {
     }
 
     @Transactional
+    fun update(id: UUID, dto: CreateWishlistItemDto, userId: UUID): WishlistItemDto {
+        val item = WishlistItem.findById(id) ?: throw IllegalArgumentException("Wishlist item not found")
+        if (item.user.id.value != userId) throw IllegalArgumentException("Not your wishlist item")
+        item.modificationDate = Instant.now()
+        if (dto.title != null) item.title = dto.title
+        if (dto.description != null) item.description = dto.description
+        if (dto.isbn != null) item.isbn = dto.isbn
+        if (dto.authors != null) item.authors = dto.authors
+        if (dto.image != null) item.image = dto.image
+        if (dto.pageCount != null) item.pageCount = dto.pageCount
+        if (dto.publisher != null) item.publisher = dto.publisher
+        if (dto.language != null) item.language = dto.language
+        return item.toDto()
+    }
+
+    @Transactional
     fun findById(id: UUID): WishlistItemDto {
         return WishlistItem[id].toDto()
     }

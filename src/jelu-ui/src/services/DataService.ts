@@ -2448,6 +2448,74 @@ class DataService {
       throw new Error("error create wishlist " + error)
     }
   }
+  deleteEbookFile = async (filePath: string) => {
+    try {
+      await this.apiClient.delete('/userbooks/digital/ebooks-file', { params: { path: filePath } })
+    } catch (error) {
+      throw new Error('error deleting ebook file ' + error)
+    }
+  }
+
+  linkDigitalFile = async (userbookId: string, filePath: string) => {
+    try {
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/link`, { filePath })
+      return response.data
+    } catch (error) {
+      throw new Error('error linking digital file ' + error)
+    }
+  }
+
+  listEbooks = async () => {
+    try {
+      const response = await this.apiClient.get<any[]>('/userbooks/digital/ebooks-list')
+      return response.data || []
+    } catch (error) {
+      return []
+    }
+  }
+
+  getWishlistDownloadStatus = async () => {
+    try {
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-status')
+      return response.data
+    } catch (error) {
+      return {}
+    }
+  }
+
+  getWishlistFileUrl = (filePath: string, inline: boolean = false) => {
+    const encoded = encodeURIComponent(filePath)
+    return `/api/v1/userbooks/digital/wishlist-file?path=${encoded}&inline=${inline}`
+  }
+
+  searchWishlistDigital = async (query: string, lang: string = 'en', ext: string = 'epub') => {
+    try {
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-search', { params: { query, lang, ext } })
+      return response.data
+    } catch (error) {
+      throw new Error('error searching wishlist digital ' + error)
+    }
+  }
+
+  triggerWishlistDownload = async (release: any) => {
+    try {
+      const response = await this.apiClient.post<any>('/userbooks/digital/wishlist-download', release)
+      return response.data
+    } catch (error) {
+      throw new Error('error triggering wishlist download ' + error)
+    }
+  }
+
+  updateWishlistItem = async (id: string, item: any) => {
+    try {
+      const response = await this.apiClient.put<any>('/wishlist/' + id, item)
+      return response.data
+    } catch (error) {
+      console.log('error update wishlist ' + (error as any).code)
+      throw new Error('error update wishlist ' + error)
+    }
+  }
+
   deleteWishlistItem = async (id: string) => {
     try {
       await this.apiClient.delete("/wishlist/" + id)

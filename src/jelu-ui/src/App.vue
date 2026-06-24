@@ -101,8 +101,87 @@ const search = () => {
   console.log(searchQuery.value)
   if (StringUtils.isNotBlank(searchQuery.value)) {
     showAdvanced.value = false
+    showSuggestions.value = false
     router.push({ path: '/search', query: { q: searchQuery.value } })
   }
+}
+
+// ── Typeahead suggestions ────────────────────────────────────────────
+const suggestions = ref<any[]>([])
+const showSuggestions = ref(false)
+const suggestionLoading = ref(false)
+const activeSuggestionIndex = ref(-1)
+let suggestTimer: any = null
+
+const fetchSuggestions = () => {
+  const q = searchQuery.value
+  if (suggestTimer) clearTimeout(suggestTimer)
+  if (!q || q.trim().length < 2) {
+    suggestions.value = []
+    showSuggestions.value = false
+    return
+  }
+  suggestTimer = setTimeout(async () => {
+    suggestionLoading.value = true
+    try {
+      const res = await dataService.findBooks(q, 0, 6)
+      suggestions.value = res?.content || []
+      showSuggestions.value = suggestions.value.length > 0
+      activeSuggestionIndex.value = -1
+    } catch (e) {
+      suggestions.value = []
+      showSuggestions.value = false
+    } finally {
+      suggestionLoading.value = false
+    }
+  }, 250)
+}
+
+const onSearchKeydown = (e: KeyboardEvent) => {
+  if (!showSuggestions.value) return
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    activeSuggestionIndex.value = Math.min(activeSuggestionIndex.value + 1, suggestions.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    activeSuggestionIndex.value = Math.max(activeSuggestionIndex.value - 1, -1)
+  } else if (e.key === 'Escape') {
+    showSuggestions.value = false
+  }
+}
+
+const selectSuggestion = (ub: any) => {
+  showSuggestions.value = false
+  searchQuery.value = ''
+  // raw item is a Book; book-detail route expects the book id
+  const bookId = ub?.id
+  if (bookId) {
+    router.push({ name: 'book-detail', params: { bookId } })
+  }
+}
+
+const onSearchEnter = () => {
+  if (showSuggestions.value && activeSuggestionIndex.value >= 0) {
+    selectSuggestion(suggestions.value[activeSuggestionIndex.value])
+  } else {
+    search()
+  }
+}
+
+const hideSuggestions = () => {
+  setTimeout(() => { showSuggestions.value = false }, 200)
+}
+
+const suggestionCover = (ub: any): string => {
+  const img = ub?.image
+  if (!img) return ''
+  return img.startsWith('http') ? img : '/files/' + img
+}
+
+const suggestionAuthors = (ub: any): string => {
+  const a = ub?.authors
+  if (!a || !a.length) return ''
+  return a.map((x: any) => x.name).join(', ')
 }
 
 // hide the search input if current view is the search page
@@ -265,17 +344,20 @@ function scanModalClosed() {
             class="dropdown-content mt-2-left-10 w-svw"
           >
             <div
-              class="form-control w-full"
+              class="form-control w-full relative"
             >
               <div class="join w-full">
+                <!-- typeahead anchor -->
                 <input
                   v-model="searchQuery"
                   type="text"
                   :placeholder="t('labels.search_query')"
                   class="input input-accent join-item w-1/2"
                   @focus="showAdvanced = true"
-                  @blur="hideAdvanced"
-                  @keyup.enter="search"
+                  @blur="hideAdvanced(); hideSuggestions()"
+                  @input="fetchSuggestions"
+                  @keydown="onSearchKeydown"
+                  @keyup.enter="onSearchEnter"
                 >
                 <button
                   class="btn btn-square btn-outline join-item"
@@ -319,6 +401,34 @@ function scanModalClosed() {
                     />
                   </svg>
                 </button>
+              </div>
+              <!-- Typeahead suggestions dropdown -->
+              <div
+                v-if="showSuggestions"
+                class="absolute left-0 right-0 top-full mt-1 bg-base-100 border border-base-content/20 rounded-box shadow-xl z-[60] max-h-96 overflow-y-auto"
+              >
+                <div
+                  v-for="(ub, idx) in suggestions"
+                  :key="ub.id"
+                  class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-base-200"
+                  :class="{ 'bg-base-200': idx === activeSuggestionIndex }"
+                  @mousedown.prevent="selectSuggestion(ub)"
+                  @mouseenter="activeSuggestionIndex = idx"
+                >
+                  <img
+                    v-if="suggestionCover(ub)"
+                    :src="suggestionCover(ub)"
+                    class="w-8 h-12 object-cover rounded flex-shrink-0"
+                    alt="cover"
+                  >
+                  <div v-else class="w-8 h-12 bg-base-300 rounded flex items-center justify-center flex-shrink-0">
+                    <i class="mdi mdi-book-outline text-base-content/30" />
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <div class="text-sm font-medium truncate">{{ ub.title }}</div>
+                    <div v-if="suggestionAuthors(ub)" class="text-xs text-base-content/60 truncate">{{ suggestionAuthors(ub) }}</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
