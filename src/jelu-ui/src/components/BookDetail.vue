@@ -90,6 +90,7 @@ const getBook = async () => {
     getBookUsers()
     getShelfLocation()
     initPaceDefault()
+    loadPaceGoal()
   } catch (error) {
     console.log("failed get book : " + error);
     getBookIsLoading.value = false
@@ -337,6 +338,51 @@ const fetchAllPaces = async () => {
 }
 
 
+
+const paceGoal = ref<any>(null)
+
+const loadPaceGoal = async () => {
+  if (!book.value?.id) return
+  try {
+    paceGoal.value = await dataService.getPaceTarget(book.value.id)
+  } catch (e) {
+    paceGoal.value = null
+  }
+}
+
+const editPaceGoal = async () => {
+  if (!book.value?.id) return
+  const current = paceGoal.value?.dailyTargetPages ?? ''
+  const { value } = await ObjectUtils.baseSwalMixin.fire({
+    title: 'Daily reading goal',
+    input: 'number',
+    inputLabel: 'Pages per day',
+    inputValue: String(current),
+    inputAttributes: { min: '1', step: '1' },
+    showCancelButton: true,
+    confirmButtonText: 'Save',
+  })
+  const pages = value ? parseInt(value) : 0
+  if (pages > 0) {
+    try {
+      paceGoal.value = await dataService.setPaceTarget(book.value.id, pages)
+      ObjectUtils.toast(oruga, 'success', 'Daily goal updated', 2000)
+    } catch (e) {
+      ObjectUtils.toast(oruga, 'danger', 'Could not update goal: ' + e, 3000)
+    }
+  }
+}
+
+const removePaceGoal = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.deletePaceTarget(book.value.id)
+    paceGoal.value = null
+    ObjectUtils.toast(oruga, 'success', 'Daily goal removed', 2000)
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not remove goal: ' + e, 3000)
+  }
+}
 
 const initPaceDefault = async () => {
   await fetchAllPaces()
@@ -1113,6 +1159,25 @@ getBook()
               <span class="opacity-70">Est. finish:</span>
               <span class="font-medium">{{ serverPace.estimatedFinish }} ({{ serverPace.daysRemaining }} days)</span>
             </template>
+          </div>
+        </div>
+        <!-- Daily reading goal -->
+        <div v-if="book?.lastReadingEvent === 'CURRENTLY_READING' || paceGoal" class="my-3 p-3 bg-base-200 rounded-lg text-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="mdi mdi-target mdi-18px" />
+              <span class="font-semibold">Daily goal</span>
+              <span v-if="paceGoal" class="opacity-80">{{ paceGoal.dailyTargetPages }} pages/day</span>
+              <span v-else class="opacity-50">none set</span>
+            </div>
+            <div class="flex gap-1">
+              <button class="btn btn-xs btn-outline" @click="editPaceGoal">
+                <i class="mdi mdi-pencil mdi-14px mr-1" />{{ paceGoal ? 'Edit' : 'Set goal' }}
+              </button>
+              <button v-if="paceGoal" class="btn btn-xs btn-outline btn-error" @click="removePaceGoal">
+                <i class="mdi mdi-delete mdi-14px" />
+              </button>
+            </div>
           </div>
         </div>
         <p v-if="book?.book?.publishedDate">
