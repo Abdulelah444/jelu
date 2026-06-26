@@ -86,6 +86,7 @@ class DataService {
   private API_BOOK_QUOTES = '/book-quotes';
 
   private API_CUSTOM_LISTS = '/custom-lists';
+  private API_APP_SETTINGS = '/app-settings';
 
   constructor() {
     this.apiClient = axios.create({
@@ -2503,6 +2504,40 @@ class DataService {
       return response.data
     } catch (error) {
       throw new Error('error triggering wishlist download ' + error)
+    }
+  }
+
+  uploadAppLogo = async (file: File): Promise<any> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await this.apiClient.post('/app-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data
+  }
+
+  resetAppLogo = async (): Promise<any> => {
+    const response = await this.apiClient.delete('/app-logo')
+    return response.data
+  }
+
+  getAppSettings = async (): Promise<Record<string, string>> => {
+    try {
+      const response = await this.apiClient.get<Record<string, string>>(this.API_APP_SETTINGS)
+      return response.data || {}
+    } catch (error) {
+      console.log('error fetching app settings ' + (error as any).code)
+      return {}
+    }
+  }
+
+  updateAppSettings = async (settings: Record<string, string | null>): Promise<Record<string, string>> => {
+    try {
+      const response = await this.apiClient.put<Record<string, string>>(this.API_APP_SETTINGS, settings)
+      return response.data || {}
+    } catch (error) {
+      console.log('error updating app settings ' + (error as any).code)
+      throw new Error('error updating app settings ' + error)
     }
   }
 

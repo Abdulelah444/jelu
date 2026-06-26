@@ -19,6 +19,7 @@ const isLoading = ref(false)
 const activeTab = ref("ALL")
 const showAddBook = ref(false)
 const showAddConcept = ref(false)
+const appSettingsLocal = useAppSettings()
 const editingItem = ref<any>(null)
 const editForm = ref<any>({})
 const digitalSearchItem = ref<any>(null)
@@ -138,7 +139,8 @@ const getItemFile = (item: any) => {
     .filter((w: string) => w.length > 3)
   if (words.length === 0) return null
   // Require at least 70% of significant title words to appear in the filename
-  const needed = Math.max(1, Math.ceil(words.length * 0.7))
+  const pct = (appSettingsLocal.getInt('match_threshold') || 70) / 100
+  const needed = Math.max(1, Math.ceil(words.length * pct))
   let best: any = null
   let bestScore = 0
   for (const f of ebookFiles.value) {

@@ -3,6 +3,7 @@ import { useOruga } from "@oruga-ui/oruga-next";
 import { themeChange } from 'theme-change';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
 import { computed, onMounted, Ref, ref, watch } from 'vue';
+import defaultLogo from './assets/jelu_logo.png';
 import Avatar from 'vue-avatar-sdh';
 import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
@@ -13,6 +14,7 @@ import dataService from "./services/DataService";
 import { key } from './store';
 import { StringUtils } from './utils/StringUtils';
 import useTypography from "./composables/typography";
+import { useAppSettings } from "./composables/appSettings";
 
 const {
   offlineReady,
@@ -52,6 +54,7 @@ store.dispatch('getUser')
     console.log("ok nav")
     initialLoad.value = false
     store.dispatch('getServerSettings')
+    useAppSettings().load()
   })
   .catch(() => {
     if (store.state.route != null && (
@@ -116,15 +119,23 @@ let suggestTimer: any = null
 const fetchSuggestions = () => {
   const q = searchQuery.value
   if (suggestTimer) clearTimeout(suggestTimer)
+  // Respect the typeahead settings
+  if (!appSettings.getBool('typeahead_enabled')) {
+    suggestions.value = []
+    showSuggestions.value = false
+    return
+  }
   if (!q || q.trim().length < 2) {
     suggestions.value = []
     showSuggestions.value = false
     return
   }
+  const count = appSettings.getInt('typeahead_count')
+  const delay = appSettings.getInt('typeahead_debounce')
   suggestTimer = setTimeout(async () => {
     suggestionLoading.value = true
     try {
-      const res = await dataService.findBooks(q, 0, 6)
+      const res = await dataService.findBooks(q, 0, count)
       suggestions.value = res?.content || []
       showSuggestions.value = suggestions.value.length > 0
       activeSuggestionIndex.value = -1
@@ -134,7 +145,7 @@ const fetchSuggestions = () => {
     } finally {
       suggestionLoading.value = false
     }
-  }, 250)
+  }, delay)
 }
 
 const onSearchKeydown = (e: KeyboardEvent) => {
@@ -163,6 +174,8 @@ const selectSuggestion = (ub: any) => {
 const onSearchEnter = () => {
   if (showSuggestions.value && activeSuggestionIndex.value >= 0) {
     selectSuggestion(suggestions.value[activeSuggestionIndex.value])
+  } else if (appSettings.getBool('typeahead_enter_top_hit') && showSuggestions.value && suggestions.value.length > 0) {
+    selectSuggestion(suggestions.value[0])
   } else {
     search()
   }
@@ -200,6 +213,12 @@ const collapseDropdown = () => {
 }
 
 const { typographyClasses } = useTypography()
+const appSettings = useAppSettings()
+const logoSrc = computed(() => {
+  return appSettings.getBool('custom_logo_enabled')
+    ? '/files/custom-logo.png?v=' + Date.now()
+    : defaultLogo
+})
 
 let barcodeReader: any = null
 
@@ -315,7 +334,7 @@ function scanModalClosed() {
           :to="{ name: 'home' }"
         >
           <img
-            src="./assets/jelu_logo.png"
+:src="logoSrc"
             alt="home"
             class="w-14"
           >

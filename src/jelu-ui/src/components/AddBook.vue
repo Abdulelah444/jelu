@@ -13,6 +13,7 @@ import { Path } from "../model/DirectoryListing";
 import { Metadata } from "../model/Metadata";
 import { SeriesOrder } from "../model/Series";
 import { Tag } from "../model/Tag";
+import { useAppSettings } from '../composables/appSettings'
 import dataService from "../services/DataService";
 import { key } from '../store';
 import { ObjectUtils } from "../utils/ObjectUtils";
@@ -280,14 +281,15 @@ const importBook = async () => {
         }
       }
       // Check ebooks folder for an already-downloaded file matching this title
-      if (res.id && res.book.title) {
+      if (res.id && res.book.title && useAppSettings().getBool('autolink_on_add')) {
         try {
           const files = await dataService.listEbooks()
           const words = res.book.title.toLowerCase()
             .replace(/[^a-z0-9 ]/g, '')
             .split(' ')
             .filter((w: string) => w.length > 3)
-          const needed = Math.max(1, Math.ceil(words.length * 0.7))
+          const pct = (useAppSettings().getInt('match_threshold') || 70) / 100
+          const needed = Math.max(1, Math.ceil(words.length * pct))
           const matches = files.filter((f: any) => {
             const fn = f.filename.toLowerCase()
             return words.filter((w: string) => fn.includes(w)).length >= needed

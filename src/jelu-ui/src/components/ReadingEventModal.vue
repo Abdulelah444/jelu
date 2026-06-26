@@ -2,6 +2,7 @@
 import dayjs from 'dayjs'
 import { Ref, ref, watch } from "vue";
 import { CreateReadingEvent, ReadingEvent, ReadingEventType } from "../model/ReadingEvent";
+import { useAppSettings } from '../composables/appSettings'
 import dataService from "../services/DataService";
 import { useI18n } from 'vue-i18n'
 import Datepicker from 'vue3-datepicker'
@@ -82,9 +83,11 @@ const create = async (wipeHistory: boolean = false) => {
     const res = await dataService.createReadingEvent(currentCreateEvent.value)
     progress.value = false
     if (isStartingToRead && res?.userBook?.id) {
+      const appS = useAppSettings()
       const existing = await dataService.getPaceTarget(res.userBook.id)
-      if (!existing) {
-        const input = window.prompt('How many pages a day do you want to read for this book? (leave blank to skip)', '20')
+      if (!existing && appS.getBool('autoprompt_goal_on_reading')) {
+        const defaultGoal = String(appS.getInt('default_daily_goal') || 20)
+        const input = window.prompt('How many pages a day do you want to read for this book? (leave blank to skip)', defaultGoal)
         if (input) {
           const pages = parseInt(input)
           if (!isNaN(pages) && pages > 0) {

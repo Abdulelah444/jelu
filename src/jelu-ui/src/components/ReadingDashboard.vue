@@ -9,6 +9,7 @@ import { UserBook } from '../model/Book'
 import { MonthStats, TotalsStats, YearStats } from '../model/YearStats'
 import { useOruga } from '@oruga-ui/oruga-next'
 import WeeklyReportModal from './WeeklyReportModal.vue'
+import { useAppSettings } from '../composables/appSettings'
 import ReadingGoalModal from './ReadingGoalModal.vue'
 import FinishedBooksModal from './FinishedBooksModal.vue'
 import ReadingTimeline from './ReadingTimeline.vue'
@@ -164,6 +165,7 @@ onMounted(async () => {
     console.log("Failed to load dashboard data: " + e)
   }
   loading.value = false
+  maybeAutoWeeklyReport()
 })
 
 // ═══ READING ACTIVITY METRICS ═══
@@ -319,6 +321,21 @@ function openWeeklyReport() {
     canCancel: ['x', 'button', 'outside'],
     scroll: 'keep',
   })
+}
+
+function maybeAutoWeeklyReport() {
+  try {
+    const appS = useAppSettings()
+    if (!appS.getBool('weekly_report_popup')) return
+    const now = new Date()
+    if (now.getDay() !== 0) return // 0 = Sunday
+    // week key: year + ISO week-ish (use date of the Sunday)
+    const weekKey = now.toISOString().slice(0, 10)
+    const seen = window.localStorage.getItem('weeklyReportSeenWeek')
+    if (seen === weekKey) return
+    window.localStorage.setItem('weeklyReportSeenWeek', weekKey)
+    openWeeklyReport()
+  } catch (e) { /* ignore */ }
 }
 
 async function loadPaceStatuses() {

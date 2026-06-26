@@ -964,4 +964,24 @@
             </column>
         </addColumn>
     </changeSet>
+    <changeSet id="add_app_settings" author="jelu">
+        <createTable tableName="app_settings">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="setting_key" type="varchar(100)" remarks="Setting key">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="setting_value" type="text" remarks="Setting value (stored as string)" />
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of last modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="app_settings" indexName="idx_app_settings_key" unique="true">
+            <column name="setting_key" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

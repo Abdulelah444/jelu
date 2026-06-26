@@ -210,9 +210,7 @@ const router = createRouter({
                 { path : 'users', component: () => import(/* webpackChunkName: "recommend" */ './components/UsersList.vue')},
                 { path: 'imports', component: () => import(/* webpackChunkName: "recommend" */ './components/Imports.vue')},
                 { path: 'settings', component: () => import(/* webpackChunkName: "recommend" */ './components/UserSettings.vue')},
-                { path: 'messages', component: () => import(/* webpackChunkName: "recommend" */ './components/UserMessages.vue')},
-                { path: 'stats', component: () => import(/* webpackChunkName: "recommend" */ './components/UserStats.vue')},
-                { path: 'tags', component: () => import(/* webpackChunkName: "recommend" */ './components/TagsAdmin.vue')},
+                { path: 'preferences', component: () => import(/* webpackChunkName: "recommend" */ './components/Preferences.vue')},
                 { path: 'data', component: () => import(/* webpackChunkName: "recommend" */ './components/DataAdmin.vue')},
                 { path: 'api-tokens', component: () => import(/* webpackChunkName: "recommend" */ './components/ApiTokens.vue')},
             ]

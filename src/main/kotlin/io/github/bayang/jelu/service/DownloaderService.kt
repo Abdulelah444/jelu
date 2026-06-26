@@ -14,16 +14,18 @@ private val logger = KotlinLogging.logger {}
 @Service
 class DownloaderService(
     private val properties: JeluProperties,
+    private val appSettingsService: AppSettingsService,
 ) {
-    private val webClient: WebClient by lazy {
-        WebClient.builder()
-            .baseUrl(properties.ebooks.downloaderUrl)
+    private fun client(): WebClient {
+        val url = appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
+        return WebClient.builder()
+            .baseUrl(url)
             .build()
     }
 
     fun search(query: String, lang: String = "en", ext: String = "epub"): CwaSearchResponse {
         logger.info { "Searching CWA for: $query (lang=$lang, ext=$ext)" }
-        return webClient.get()
+        return client().get()
             .uri { uriBuilder ->
                 uriBuilder
                     .path("/api/releases")
@@ -41,7 +43,7 @@ class DownloaderService(
 
     fun triggerDownload(release: CwaDownloadRequest) {
         logger.info { "Triggering CWA download: ${release.title} (${release.sourceId})" }
-        webClient.post()
+        client().post()
             .uri("/api/releases/download")
             .bodyValue(release)
             .retrieve()
@@ -50,7 +52,7 @@ class DownloaderService(
     }
 
     fun getStatus(): Map<String, Any> {
-        return webClient.get()
+        return client().get()
             .uri("/api/status")
             .retrieve()
             .bodyToMono<Map<String, Any>>()
