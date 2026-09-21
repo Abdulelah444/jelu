@@ -85,6 +85,17 @@ class BooksController(
     fun booksMissingPageCount(
         @PageableDefault(page = 0, size = 200, direction = Sort.Direction.ASC, sort = ["title"]) @ParameterObject pageable: Pageable,
     ): Page<BookDto> = repository.findBooksMissingPageCount(pageable)
+
+    @GetMapping(path = ["/books/missing"])
+    fun booksMissing(
+        @RequestParam(name = "field", required = true) field: String,
+        @PageableDefault(page = 0, size = 200, direction = Sort.Direction.ASC, sort = ["title"]) @ParameterObject pageable: Pageable,
+    ): Page<BookDto> = repository.findBooksMissing(field, pageable)
+
+    @GetMapping(path = ["/books/duplicates"])
+    fun booksDuplicates(
+        @PageableDefault(page = 0, size = 200, direction = Sort.Direction.ASC, sort = ["title"]) @ParameterObject pageable: Pageable,
+    ): Page<BookDto> = repository.findDuplicateBooks(pageable)
     @GetMapping(path = ["/books/{id}/users"])
 
     fun bookUsersById(
@@ -404,6 +415,15 @@ class BooksController(
         author: AuthorUpdateDto,
         principal: Authentication,
     ): AuthorDto = repository.mergeAuthors(authorId, otherId, author, (principal.principal as JeluUser).user)
+
+    @PutMapping(path = ["/series/{id}/merge/{otherId}"], consumes = [MediaType.APPLICATION_JSON_VALUE])
+    fun mergeSeries(
+        @PathVariable("id") seriesId: UUID,
+        @PathVariable("otherId") otherId: UUID,
+        @RequestBody @Valid
+        series: SeriesUpdateDto,
+        principal: Authentication,
+    ): SeriesDto = repository.mergeSeries(seriesId, otherId, series, (principal.principal as JeluUser).user)
 
     @PutMapping(path = ["/userbooks/{id}"], consumes = [MediaType.APPLICATION_JSON_VALUE])
     fun updateUserBook(

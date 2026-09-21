@@ -1805,6 +1805,30 @@ class DataService {
     }
   }
 
+  checkTitleAuthorExists = async (title: string|undefined, authorNames: string[]) => {
+    if (!title || title.trim().length === 0) return null
+    try {
+      const res = await this.findBooks(title.trim(), 0, 10)
+      if (res.empty) return null
+      const normalize = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '').trim()
+      const targetTitle = normalize(title)
+      const targetAuthors = authorNames.map(normalize).filter(a => a.length > 0)
+      for (const b of res.content) {
+        const bAny = b as any
+        const bTitle = normalize(bAny.title || '')
+        if (bTitle !== targetTitle) continue
+        // title matches; if we have authors, require an author overlap too
+        if (targetAuthors.length === 0) return bAny
+        const bAuthors = (bAny.authors || []).map((a: any) => normalize(a.name || ''))
+        const overlap = bAuthors.some((a: string) => targetAuthors.includes(a))
+        if (overlap) return bAny
+      }
+      return null
+    } catch (e) {
+      return null
+    }
+  }
+
   checkIsbnExists = async (isbn10: string|undefined, isbn13: string|undefined) => {
     console.log(isbn10 + " " + isbn13)
     if (StringUtils.isNotBlank(isbn10)) {
@@ -2518,6 +2542,25 @@ class DataService {
 
   resetAppLogo = async (): Promise<any> => {
     const response = await this.apiClient.delete('/app-logo')
+    return response.data
+  }
+
+  findDuplicateBooks = async (page = 0, size = 200): Promise<Page<Book>> => {
+    const response = await this.apiClient.get<Page<Book>>(`${this.API_BOOK}/duplicates`, {
+      params: { page, size }
+    })
+    return response.data
+  }
+
+  findBooksMissing = async (field: string, page = 0, size = 200): Promise<Page<Book>> => {
+    const response = await this.apiClient.get<Page<Book>>(`${this.API_BOOK}/missing`, {
+      params: { field, page, size }
+    })
+    return response.data
+  }
+
+  mergeSeries = async (seriesId: string, otherId: string, series: any): Promise<any> => {
+    const response = await this.apiClient.put(`${this.API_SERIES}/${seriesId}/merge/${otherId}`, series)
     return response.data
   }
 

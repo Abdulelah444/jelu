@@ -203,14 +203,24 @@ prefillFromQuery()
 const importBook = async () => {
   console.log("import book");
   if (StringUtils.isNotBlank(form.title)) {
-    const alreadyExisting = await dataService.checkIsbnExists(form.isbn10, form.isbn13)
+    let alreadyExisting = await dataService.checkIsbnExists(form.isbn10, form.isbn13)
+    let dupReason = 'isbn'
+    // If no ISBN match, fall back to a title + author check
+    if (alreadyExisting == null) {
+      const authorNames = authors.value.map((a: any) => a.name).filter((n: string) => !!n)
+      alreadyExisting = await dataService.checkTitleAuthorExists(form.title, authorNames)
+      dupReason = 'title'
+    }
     console.log('already existing')
     console.log(alreadyExisting)
     let saveBook = true
     if (alreadyExisting != null) {
       saveBook = false
+      const dupMsg = dupReason === 'isbn'
+        ? t('labels.book_with_same_isbn_already_exists')
+        : 'You already have a book with this title and author'
       await ObjectUtils.swalYesNoMixin.fire({
-        html: `<p>${t('labels.book_with_same_isbn_already_exists')}:<br>${alreadyExisting.title}<br>${t('labels.save_new_anyway')}</p>`,
+        html: `<p>${dupMsg}:<br><b>${alreadyExisting.title}</b><br>${t('labels.save_new_anyway')}</p>`,
         showDenyButton: false,
         confirmButtonText: t('labels.save'),
         cancelButtonText: t('labels.dont_save')
@@ -218,7 +228,9 @@ const importBook = async () => {
         if (result.isConfirmed) {
           saveBook = true
         } else if (result.isDenied) {
-          ObjectUtils.baseSwalMixin.fire('', t('labels.changes_not_saved'), 'info')
+          clearForm()
+          selectedShelfId.value = null
+          ObjectUtils.toast(oruga, 'info', t('labels.changes_not_saved'), 2000)
         }
       })
     }
@@ -335,9 +347,25 @@ const importBook = async () => {
           // No file match or scan failed — proceed silently
         }
       }
+      const savedId = res.id
       clearForm();
       selectedShelfId.value = null
-      await router.push({name: 'my-books'})
+      const choice = await ObjectUtils.baseSwalMixin.fire({
+        title: t('labels.book_title_saved', { title: res.book.title }),
+        html: '<p>What would you like to do next?</p>',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: 'Print QR label',
+        denyButtonText: 'Add another',
+        cancelButtonText: 'Done',
+      })
+      if (choice.isConfirmed) {
+        await router.push({ name: 'book-labels' })
+      } else if (choice.isDenied) {
+        // stay on the add-book page with a fresh form (already cleared)
+      } else {
+        await router.push({ name: 'my-books' })
+      }
     } catch (error: any) {
       progress.value = false
       ObjectUtils.toast(oruga, "danger", t('labels.error_message', {msg : error.message}), 4000)

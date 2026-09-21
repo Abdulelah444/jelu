@@ -584,6 +584,38 @@ class BookRepository(
         return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
     }
 
+    fun findDuplicateBooks(pageable: Pageable): Page<Book> {
+        // Find books whose normalized (lowercased) title is shared by more than one book.
+        val dupTitles = BookTable
+            .select(BookTable.title.lowerCase())
+            .groupBy(BookTable.title.lowerCase())
+            .having { BookTable.id.count() greater 1L }
+        val query = BookTable.selectAll().where { BookTable.title.lowerCase() inSubQuery dupTitles }
+        val total = query.count()
+        query.limit(pageable.pageSize).offset(pageable.offset)
+        query.orderBy(BookTable.title to SortOrder.ASC_NULLS_LAST)
+        return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
+    }
+
+    fun findBooksMissing(field: String, pageable: Pageable): Page<Book> {
+        val query = when (field) {
+            "pagecount" -> BookTable.selectAll().where { BookTable.pageCount eq null }
+            "isbn" -> BookTable.selectAll().where { (BookTable.isbn10 eq null or (BookTable.isbn10 eq "")) and (BookTable.isbn13 eq null or (BookTable.isbn13 eq "")) }
+            "cover" -> BookTable.selectAll().where { BookTable.image eq null or (BookTable.image eq "") }
+            "summary" -> BookTable.selectAll().where { BookTable.summary eq null or (BookTable.summary eq "") }
+            "author" -> {
+                // books that have no row in the BookAuthors join table
+                val withAuthors = BookAuthors.select(BookAuthors.book).withDistinct()
+                BookTable.selectAll().where { BookTable.id notInSubQuery withAuthors }
+            }
+            else -> BookTable.selectAll().where { BookTable.pageCount eq null }
+        }
+        val total = query.count()
+        query.limit(pageable.pageSize).offset(pageable.offset)
+        query.orderBy(BookTable.title to SortOrder.ASC_NULLS_LAST)
+        return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
+    }
+
     fun findBookById(bookId: UUID): Book = Book[bookId]
 
     fun findAuthorsById(authorId: UUID): Author = Author[authorId]

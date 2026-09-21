@@ -20,6 +20,7 @@ import io.github.bayang.jelu.dto.ReadingEventTypeFilter
 import io.github.bayang.jelu.dto.Role
 import io.github.bayang.jelu.dto.SeriesCreateDto
 import io.github.bayang.jelu.dto.SeriesDto
+import io.github.bayang.jelu.dto.SeriesOrderDto
 import io.github.bayang.jelu.dto.SeriesRatingDto
 import io.github.bayang.jelu.dto.SeriesUpdateDto
 import io.github.bayang.jelu.dto.TagDto
@@ -144,6 +145,10 @@ class BookService(
     ): Page<SeriesDto> = bookRepository.findAllSeries(name, userId, pageable).map { it.toSeriesDto() }
     @Transactional
     fun findBooksMissingPageCount(pageable: Pageable): Page<BookDto> = bookRepository.findBooksMissingPageCount(pageable).map { it.toBookDto() }
+
+    fun findBooksMissing(field: String, pageable: Pageable): Page<BookDto> = bookRepository.findBooksMissing(field, pageable).map { it.toBookDto() }
+
+    fun findDuplicateBooks(pageable: Pageable): Page<BookDto> = bookRepository.findDuplicateBooks(pageable).map { it.toBookDto() }
 
     fun findBookById(bookId: UUID): BookDto = bookRepository.findBookById(bookId).toBookDto()
 
@@ -800,6 +805,51 @@ class BookService(
         val res = bookRepository.updateAuthor(authorId, authorUpdateDto)
         searchIndexService.authorUpdated(res.id.value)
         return res.toAuthorDto()
+    }
+
+    @Transactional
+    fun mergeSeries(
+        seriesId: UUID,
+        otherId: UUID,
+        seriesUpdateDto: SeriesUpdateDto,
+        user: UserDto,
+    ): SeriesDto {
+        val pageNum = 0
+        val size = 30
+        val series = bookRepository.findSeriesById(seriesId)
+        val seriesToKeepName = series.name
+        val otherSeriesBooksIds: MutableList<UUID> = mutableListOf()
+        do {
+            val booksPage: Page<Book> = bookRepository.findSeriesBooksById(otherId, user, PageRequest.of(pageNum, size))
+            if (booksPage.hasContent()) {
+                for (book in booksPage.content) {
+                    val dto = book.toBookUpdateDto()
+                    // Re-point any series entry that referenced the "other" series to the kept series,
+                    // preserving the order number; drop the old one.
+                    val newSeries = mutableListOf<SeriesOrderDto>()
+                    var keptOrder: Double? = null
+                    dto.series?.forEach { so ->
+                        if (so.seriesId == otherId || so.name == series.name) {
+                            keptOrder = so.numberInSeries
+                        } else {
+                            newSeries.add(so)
+                        }
+                    }
+                    // add the kept series (by name) with preserved order if not already present
+                    if (newSeries.none { it.name == seriesToKeepName }) {
+                        newSeries.add(SeriesOrderDto(name = seriesToKeepName, seriesId = seriesId, numberInSeries = keptOrder))
+                    }
+                    dto.series = newSeries
+                    bookRepository.update(book, dto)
+                    otherSeriesBooksIds.add(book.id.value)
+                }
+            }
+        } while (booksPage.hasNext())
+        bookRepository.deleteSeriesById(otherId)
+        searchIndexService.booksUpdated(otherSeriesBooksIds)
+        val res = bookRepository.findSeriesById(seriesId)
+        searchIndexService.seriesUpdated(res.id.value)
+        return res.toSeriesDto()
     }
 
     @Transactional

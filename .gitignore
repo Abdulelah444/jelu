@@ -58,3 +58,4 @@ write.lock
 /_8q.nvd
 /_8q.nvm
 /segments_c8
+*.bak

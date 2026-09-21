@@ -62,83 +62,54 @@ const { typographyClasses } = useTypography()
 </script>
 
 <template>
-  <div class="w-fit flex flex-wrap justify-items-center justify-self-center">
-    <div>
-      <h1
-        class="text-2xl mb-3 capitalize"
-        :class="typographyClasses"
-      >
-        {{ t('settings.profile') }} :
-      </h1>
-      <div class="card card-side bg-base-200 border border-base-300 shadow-md">
-        <Avatar
-          :username="store != null && store.getters.getUsername"
-          class="ml-4 mt-8"
-        />
-        <div class="card-body">
-          <p>
-            <span class="capitalize">{{ t('settings.username') }}</span> :
-            <strong>{{ store.getters.getUsername }}</strong>
-            <br>
-            <span class="capitalize">{{ t('settings.role', 2) }}</span> :
-            <span class="badge badge-info tag">USER</span> &nbsp;
-            <span
-              v-if="store.getters.isAdmin"
-              class="badge badge-warning tag"
-            >ADMIN</span>
-          </p>
-          <div class="card-actions justify-end">
-            <button
-              v-if="user.provider !== Provider.LDAP && user.provider !== Provider.PROXY"
-              v-tooltip="t('profile.edit_user')"
-              class="btn btn-circle btn-ghost"
-              @click="toggleUserModal"
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width="24"
-                height="24"
-                fill="text-base-content"
-              >
-                <path
-                  d="M19.045 7.401c.378-.378.586-.88.586-1.414s-.208-1.036-.586-1.414l-1.586-1.586c-.378-.378-.88-.586-1.414-.586s-1.036.208-1.413.585L4 13.585V18h4.413L19.045 7.401zm-3-3 1.587 1.585-1.59 1.584-1.586-1.585 1.589-1.584zM6 16v-1.585l7.04-7.018 1.586 1.586L7.587 16H6zm-2 4h16v2H4z"
-                />
-              </svg>
-            </button>
-          </div>
+  <div class="max-w-2xl mx-auto px-4 py-6">
+    <h1 class="text-2xl font-semibold mb-1">Profile</h1>
+    <p class="text-sm opacity-60 mb-6">Your account details and recent sign-in activity.</p>
+
+    <!-- Account card -->
+    <div class="border border-base-300 rounded-xl p-4 flex items-center gap-4">
+      <Avatar :username="store != null && store.getters.getUsername" />
+      <div class="flex-1 min-w-0">
+        <div class="text-lg font-medium">{{ store.getters.getUsername }}</div>
+        <div class="flex items-center gap-1 mt-1">
+          <span v-if="store.getters.isAdmin" class="badge badge-warning badge-sm rounded-md">ADMIN</span>
+          <span v-else class="badge badge-info badge-sm rounded-md">USER</span>
         </div>
       </div>
+      <button
+        v-if="user.provider !== Provider.LDAP && user.provider !== Provider.PROXY"
+        v-tooltip="t('profile.edit_user')"
+        class="btn btn-sm btn-ghost btn-circle"
+        @click="toggleUserModal"
+      >
+        <i class="mdi mdi-pencil mdi-18px" />
+      </button>
     </div>
-  </div>
-  <div class="overflow-x-auto mt-6">
-    <h1
-      class="text-2xl capitalize"
-      :class="typographyClasses"
-    >
-      {{ t('login_info.activity') }}
-    </h1>
-    <table class="table">
-      <thead>
-        <tr class="text-xl">
-          <th>{{ t('login_info.ip') }}</th>
-          <th>{{ t('login_info.user_agent') }}</th>
-          <th>{{ t('login_info.source') }}</th>
-          <th>{{ t('login_info.last_activity') }}</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr
-          v-for="line in loginHistoryInfo"
-          :key="line.date"
-          class="text-lg"
-        >
-          <td>{{ line.ip }}</td>
-          <td>{{ line.userAgent }}</td>
-          <td>{{ line.source }}</td>
-          <td>{{ line.date }}</td>
-        </tr>
-      </tbody>
-    </table>
+
+    <!-- Sign-in activity -->
+    <div class="border border-base-300 rounded-xl p-4 mt-3">
+      <h2 class="font-medium flex items-center gap-2 mb-3"><i class="mdi mdi-history" /> {{ t('login_info.activity') }}</h2>
+      <div class="overflow-x-auto">
+        <table class="table table-sm">
+          <thead>
+            <tr>
+              <th>{{ t('login_info.ip') }}</th>
+              <th>{{ t('login_info.user_agent') }}</th>
+              <th>{{ t('login_info.source') }}</th>
+              <th>{{ t('login_info.last_activity') }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="line in loginHistoryInfo" :key="line.date">
+              <td>{{ line.ip }}</td>
+              <td class="max-w-xs truncate">{{ line.userAgent }}</td>
+              <td>{{ line.source }}</td>
+              <td>{{ line.date }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </template>
 

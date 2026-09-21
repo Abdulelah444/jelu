@@ -57,7 +57,7 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
 
     <div v-else class="flex flex-col gap-3">
       <!-- READING -->
-      <div class="border border-base-content/15 rounded-xl overflow-hidden">
+      <div class="border border-base-300 rounded-xl overflow-hidden">
         <button class="w-full flex items-center justify-between px-4 py-3 bg-base-200 hover:bg-base-300" @click="toggle('reading')">
           <span class="font-medium flex items-center gap-2"><i class="mdi mdi-book-open-page-variant" /> Reading goals &amp; pace</span>
           <i class="mdi" :class="open.reading ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
@@ -109,7 +109,7 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
       </div>
 
       <!-- DOWNLOADS -->
-      <div class="border border-base-content/15 rounded-xl overflow-hidden">
+      <div class="border border-base-300 rounded-xl overflow-hidden">
         <button class="w-full flex items-center justify-between px-4 py-3 bg-base-200 hover:bg-base-300" @click="toggle('downloads')">
           <span class="font-medium flex items-center gap-2"><i class="mdi mdi-download" /> Downloads (Shelfmark)</span>
           <i class="mdi" :class="open.downloads ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
@@ -143,7 +143,7 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
       </div>
 
       <!-- SEARCH -->
-      <div class="border border-base-content/15 rounded-xl overflow-hidden">
+      <div class="border border-base-300 rounded-xl overflow-hidden">
         <button class="w-full flex items-center justify-between px-4 py-3 bg-base-200 hover:bg-base-300" @click="toggle('search')">
           <span class="font-medium flex items-center gap-2"><i class="mdi mdi-magnify" /> Search</span>
           <i class="mdi" :class="open.search ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
@@ -169,7 +169,7 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
       </div>
 
       <!-- NOTIFICATIONS -->
-      <div class="border border-base-content/15 rounded-xl overflow-hidden">
+      <div class="border border-base-300 rounded-xl overflow-hidden">
         <button class="w-full flex items-center justify-between px-4 py-3 bg-base-200 hover:bg-base-300" @click="toggle('notifications')">
           <span class="font-medium flex items-center gap-2"><i class="mdi mdi-bell-outline" /> Notifications</span>
           <i class="mdi" :class="open.notifications ? 'mdi-chevron-up' : 'mdi-chevron-down'" />

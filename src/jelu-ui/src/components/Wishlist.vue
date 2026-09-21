@@ -8,6 +8,7 @@ import { Metadata } from "../model/Metadata"
 import ScanModal from "./ScanModal.vue"
 import { ObjectUtils } from "../utils/ObjectUtils"
 import { useTitle } from "@vueuse/core"
+import { useAppSettings } from "../composables/appSettings"
 
 const { t } = useI18n({ inheritLocale: true, useScope: "global" })
 useTitle("Jelu | Wishlist")

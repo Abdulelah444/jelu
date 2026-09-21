@@ -9,95 +9,96 @@ import { key } from '../store';
 import { ObjectUtils } from "../utils/ObjectUtils";
 import useTypography from "../composables/typography";
 
-const { t } = useI18n({
-      inheritLocale: true,
-      useScope: 'global'
-    })
-
+const { t } = useI18n({ inheritLocale: true, useScope: 'global' })
 const oruga = useOruga()
 const store = useStore(key)
+const props = defineProps<{ currentUser: User }>()
+const emit = defineEmits<{ (e: 'close'): void }>()
 
-const props = defineProps<{
-  currentUser: User,
-}>()
+const form = ref({ password: '', password_confirm: '' })
+const showPassword = ref(false)
+const saving = ref(false)
 
-const form = ref({'password' : '', 'password_confirm': ''})
-console.log(props.currentUser)
-
-const emit = defineEmits<{
-  (e: 'close'): void
-}>()
+const matches = computed(() => form.value.password === form.value.password_confirm)
+const isValid = computed(() => matches.value)
 
 async function editUser() {
-  console.log("edit user")
-  console.log(form)
-  if (props.currentUser.id != null) {
-    try {
-      const modified = await dataService.updateUser(props.currentUser.id, {"isAdmin": undefined, "password": form.value.password})
-      store.commit('user', modified)
-      ObjectUtils.toast(oruga, "success", t('admin_user.user_updated', {name : props.currentUser.login}), 2500)
-      emit('close')
-    } catch (err: any) {
-      console.log('failed to edit user')
-      console.log(err)
-    }
+  if (props.currentUser.id == null) return
+  saving.value = true
+  try {
+    const modified = await dataService.updateUser(props.currentUser.id, { isAdmin: undefined, password: form.value.password })
+    store.commit('user', modified)
+    ObjectUtils.toast(oruga, "success", "Password changed. You may need to sign in again.", 3500)
+    emit('close')
+  } catch (err: any) {
+    console.log('failed to change password', err)
+    ObjectUtils.toast(oruga, "danger", "Could not change password: " + (err?.message || err), 3500)
+  } finally {
+    saving.value = false
   }
 }
-
-const isValid = computed(() => {
-  return form.value.password.length >=3 && form.value.password_confirm.length >=3 && form.value.password === form.value.password_confirm
-})
 
 const { typographyClasses } = useTypography()
 </script>
 
 <template>
   <section class="event-modal">
-    <div>
-      <h1
-        class="text-2xl first-letter:capitalize"
-        :class="typographyClasses"
-      >
-        {{ t('admin_user.edit_user', {name : props.currentUser.login}) }}
-      </h1>
-      <div>
-        <label class="fieldset">
-          <span class="label capitalize">{{ t('admin_user.password') }}</span>
-          <input
-            v-model="form.password"
-            type="password"
-            class="input validator"
-            :placeholder="t('admin_user.password')"
-            required
-            minlength="3"
-          >
-          <span class="validator-hint hidden">{{ t('login.password_length') }}</span>
+    <div class="max-w-md">
+      <h1 class="text-xl font-semibold mb-1" :class="typographyClasses">Change password</h1>
+      <p class="text-sm opacity-60 mb-4">Set a new password for <strong>{{ props.currentUser.login }}</strong>.</p>
+
+      <div class="flex flex-col gap-3">
+        <label class="flex flex-col gap-1">
+          <span class="text-sm">New password</span>
+          <div class="join w-full">
+            <input
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              class="input input-sm input-bordered join-item w-full"
+              placeholder="Leave blank for no password"
+              autocomplete="new-password"
+            >
+            <button
+              type="button"
+              class="btn btn-sm btn-outline join-item"
+              @click="showPassword = !showPassword"
+            >
+              <i class="mdi" :class="showPassword ? 'mdi-eye-off' : 'mdi-eye'" />
+            </button>
+          </div>
         </label>
-        <label class="fieldset">
-          <span class="label capitalize">{{ t('admin_user.password_confirm') }}</span>
+
+        <label class="flex flex-col gap-1">
+          <span class="text-sm">Confirm password</span>
           <input
             v-model="form.password_confirm"
-            type="password"
-            class="input validator"
-            :placeholder="t('admin_user.password_confirm')"
-            required
-            minlength="3"
+            :type="showPassword ? 'text' : 'password'"
+            class="input input-sm input-bordered w-full"
+            placeholder="Re-enter the password"
+            autocomplete="new-password"
           >
-          <span class="validator-hint hidden">{{ t('login.password_length') }}</span>
+          <span v-if="form.password_confirm.length > 0 && !matches" class="text-xs text-error">Passwords don't match</span>
         </label>
-        <button
-          class="btn btn-accent mt-4"
-          type="submit"
-          :disabled="! isValid"
-          @click="editUser"
-        >
-          {{ t('labels.submit') }}
-        </button>
+
+        <div v-if="form.password.length === 0 && matches" class="text-xs opacity-60 flex items-center gap-1">
+          <i class="mdi mdi-information-outline" /> This will set an empty password (no password required to sign in).
+        </div>
+
+        <div class="flex justify-end gap-2 mt-2">
+          <button class="btn btn-sm btn-ghost" @click="emit('close')">Cancel</button>
+          <button
+            class="btn btn-sm btn-primary"
+            :class="{ 'loading': saving }"
+            :disabled="!isValid || saving"
+            @click="editUser"
+          >
+            Save password
+          </button>
+        </div>
       </div>
     </div>
   </section>
 </template>
 
 <style lang="scss">
-
 </style>

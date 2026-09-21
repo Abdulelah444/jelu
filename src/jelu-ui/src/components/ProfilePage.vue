@@ -11,7 +11,7 @@ const { t } = useI18n({
   useScope: 'global'
 })
 
-useTitle('Jelu | User page')
+useTitle('Jelu | Settings — Profile')
 
 const currentView = ref("PROFILE")
 

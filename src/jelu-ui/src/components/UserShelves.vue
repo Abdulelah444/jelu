@@ -3,7 +3,7 @@ import { useTitle } from '@vueuse/core'
 import UserShelvesList from './UserShelvesList.vue'
 
 
-useTitle('Jelu | User page')
+useTitle('Jelu | Settings — Shelves')
 
 
 </script>
