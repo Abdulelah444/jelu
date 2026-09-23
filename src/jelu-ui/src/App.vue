@@ -164,10 +164,12 @@ const onSearchKeydown = (e: KeyboardEvent) => {
 const selectSuggestion = (ub: any) => {
   showSuggestions.value = false
   searchQuery.value = ''
-  // raw item is a Book; book-detail route expects the book id
-  const bookId = ub?.id
-  if (bookId) {
-    router.push({ name: 'book-detail', params: { bookId } })
+  // raw item is a Book; book-detail route expects the userbook id
+  const userBookId = ub?.userBookId ?? ub?.userbook?.id
+  if (userBookId) {
+    router.push({ name: 'book-detail', params: { bookId: userBookId } })
+  } else if (ub?.id) {
+    router.push({ name: 'public-book', params: { bookId: ub.id } })
   }
 }
 
