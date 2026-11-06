@@ -134,35 +134,72 @@ book downloader together**. Only Docker is required on the machine — the Jelu
 image builds itself from source (frontend + backend) in a multi-stage build:
 
 ```shell
+git clone https://github.com/Abdulelah444/jelu.git
+cd jelu
 cp .env.example .env                       # optional: set a shared SHELFMARK_API_KEY
 docker compose up -d --build               # builds Jelu, pulls Shelfmark
-./scripts/bootstrap-shelfmark.sh          # one-time: seed mirrors + DNS
 ```
 
 * Jelu: http://localhost:11111
 * Shelfmark (usually you don't need its UI): http://localhost:8084
 
-The bootstrap script is a one-time step. A fresh Shelfmark has **no mirrors
-configured**, so searches return nothing until it is seeded. The script pushes
-a known-good starting config through Shelfmark's settings API — good Anna's
-Archive mirror first, Cloudflare DNS. Override without editing anything:
+On a **fresh install** the data folder defaults to `./data` next to the compose
+file, and Jelu starts with an empty database — create your account on first
+visit.
+
+> **Updating an existing install?** Do not follow the commands above blindly:
+> they point at `./data`, which is empty, and the app would start with a new
+> database and no account. See [Updating](#updating-an-existing-install) below.
+
+The bootstrap script is a one-time step **for a fresh install**. A new Shelfmark
+has **no mirrors configured**, so searches return nothing until it is seeded.
+The script pushes a known-good starting config through Shelfmark's settings API
+— good Anna's Archive mirror first, Cloudflare DNS. Override without editing
+anything:
 
 ```shell
 AA_MIRRORS="https://annas-archive.gd,https://annas-archive.org" \
 SHELFMARK_DNS=cloudflare ./scripts/bootstrap-shelfmark.sh
 ```
 
+Do **not** run it on an existing install unless downloads are broken: it
+overwrites your current mirror and DNS settings with its own defaults.
 Afterwards the downloader settings — **mirrors, DNS provider, DNS-over-HTTPS** —
 are managed from Jelu itself (`Settings > Preferences > Downloads (Shelfmark)`),
 which reads the current values from Shelfmark and pushes changes back. You
 never have to open Shelfmark's own settings page.
 
-Updating:
+### Updating an existing install
+
+Already running a compose stack from this repo:
 
 ```shell
-git pull && docker compose up -d --build   # Jelu (source) + Shelfmark (image)
-docker compose pull && docker compose up -d  # Shelfmark only
+git pull
+docker compose up -d --build               # Jelu (source) + Shelfmark (image)
+docker compose pull && docker compose up -d   # Shelfmark only
 ```
+
+Data lives outside the containers, so this does not touch your books, history
+or accounts. Database migrations run automatically on startup.
+
+**Migrating from an older, hand-made setup.** Earlier deployments kept covers in
+`<data>/images` and imports in `<data>/imports`; this compose file expects them
+under `<data>/files/`. Before starting:
+
+1. Back up the data folder (the database is a single file):
+   `tar czf ~/jelu-data-backup.tgz -C <data> .`
+2. Point the stack at the existing data: put `JELU_DATA_DIR=<data>` in `.env`.
+3. Either move the folders once —
+   `mkdir -p <data>/files && mv <data>/images <data>/files/images && mv <data>/imports <data>/files/imports`
+   — or edit the two volume lines in `docker-compose.yml` to match where they
+   already are.
+4. Stop the old containers, then `docker compose up -d --build` from the
+   source checkout (this folder — the compose file builds from here, not from
+   the data folder).
+5. Confirm you can log in and your books and covers are present.
+
+If the app comes up empty, the volume is pointing at the wrong folder. Stop it
+before correcting the path, so it does not create a second database.
 
 Data lives under `./data/` by default; set `JELU_DATA_DIR` in `.env` to move
 it (for example `/opt/jelu-data`). Ebooks downloaded by Shelfmark land in the
