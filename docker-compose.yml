@@ -1,10 +1,12 @@
 # Jelu + Shelfmark (Calibre-Web-Automated downloader) — the whole stack in one file.
 #
+#   cp .env.example .env
 #   docker compose up -d --build
+#   ./scripts/bootstrap-shelfmark.sh        # one-time: seed mirrors + DNS
 #
 #   - Jelu web UI      : http://localhost:11111
-#   - Shelfmark web UI : http://localhost:8084  (usually you don't need it —
-#     mirror / DNS settings are managed from Jelu: Settings > Preferences > Downloads)
+#   - Shelfmark web UI : http://localhost:8084  (you normally don't need it —
+#     mirrors / DNS are managed from Jelu: Settings > Preferences > Downloads)
 #
 # Data lives under ./data/ by default (override with JELU_DATA_DIR).
 # Set a SHELFMARK_API_KEY in .env to protect the Shelfmark API; Jelu picks it up
@@ -15,7 +17,7 @@ name: jelu
 services:
   jelu:
     build: .
-    image: jelu:local
+    image: ${JELU_IMAGE:-jelu:local}
     container_name: jelu
     ports:
       - "11111:11111"
@@ -35,12 +37,18 @@ services:
       # you set for the Shelfmark service. Leave unset when Shelfmark runs
       # without authentication (AUTH_METHOD=none).
       - JELU_EBOOKS_API_KEY=${SHELFMARK_API_KEY:-}
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/localhost/11111' || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
     restart: unless-stopped
     depends_on:
       - cwa-downloader
 
   cwa-downloader:
-    image: ghcr.io/calibrain/shelfmark:latest
+    image: ghcr.io/calibrain/shelfmark:${SHELFMARK_TAG:-latest}
     container_name: cwa-downloader
     ports:
       - "8084:8084"
@@ -56,4 +64,11 @@ services:
       - MAX_CONCURRENT_DOWNLOADS=1
       - SUPPORTED_FORMATS=epub,pdf,mobi,azw3,cbz,cbr
       - BOOK_LANGUAGE=en,ar
+    healthcheck:
+      # Shelfmark's image is python-slim: no curl. Use urllib via python3 (or python).
+      test: ["CMD-SHELL", "python3 -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8084/api/health', timeout=4).status==200 else 1)\" || python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8084/api/health', timeout=4).status==200 else 1)\""]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 120s
     restart: unless-stopped

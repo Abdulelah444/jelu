@@ -130,21 +130,39 @@ services:
 ### Whole stack: Jelu + Shelfmark (docker compose)
 
 The repo ships a `docker-compose.yml` that starts **Jelu and the Shelfmark
-book downloader together** — one clone, one `docker compose up`:
+book downloader together**. Only Docker is required on the machine — the Jelu
+image builds itself from source (frontend + backend) in a multi-stage build:
 
 ```shell
-cp .env.example .env   # optional: set a shared SHELFMARK_API_KEY
-docker compose up -d --build
+cp .env.example .env                       # optional: set a shared SHELFMARK_API_KEY
+docker compose up -d --build               # builds Jelu, pulls Shelfmark
+./scripts/bootstrap-shelfmark.sh          # one-time: seed mirrors + DNS
 ```
 
 * Jelu: http://localhost:11111
 * Shelfmark (usually you don't need its UI): http://localhost:8084
 
-The downloader settings — **Anna's Archive / LibGen mirrors, DNS provider,
-DNS-over-HTTPS** — are managed from Jelu itself (`Settings > Preferences >
-Downloads (Shelfmark)`), which reads the current values from Shelfmark and
-pushes your changes back to its settings API. You never have to open
-Shelfmark's own settings page.
+The bootstrap script is a one-time step. A fresh Shelfmark has **no mirrors
+configured**, so searches return nothing until it is seeded. The script pushes
+a known-good starting config through Shelfmark's settings API — good Anna's
+Archive mirror first, Cloudflare DNS. Override without editing anything:
+
+```shell
+AA_MIRRORS="https://annas-archive.gd,https://annas-archive.org" \
+SHELFMARK_DNS=cloudflare ./scripts/bootstrap-shelfmark.sh
+```
+
+Afterwards the downloader settings — **mirrors, DNS provider, DNS-over-HTTPS** —
+are managed from Jelu itself (`Settings > Preferences > Downloads (Shelfmark)`),
+which reads the current values from Shelfmark and pushes changes back. You
+never have to open Shelfmark's own settings page.
+
+Updating:
+
+```shell
+git pull && docker compose up -d --build   # Jelu (source) + Shelfmark (image)
+docker compose pull && docker compose up -d  # Shelfmark only
+```
 
 Data lives under `./data/` by default; set `JELU_DATA_DIR` in `.env` to move
 it (for example `/opt/jelu-data`). Ebooks downloaded by Shelfmark land in the

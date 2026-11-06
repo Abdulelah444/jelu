@@ -1,3 +1,14 @@
+# syntax=docker/dockerfile:1
+
+# ── Stage 1: build the fat jar (frontend + backend) from source ──────────────
+# Gradle downloads its own Node for the Vue build, so only a JDK is needed here.
+FROM eclipse-temurin:17-jdk-noble AS build
+
+WORKDIR /src
+COPY . .
+RUN chmod +x ./gradlew && ./gradlew --no-daemon copyWebDist assemble unpack
+
+# ── Stage 2: runtime ────────────────────────────────────────────────────────
 FROM eclipse-temurin:17-jre-noble
 
 WORKDIR app
@@ -107,11 +118,10 @@ RUN if [ "$TARGETPLATFORM" = "linux/amd64" ] ; then \
           && rm goodreads.zip; \
   fi
 
-ARG DEPENDENCY=build/dependency
-COPY ${DEPENDENCY}/dependencies/ ./
-COPY ${DEPENDENCY}/spring-boot-loader/ ./
-COPY ${DEPENDENCY}/snapshot-dependencies/ ./
-COPY ${DEPENDENCY}/application/ ./
+COPY --from=build /src/build/dependency/dependencies/ ./
+COPY --from=build /src/build/dependency/spring-boot-loader/ ./
+COPY --from=build /src/build/dependency/snapshot-dependencies/ ./
+COPY --from=build /src/build/dependency/application/ ./
 
 ENTRYPOINT ["java", "org.springframework.boot.loader.launch.JarLauncher", "--spring.config.additional-location=optional:file:/config/"]
 EXPOSE 11111
