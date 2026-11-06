@@ -8,7 +8,7 @@ source "$(dirname "$0")/docker-common.sh" $1 $2
 # Push docker images (built previously)
 docker buildx build \
     --platform $PLATFORMS \
-    --tag wabayang/jelu:$DOCKER_CHANNEL \
-    --tag wabayang/jelu:$1 \
+    --tag "$DOCKER_IMAGE_REPO:$DOCKER_CHANNEL" \
+    --tag "$DOCKER_IMAGE_REPO:$1" \
     --file ./Dockerfile . \
     --push
