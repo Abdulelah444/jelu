@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.bayang.jelu.config.JeluProperties
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -18,9 +19,12 @@ class DownloaderService(
 ) {
     private fun client(baseUrl: String? = null): WebClient {
         val url = baseUrl ?: appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
-        return WebClient.builder()
+        val builder = WebClient.builder()
             .baseUrl(url)
-            .build()
+        if (properties.ebooks.apiKey.isNotBlank()) {
+            builder.defaultHeader("Authorization", "Bearer ${properties.ebooks.apiKey}")
+        }
+        return builder.build()
     }
 
     fun search(query: String, lang: String = "en", ext: String = "epub"): CwaSearchResponse {
@@ -57,6 +61,26 @@ class DownloaderService(
             .retrieve()
             .bodyToMono<Map<String, Any>>()
             .block(Duration.ofSeconds(10))
+            ?: emptyMap()
+    }
+
+    fun getSettings(tab: String): Map<String, Any?> {
+        return client().get()
+            .uri("/api/settings/{tab}", tab)
+            .retrieve()
+            .bodyToMono<Map<String, Any?>>()
+            .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
+            ?: emptyMap()
+    }
+
+    fun updateSettings(tab: String, values: Map<String, Any?>): Map<String, Any?> {
+        return client().put()
+            .uri("/api/settings/{tab}", tab)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(values)
+            .retrieve()
+            .bodyToMono<Map<String, Any?>>()
+            .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
             ?: emptyMap()
     }
 }

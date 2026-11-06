@@ -96,6 +96,7 @@ data class JeluProperties(
         var allowedExtensions: List<String> = listOf("epub", "pdf", "mobi", "azw3", "cbz", "cbr"),
         var downloaderUrl: String = "http://cwa-downloader:8084",
         var downloaderTimeoutSeconds: Int = 120,
+        var apiKey: String = "",
     )
 
     data class Lucene(

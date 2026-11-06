@@ -12,6 +12,7 @@ import org.springframework.http.MediaType
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
@@ -68,6 +69,46 @@ class WishlistDigitalController(
         } catch (e: Exception) {
             logger.error(e) { "CWA status check failed" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Status check failed: ${e.message}")
+        }
+    }
+
+    private companion object {
+        val SETTINGS_TABS = setOf("mirrors", "network", "downloads")
+    }
+
+    @GetMapping("/shelfmark-settings")
+    fun shelfmarkSettings(
+        @RequestParam("tab") tab: String,
+    ): Map<String, Any?> {
+        if (tab !in SETTINGS_TABS) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported Shelfmark settings tab: $tab")
+        }
+        return try {
+            downloaderService.getSettings(tab)
+        } catch (e: Exception) {
+            logger.error(e) { "CWA settings read failed (tab=$tab)" }
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Downloader settings read failed: ${e.message}")
+        }
+    }
+
+    @PutMapping("/shelfmark-settings")
+    fun updateShelfmarkSettings(
+        @RequestBody body: Map<String, Any>,
+    ): Map<String, Any?> {
+        val tab = body["tab"] as? String
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "tab is required")
+        if (tab !in SETTINGS_TABS) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported Shelfmark settings tab: $tab")
+        }
+        val values = body["values"]
+            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "values is required")
+        @Suppress("UNCHECKED_CAST")
+        val typedValues = values as Map<String, Any?>
+        return try {
+            downloaderService.updateSettings(tab, typedValues)
+        } catch (e: Exception) {
+            logger.error(e) { "CWA settings update failed (tab=$tab)" }
+            throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Downloader settings update failed: ${e.message}")
         }
     }
 

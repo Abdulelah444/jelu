@@ -2496,6 +2496,24 @@ class DataService {
     }
   }
 
+  getShelfmarkSettings = async (tab: string): Promise<any> => {
+    try {
+      const response = await this.apiClient.get<any>('/userbooks/digital/shelfmark-settings', { params: { tab } })
+      return response.data
+    } catch (error) {
+      throw new Error('error reading Shelfmark settings ' + error)
+    }
+  }
+
+  updateShelfmarkSettings = async (tab: string, values: Record<string, any>): Promise<any> => {
+    try {
+      const response = await this.apiClient.put<any>('/userbooks/digital/shelfmark-settings', { tab, values })
+      return response.data
+    } catch (error) {
+      throw new Error('error applying Shelfmark settings ' + error)
+    }
+  }
+
   getWishlistFileUrl = (filePath: string, inline: boolean = false) => {
     const encoded = encodeURIComponent(filePath)
     return `/api/v1/userbooks/digital/wishlist-file?path=${encoded}&inline=${inline}`

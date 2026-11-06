@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useTitle } from '@vueuse/core'
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useOruga } from '@oruga-ui/oruga-next'
 import { ObjectUtils } from '../utils/ObjectUtils'
 import { useAppSettings } from '../composables/appSettings'
@@ -16,6 +16,19 @@ const saving = ref(false)
 // Shelfmark connection check
 const testingShelfmark = ref(false)
 const shelfmarkStatus = ref<null | { ok: boolean, reason?: string }>(null)
+
+// Shelfmark downloader settings (managed here, applied to Shelfmark via its settings API)
+const shelfmarkSettingsLoaded = ref(false)
+const shelfmarkSettingsError = ref('')
+const applyingShelfmark = ref(false)
+const dl = reactive({
+  aaMirrors: '',
+  libgenMirrors: '',
+  customDns: 'auto',
+  customDnsManual: '',
+  useDoh: true,
+  maxConcurrent: 1,
+})
 
 // Local editable copy
 const form = ref<Record<string, string>>({})
@@ -47,11 +60,59 @@ const testShelfmark = async (url?: string) => {
   }
 }
 
+const fieldValue = (tab: any, key: string): any => {
+  const field = tab?.fields?.find((f: any) => f.key === key)
+  return field?.value !== undefined ? field.value : field?.default
+}
+
+const loadShelfmarkSettings = async () => {
+  shelfmarkSettingsLoaded.value = false
+  shelfmarkSettingsError.value = ''
+  try {
+    const [mirrors, network, downloads] = await Promise.all([
+      dataService.getShelfmarkSettings('mirrors'),
+      dataService.getShelfmarkSettings('network'),
+      dataService.getShelfmarkSettings('downloads'),
+    ])
+    dl.aaMirrors = (fieldValue(mirrors, 'AA_MIRROR_URLS') || []).join(', ')
+    dl.libgenMirrors = (fieldValue(mirrors, 'LIBGEN_MIRROR_URLS') || []).join(', ')
+    dl.customDns = fieldValue(network, 'CUSTOM_DNS') || 'auto'
+    dl.customDnsManual = fieldValue(network, 'CUSTOM_DNS_MANUAL') || ''
+    dl.useDoh = fieldValue(network, 'USE_DOH') !== false
+    dl.maxConcurrent = Number(fieldValue(downloads, 'MAX_CONCURRENT_DOWNLOADS') || 1)
+    shelfmarkSettingsLoaded.value = true
+  } catch (e) {
+    shelfmarkSettingsError.value = String(e)
+  }
+}
+
+const applyShelfmarkSettings = async () => {
+  applyingShelfmark.value = true
+  try {
+    const splitList = (s: string) => s.split(',').map(x => x.trim()).filter(Boolean)
+    await dataService.updateShelfmarkSettings('mirrors', {
+      AA_MIRROR_URLS: splitList(dl.aaMirrors),
+      LIBGEN_MIRROR_URLS: splitList(dl.libgenMirrors),
+    })
+    await dataService.updateShelfmarkSettings('network', {
+      CUSTOM_DNS: dl.customDns,
+      CUSTOM_DNS_MANUAL: dl.customDnsManual,
+      USE_DOH: dl.useDoh,
+    })
+    ObjectUtils.toast(oruga, 'success', 'Shelfmark downloader settings applied', 2000)
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not apply: ' + e, 3000)
+  } finally {
+    applyingShelfmark.value = false
+  }
+}
+
 onMounted(async () => {
   await load(true)
   initForm()
   loading.value = false
   if (form.value.shelfmark_url?.trim()) testShelfmark()
+  loadShelfmarkSettings()
 })
 
 const saveAll = async () => {
@@ -151,6 +212,51 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
             <span v-if="shelfmarkStatus.ok">Shelfmark is reachable at this URL</span>
             <span v-else>{{ shelfmarkStatus.reason }}</span>
           </div>
+
+          <div class="divider my-0 text-xs opacity-50">Shelfmark settings (applied to the downloader)</div>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm">Anna's Archive mirrors — tried in order</span>
+            <input v-model="dl.aaMirrors" type="text" class="input input-sm input-bordered w-full" placeholder="https://annas-archive.gd, https://annas-archive.org">
+          </label>
+          <label class="flex flex-col gap-1">
+            <span class="text-sm">LibGen mirrors — tried in order</span>
+            <input v-model="dl.libgenMirrors" type="text" class="input input-sm input-bordered w-full" placeholder="https://libgen.is">
+          </label>
+          <label class="flex items-center justify-between gap-4">
+            <span class="text-sm">DNS provider</span>
+            <select v-model="dl.customDns" class="select select-sm select-bordered w-40">
+              <option value="auto">Auto (recommended)</option>
+              <option value="system">System</option>
+              <option value="google">Google</option>
+              <option value="cloudflare">Cloudflare</option>
+              <option value="quad9">Quad9</option>
+              <option value="opendns">OpenDNS</option>
+              <option value="manual">Manual</option>
+            </select>
+          </label>
+          <label v-if="dl.customDns === 'manual'" class="flex flex-col gap-1">
+            <span class="text-sm">Manual DNS servers</span>
+            <input v-model="dl.customDnsManual" type="text" class="input input-sm input-bordered w-full" placeholder="1.1.1.1, 8.8.8.8">
+          </label>
+          <label class="flex items-center justify-between gap-4">
+            <span class="text-sm">Use DNS-over-HTTPS</span>
+            <input v-model="dl.useDoh" type="checkbox" class="toggle toggle-sm">
+          </label>
+          <label class="flex items-center justify-between gap-4">
+            <span class="text-sm">Max concurrent downloads (container env)</span>
+            <input v-model="dl.maxConcurrent" type="number" min="1" max="10" disabled class="input input-sm input-bordered w-24">
+          </label>
+          <div v-if="shelfmarkSettingsError" class="text-sm text-warning">
+            Could not load current Shelfmark settings: {{ shelfmarkSettingsError }}
+          </div>
+          <div class="flex items-center gap-2">
+            <button class="btn btn-sm btn-outline" :class="{ 'loading': applyingShelfmark }" :disabled="applyingShelfmark" @click="applyShelfmarkSettings">
+              <i v-if="!applyingShelfmark" class="mdi mdi-cloud-upload mdi-18px" />
+              Apply to Shelfmark
+            </button>
+            <span v-if="shelfmarkSettingsLoaded" class="text-xs opacity-60">Current settings loaded from Shelfmark</span>
+          </div>
+
           <label class="flex flex-col gap-1">
             <span class="text-sm">Ebooks folder path (in container)</span>
             <input v-model="form.ebooks_path" type="text" class="input input-sm input-bordered w-full" placeholder="/files/ebooks">
