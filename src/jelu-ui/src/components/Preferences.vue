@@ -4,6 +4,7 @@ import { ref, onMounted } from 'vue'
 import { useOruga } from '@oruga-ui/oruga-next'
 import { ObjectUtils } from '../utils/ObjectUtils'
 import { useAppSettings } from '../composables/appSettings'
+import dataService from '../services/DataService'
 
 useTitle('Jelu | Settings — Preferences')
 const oruga = useOruga()
@@ -11,6 +12,10 @@ const { load, getString, getInt, getBool, save, defaults } = useAppSettings()
 
 const loading = ref(true)
 const saving = ref(false)
+
+// Shelfmark connection check
+const testingShelfmark = ref(false)
+const shelfmarkStatus = ref<null | { ok: boolean, reason?: string }>(null)
 
 // Local editable copy
 const form = ref<Record<string, string>>({})
@@ -27,10 +32,26 @@ const initForm = () => {
   form.value = f
 }
 
+const testShelfmark = async (url?: string) => {
+  const target = (url ?? form.value.shelfmark_url ?? '').trim()
+  if (!target) {
+    shelfmarkStatus.value = { ok: false, reason: 'Enter a Shelfmark URL first' }
+    return
+  }
+  testingShelfmark.value = true
+  try {
+    const result = await dataService.checkShelfmarkConnection(target)
+    shelfmarkStatus.value = { ok: result.ok, reason: result.reason }
+  } finally {
+    testingShelfmark.value = false
+  }
+}
+
 onMounted(async () => {
   await load(true)
   initForm()
   loading.value = false
+  if (form.value.shelfmark_url?.trim()) testShelfmark()
 })
 
 const saveAll = async () => {
@@ -117,8 +138,19 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
         <div v-show="open.downloads" class="p-4 flex flex-col gap-4">
           <label class="flex flex-col gap-1">
             <span class="text-sm">Shelfmark URL</span>
-            <input v-model="form.shelfmark_url" type="text" class="input input-sm input-bordered w-full" placeholder="http://192.168.88.20:8084">
+            <div class="flex gap-2">
+              <input v-model="form.shelfmark_url" type="text" class="input input-sm input-bordered w-full" placeholder="http://192.168.88.20:8084">
+              <button class="btn btn-sm btn-outline shrink-0" :class="{ 'loading': testingShelfmark }" :disabled="testingShelfmark" @click="testShelfmark()">
+                <i v-if="!testingShelfmark" class="mdi mdi-cloud-check mdi-18px" />
+                Test connection
+              </button>
+            </div>
           </label>
+          <div v-if="shelfmarkStatus" class="flex items-center gap-2 text-sm" :class="shelfmarkStatus.ok ? 'text-success' : 'text-error'">
+            <i class="mdi mdi-18px" :class="shelfmarkStatus.ok ? 'mdi-check-circle' : 'mdi-alert-circle'" />
+            <span v-if="shelfmarkStatus.ok">Shelfmark is reachable at this URL</span>
+            <span v-else>{{ shelfmarkStatus.reason }}</span>
+          </div>
           <label class="flex flex-col gap-1">
             <span class="text-sm">Ebooks folder path (in container)</span>
             <input v-model="form.ebooks_path" type="text" class="input input-sm input-bordered w-full" placeholder="/files/ebooks">

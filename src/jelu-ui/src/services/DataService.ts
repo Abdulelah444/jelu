@@ -2484,6 +2484,18 @@ class DataService {
     }
   }
 
+  checkShelfmarkConnection = async (url?: string): Promise<{ ok: boolean, data?: any, reason?: string }> => {
+    try {
+      const params = url ? { url } : undefined
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-status', { params })
+      return { ok: true, data: response.data }
+    } catch (error) {
+      const axiosError = error as any
+      const reason = axiosError?.response?.data?.message || axiosError?.message || 'connection failed'
+      return { ok: false, reason: String(reason) }
+    }
+  }
+
   getWishlistFileUrl = (filePath: string, inline: boolean = false) => {
     const encoded = encodeURIComponent(filePath)
     return `/api/v1/userbooks/digital/wishlist-file?path=${encoded}&inline=${inline}`

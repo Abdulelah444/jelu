@@ -56,9 +56,15 @@ class WishlistDigitalController(
     }
 
     @GetMapping("/wishlist-status")
-    fun wishlistStatus(): Map<String, Any> {
+    fun wishlistStatus(
+        @RequestParam("url", required = false) url: String?,
+    ): Map<String, Any> {
+        val target = url?.trim()?.takeIf { it.isNotEmpty() }
+        if (target != null && !target.startsWith("http://") && !target.startsWith("https://")) {
+            throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Shelfmark URL must start with http:// or https://")
+        }
         return try {
-            downloaderService.getStatus()
+            downloaderService.getStatus(target)
         } catch (e: Exception) {
             logger.error(e) { "CWA status check failed" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Status check failed: ${e.message}")

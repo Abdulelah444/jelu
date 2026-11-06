@@ -16,8 +16,8 @@ class DownloaderService(
     private val properties: JeluProperties,
     private val appSettingsService: AppSettingsService,
 ) {
-    private fun client(): WebClient {
-        val url = appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
+    private fun client(baseUrl: String? = null): WebClient {
+        val url = baseUrl ?: appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
         return WebClient.builder()
             .baseUrl(url)
             .build()
@@ -51,8 +51,8 @@ class DownloaderService(
             .block(Duration.ofSeconds(30))
     }
 
-    fun getStatus(): Map<String, Any> {
-        return client().get()
+    fun getStatus(baseUrl: String? = null): Map<String, Any> {
+        return client(baseUrl).get()
             .uri("/api/status")
             .retrieve()
             .bodyToMono<Map<String, Any>>()
