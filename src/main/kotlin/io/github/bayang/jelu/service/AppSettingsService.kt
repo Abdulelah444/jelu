@@ -8,20 +8,21 @@ import org.springframework.transaction.annotation.Transactional
 
 @Service
 class AppSettingsService {
+    @Transactional
+    fun getAll(): Map<String, String?> = AppSettings.all().associate { it.settingKey to it.settingValue }
 
     @Transactional
-    fun getAll(): Map<String, String?> {
-        return AppSettings.all().associate { it.settingKey to it.settingValue }
-    }
+    fun getRaw(key: String): String? =
+        AppSettings
+            .find { AppSettingsTable.settingKey eq key }
+            .firstOrNull()
+            ?.settingValue
 
     @Transactional
-    fun getRaw(key: String): String? {
-        return AppSettings.find { AppSettingsTable.settingKey eq key }
-            .firstOrNull()?.settingValue
-    }
-
-    @Transactional
-    fun setRaw(key: String, value: String?) {
+    fun setRaw(
+        key: String,
+        value: String?,
+    ) {
         val now = nowDateTime()
         val existing = AppSettings.find { AppSettingsTable.settingKey eq key }.firstOrNull()
         if (existing != null) {
@@ -48,7 +49,18 @@ class AppSettingsService {
     }
 
     // Typed convenience getters with defaults (default = the previously-hardcoded value)
-    fun getString(key: String, default: String): String = getRaw(key) ?: default
-    fun getInt(key: String, default: Int): Int = getRaw(key)?.toIntOrNull() ?: default
-    fun getBool(key: String, default: Boolean): Boolean = getRaw(key)?.toBooleanStrictOrNull() ?: default
+    fun getString(
+        key: String,
+        default: String,
+    ): String = getRaw(key) ?: default
+
+    fun getInt(
+        key: String,
+        default: Int,
+    ): Int = getRaw(key)?.toIntOrNull() ?: default
+
+    fun getBool(
+        key: String,
+        default: Boolean,
+    ): Boolean = getRaw(key)?.toBooleanStrictOrNull() ?: default
 }

@@ -161,7 +161,6 @@ class PhysicalLibraryController(
         return ResponseEntity.noContent().build()
     }
 
-
     @PutMapping(path = ["/physical-bookcases/{bookcaseId}/shelves/reorder"])
     fun reorderShelves(
         @PathVariable("bookcaseId") bookcaseId: UUID,

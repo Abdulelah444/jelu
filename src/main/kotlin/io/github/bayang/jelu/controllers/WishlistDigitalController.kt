@@ -19,8 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.server.ResponseStatusException
 import java.io.File
-import java.net.URLDecoder
-import java.nio.charset.StandardCharsets
 
 private val logger = KotlinLogging.logger {}
 
@@ -34,27 +32,25 @@ class WishlistDigitalController(
         @RequestParam("query") query: String,
         @RequestParam("lang", required = false, defaultValue = "en") lang: String,
         @RequestParam("ext", required = false, defaultValue = "epub") ext: String,
-    ): CwaSearchResponse {
-        return try {
+    ): CwaSearchResponse =
+        try {
             downloaderService.search(query, lang, ext)
         } catch (e: Exception) {
             logger.error(e) { "CWA wishlist search failed for query: $query" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Downloader search failed: ${e.message}")
         }
-    }
 
     @PostMapping("/wishlist-download")
     fun wishlistDownload(
         @RequestBody release: CwaDownloadRequest,
-    ): Map<String, String> {
-        return try {
+    ): Map<String, String> =
+        try {
             downloaderService.triggerDownload(release)
             mapOf("status" to "download_triggered", "title" to (release.title))
         } catch (e: Exception) {
             logger.error(e) { "CWA wishlist download failed for: ${release.title}" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Download failed: ${e.message}")
         }
-    }
 
     @GetMapping("/wishlist-status")
     fun wishlistStatus(
@@ -95,13 +91,16 @@ class WishlistDigitalController(
     fun updateShelfmarkSettings(
         @RequestBody body: Map<String, Any>,
     ): Map<String, Any?> {
-        val tab = body["tab"] as? String
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "tab is required")
+        val tab =
+            body["tab"] as? String
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "tab is required")
         if (tab !in SETTINGS_TABS) {
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported Shelfmark settings tab: $tab")
         }
-        val values = body["values"]
-            ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "values is required")
+        val values =
+            body["values"]
+                ?: throw ResponseStatusException(HttpStatus.BAD_REQUEST, "values is required")
+
         @Suppress("UNCHECKED_CAST")
         val typedValues = values as Map<String, Any?>
         return try {
@@ -117,13 +116,15 @@ class WishlistDigitalController(
         @RequestParam("path") filePath: String,
     ): Map<String, String> {
         val cleanPath = filePath.removePrefix("/cwa-book-ingest/")
-        val candidates = listOf(
-            File("/files/ebooks/$cleanPath"),
-            File("/opt/jelu-data/ebooks/$cleanPath"),
-            File(filePath),
-        )
-        val file = candidates.firstOrNull { it.exists() && it.isFile }
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $cleanPath")
+        val candidates =
+            listOf(
+                File("/files/ebooks/$cleanPath"),
+                File("/opt/jelu-data/ebooks/$cleanPath"),
+                File(filePath),
+            )
+        val file =
+            candidates.firstOrNull { it.exists() && it.isFile }
+                ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $cleanPath")
         if (!file.delete()) throw ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Could not delete file")
         logger.info { "Deleted ebook file: ${file.absolutePath}" }
         return mapOf("status" to "deleted", "filename" to file.name)
@@ -133,15 +134,18 @@ class WishlistDigitalController(
     fun ebooksList(): List<Map<String, String>> {
         val dir = File("/files/ebooks")
         if (!dir.exists() || !dir.isDirectory) return emptyList()
-        return dir.listFiles()
+        return dir
+            .listFiles()
             ?.filter { it.isFile && !it.name.startsWith(".") }
-            ?.map { mapOf(
-                "filename" to it.name,
-                "path" to "/cwa-book-ingest/${it.name}",
-                "serverPath" to it.absolutePath,
-                "format" to it.extension.lowercase(),
-                "size" to "${it.length() / 1024}KB"
-            ) }
+            ?.map {
+                mapOf(
+                    "filename" to it.name,
+                    "path" to "/cwa-book-ingest/${it.name}",
+                    "serverPath" to it.absolutePath,
+                    "format" to it.extension.lowercase(),
+                    "size" to "${it.length() / 1024}KB",
+                )
+            }
             ?: emptyList()
     }
 
@@ -155,30 +159,35 @@ class WishlistDigitalController(
         // Inside the Jelu container it should be mounted at the same path or we strip prefix
         val cleanPath = filePath.removePrefix("/cwa-book-ingest/")
         // Try common mount locations
-        val candidates = listOf(
-            File("/opt/jelu-data/ebooks/$cleanPath"),
-            File("/files/ebooks/$cleanPath"),
-            File(filePath),
-        )
-        val file = candidates.firstOrNull { it.exists() && it.isFile }
-            ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $cleanPath")
+        val candidates =
+            listOf(
+                File("/opt/jelu-data/ebooks/$cleanPath"),
+                File("/files/ebooks/$cleanPath"),
+                File(filePath),
+            )
+        val file =
+            candidates.firstOrNull { it.exists() && it.isFile }
+                ?: throw ResponseStatusException(HttpStatus.NOT_FOUND, "File not found: $cleanPath")
 
         val resource = FileSystemResource(file)
         val filename = file.name
-        val mediaType = when (file.extension.lowercase()) {
-            "pdf" -> MediaType.APPLICATION_PDF
-            "epub" -> MediaType.parseMediaType("application/epub+zip")
-            "mobi", "azw3" -> MediaType.APPLICATION_OCTET_STREAM
-            else -> MediaType.APPLICATION_OCTET_STREAM
-        }
+        val mediaType =
+            when (file.extension.lowercase()) {
+                "pdf" -> MediaType.APPLICATION_PDF
+                "epub" -> MediaType.parseMediaType("application/epub+zip")
+                "mobi", "azw3" -> MediaType.APPLICATION_OCTET_STREAM
+                else -> MediaType.APPLICATION_OCTET_STREAM
+            }
 
-        val disposition = if (inline && file.extension.lowercase() == "pdf") {
-            ContentDisposition.inline().filename(filename).build()
-        } else {
-            ContentDisposition.attachment().filename(filename).build()
-        }
+        val disposition =
+            if (inline && file.extension.lowercase() == "pdf") {
+                ContentDisposition.inline().filename(filename).build()
+            } else {
+                ContentDisposition.attachment().filename(filename).build()
+            }
 
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .contentType(mediaType)
             .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
             .body(resource)

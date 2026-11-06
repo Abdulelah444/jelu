@@ -1,7 +1,6 @@
 package io.github.bayang.jelu.controllers
 
 import io.github.bayang.jelu.dto.CreatePaceTargetDto
-import io.github.bayang.jelu.dto.JeluUser
 import io.github.bayang.jelu.dto.PaceStatusDto
 import io.github.bayang.jelu.dto.PaceTargetDto
 import io.github.bayang.jelu.dto.assertIsJeluUser

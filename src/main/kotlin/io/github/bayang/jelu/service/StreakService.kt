@@ -3,10 +3,10 @@ package io.github.bayang.jelu.service
 import io.github.bayang.jelu.dao.BookPaceTarget
 import io.github.bayang.jelu.dao.BookPaceTargetTable
 import io.github.bayang.jelu.dao.DailyReadingLog
+import io.github.bayang.jelu.dao.DailyReadingLogTable
 import io.github.bayang.jelu.dao.ReadingEvent
 import io.github.bayang.jelu.dao.ReadingEventTable
 import io.github.bayang.jelu.dao.ReadingEventType
-import io.github.bayang.jelu.dao.DailyReadingLogTable
 import io.github.bayang.jelu.dao.ReadingProgressHistory
 import io.github.bayang.jelu.dao.ReadingProgressHistoryTable
 import io.github.bayang.jelu.dao.User
@@ -16,10 +16,10 @@ import io.github.bayang.jelu.dto.DailyLogEntryDto
 import io.github.bayang.jelu.dto.HeatmapDto
 import io.github.bayang.jelu.dto.PaceStatus
 import io.github.bayang.jelu.dto.StreakDto
-import io.github.bayang.jelu.dto.WeeklyBookReportDto
 import io.github.bayang.jelu.dto.TimelineBookDto
 import io.github.bayang.jelu.dto.TimelineDayDto
 import io.github.bayang.jelu.dto.TimelineDto
+import io.github.bayang.jelu.dto.WeeklyBookReportDto
 import io.github.bayang.jelu.dto.WeeklyReportDto
 import io.github.bayang.jelu.utils.nowDateTime
 import org.jetbrains.exposed.sql.SortOrder
@@ -34,7 +34,6 @@ import kotlin.math.max
 
 @Component
 class StreakService {
-
     /**
      * Rebuild the daily_reading_log for a user from their progress history.
      * Aggregates page deltas per (userbook, day).
@@ -49,15 +48,18 @@ class StreakService {
 
         // Only process books that have at least one reading event (finished/reading/paused/dropped)
         // This avoids iterating over hundreds of unread library books
-        val userBookIds = UserBook.find { UserBookTable.user eq userId }
-            .filter { ub -> ub.lastReadingEvent != null }
-            .map { it.id.value }
+        val userBookIds =
+            UserBook
+                .find { UserBookTable.user eq userId }
+                .filter { ub -> ub.lastReadingEvent != null }
+                .map { it.id.value }
 
         for (ubId in userBookIds) {
-            val history = ReadingProgressHistory
-                .find { ReadingProgressHistoryTable.userBook eq ubId }
-                .orderBy(ReadingProgressHistoryTable.recordedAt to SortOrder.ASC)
-                .toList()
+            val history =
+                ReadingProgressHistory
+                    .find { ReadingProgressHistoryTable.userBook eq ubId }
+                    .orderBy(ReadingProgressHistoryTable.recordedAt to SortOrder.ASC)
+                    .toList()
 
             if (history.isEmpty()) continue
 
@@ -89,52 +91,66 @@ class StreakService {
     }
 
     @Transactional
-    fun getHeatmap(userId: UUID, fromDate: LocalDate, toDate: LocalDate): HeatmapDto {
-        val logs = DailyReadingLog.find {
-            (DailyReadingLogTable.user eq userId) and
-                (DailyReadingLogTable.logDate greaterEq fromDate) and
-                (DailyReadingLogTable.logDate lessEq toDate)
-        }.toList()
+    fun getHeatmap(
+        userId: UUID,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    ): HeatmapDto {
+        val logs =
+            DailyReadingLog
+                .find {
+                    (DailyReadingLogTable.user eq userId) and
+                        (DailyReadingLogTable.logDate greaterEq fromDate) and
+                        (DailyReadingLogTable.logDate lessEq toDate)
+                }.toList()
 
         val perDay = mutableMapOf<LocalDate, Int>()
         for (log in logs) {
             perDay[log.logDate] = (perDay[log.logDate] ?: 0) + log.pagesRead
         }
 
-        val entries = perDay.entries
-            .sortedBy { it.key }
-            .map { DailyLogEntryDto(it.key, it.value) }
+        val entries =
+            perDay.entries
+                .sortedBy { it.key }
+                .map { DailyLogEntryDto(it.key, it.value) }
         return HeatmapDto(entries)
     }
 
     /**
      * Total pages read by a user on a given day (across all books).
      */
-    private fun pagesOnDay(userId: UUID, day: LocalDate): Int {
-        return DailyReadingLog
+    private fun pagesOnDay(
+        userId: UUID,
+        day: LocalDate,
+    ): Int =
+        DailyReadingLog
             .find { (DailyReadingLogTable.user eq userId) and (DailyReadingLogTable.logDate eq day) }
             .sumOf { it.pagesRead }
-    }
 
     /**
      * Pages read for a specific book within a date range (inclusive).
      */
-    private fun pagesForBookInRange(userBookId: UUID, from: LocalDate, to: LocalDate): Int {
-        return DailyReadingLog
+    private fun pagesForBookInRange(
+        userBookId: UUID,
+        from: LocalDate,
+        to: LocalDate,
+    ): Int =
+        DailyReadingLog
             .find {
                 (DailyReadingLogTable.userBook eq userBookId) and
                     (DailyReadingLogTable.logDate greaterEq from) and
                     (DailyReadingLogTable.logDate lessEq to)
-            }
-            .sumOf { it.pagesRead }
-    }
+            }.sumOf { it.pagesRead }
 
     @Transactional
-    fun getPagesForBookOnDate(userBookId: UUID, date: LocalDate): Int {
-        return DailyReadingLog.find {
-            (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq date)
-        }.sumOf { it.pagesRead }
-    }
+    fun getPagesForBookOnDate(
+        userBookId: UUID,
+        date: LocalDate,
+    ): Int =
+        DailyReadingLog
+            .find {
+                (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq date)
+            }.sumOf { it.pagesRead }
 
     /**
      * Per-book daily streak: consecutive days (ending today or yesterday) with
@@ -143,10 +159,12 @@ class StreakService {
     @Transactional
     fun getBookDailyStreak(userBookId: UUID): Int {
         val today = LocalDate.now(ZoneId.systemDefault())
+
         fun hasRead(day: LocalDate): Boolean =
-            DailyReadingLog.find {
-                (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq day)
-            }.any { it.pagesRead > 0 }
+            DailyReadingLog
+                .find {
+                    (DailyReadingLogTable.userBook eq userBookId) and (DailyReadingLogTable.logDate eq day)
+                }.any { it.pagesRead > 0 }
 
         var streak = 0
         var cursor = today
@@ -182,10 +200,12 @@ class StreakService {
         }
 
         // longest daily streak: scan all logged days
-        val allDays = DailyReadingLog.find { DailyReadingLogTable.user eq userId }
-            .map { it.logDate }
-            .distinct()
-            .sorted()
+        val allDays =
+            DailyReadingLog
+                .find { DailyReadingLogTable.user eq userId }
+                .map { it.logDate }
+                .distinct()
+                .sorted()
         var longestDaily = 0
         var run = 0
         var prev: LocalDate? = null
@@ -210,11 +230,13 @@ class StreakService {
             var checkWeek = weekStart
             while (true) {
                 val weekEnd = checkWeek.plusDays(6)
-                val pages = DailyReadingLog.find {
-                    (DailyReadingLogTable.user eq userId) and
-                        (DailyReadingLogTable.logDate greaterEq checkWeek) and
-                        (DailyReadingLogTable.logDate lessEq weekEnd)
-                }.sumOf { it.pagesRead }
+                val pages =
+                    DailyReadingLog
+                        .find {
+                            (DailyReadingLogTable.user eq userId) and
+                                (DailyReadingLogTable.logDate greaterEq checkWeek) and
+                                (DailyReadingLogTable.logDate lessEq weekEnd)
+                        }.sumOf { it.pagesRead }
                 val isCurrentWeek = checkWeek == weekStart
                 if (pages >= weeklyGoal) {
                     currentWeekly++
@@ -246,10 +268,11 @@ class StreakService {
         val userBookIds = UserBook.find { UserBookTable.user eq userId }.map { it.id.value }
         var dailySum = 0
         for (ubId in userBookIds) {
-            val target = BookPaceTarget
-                .find { BookPaceTargetTable.userBook eq ubId }
-                .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
-                .firstOrNull()
+            val target =
+                BookPaceTarget
+                    .find { BookPaceTargetTable.userBook eq ubId }
+                    .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
+                    .firstOrNull()
             if (target != null) dailySum += target.dailyTargetPages
         }
         return dailySum * 7
@@ -271,10 +294,11 @@ class StreakService {
 
         val userBooks = UserBook.find { UserBookTable.user eq userId }.toList()
         for (ub in userBooks) {
-            val target = BookPaceTarget
-                .find { BookPaceTargetTable.userBook eq ub.id.value }
-                .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
-                .firstOrNull() ?: continue
+            val target =
+                BookPaceTarget
+                    .find { BookPaceTargetTable.userBook eq ub.id.value }
+                    .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
+                    .firstOrNull() ?: continue
 
             anyBook = true
             val pagesThisWeek = pagesForBookInRange(ub.id.value, weekStart, weekEnd)
@@ -284,11 +308,12 @@ class StreakService {
             val onTrack = pagesThisWeek >= weeklyTarget
             if (!onTrack) allCompliant = false
 
-            val status = when {
-                compliance >= 110 -> PaceStatus.AHEAD
-                onTrack -> PaceStatus.ON_PACE
-                else -> PaceStatus.BEHIND
-            }
+            val status =
+                when {
+                    compliance >= 110 -> PaceStatus.AHEAD
+                    onTrack -> PaceStatus.ON_PACE
+                    else -> PaceStatus.BEHIND
+                }
 
             books.add(
                 WeeklyBookReportDto(
@@ -320,12 +345,18 @@ class StreakService {
      * Each book gets its first logged day (start), per-day pages, and finish date.
      */
     @Transactional
-    fun getTimeline(userId: UUID, fromDate: LocalDate, toDate: LocalDate): TimelineDto {
-        val logs = DailyReadingLog.find {
-            (DailyReadingLogTable.user eq userId) and
-                (DailyReadingLogTable.logDate greaterEq fromDate) and
-                (DailyReadingLogTable.logDate lessEq toDate)
-        }.toList()
+    fun getTimeline(
+        userId: UUID,
+        fromDate: LocalDate,
+        toDate: LocalDate,
+    ): TimelineDto {
+        val logs =
+            DailyReadingLog
+                .find {
+                    (DailyReadingLogTable.user eq userId) and
+                        (DailyReadingLogTable.logDate greaterEq fromDate) and
+                        (DailyReadingLogTable.logDate lessEq toDate)
+                }.toList()
 
         // Group logs by userbook
         val byBook = logs.groupBy { it.userBook.id.value }
@@ -333,21 +364,25 @@ class StreakService {
         val result = mutableListOf<TimelineBookDto>()
         for ((ubId, bookLogs) in byBook) {
             val ub = bookLogs.first().userBook
-            val days = bookLogs
-                .groupBy { it.logDate }
-                .map { (date, entries) -> TimelineDayDto(date, entries.sumOf { it.pagesRead }) }
-                .sortedBy { it.date }
+            val days =
+                bookLogs
+                    .groupBy { it.logDate }
+                    .map { (date, entries) -> TimelineDayDto(date, entries.sumOf { it.pagesRead }) }
+                    .sortedBy { it.date }
             if (days.isEmpty()) continue
 
             val start = days.first().date
 
             // Finish date = most recent FINISHED event for this book, if any
-            val finishEvent = ReadingEvent.find {
-                (ReadingEventTable.userBook eq ubId) and (ReadingEventTable.eventType eq ReadingEventType.FINISHED)
-            }.maxByOrNull { it.endDate ?: it.startDate ?: it.creationDate }
-            val finishDate = finishEvent?.let {
-                (it.endDate ?: it.startDate)?.toLocalDate()
-            }
+            val finishEvent =
+                ReadingEvent
+                    .find {
+                        (ReadingEventTable.userBook eq ubId) and (ReadingEventTable.eventType eq ReadingEventType.FINISHED)
+                    }.maxByOrNull { it.endDate ?: it.startDate ?: it.creationDate }
+            val finishDate =
+                finishEvent?.let {
+                    (it.endDate ?: it.startDate)?.toLocalDate()
+                }
 
             val status = ub.lastReadingEvent?.name ?: "NONE"
 

@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 import java.util.UUID
+
 object DailyReadingLogTable : UUIDTable("daily_reading_log") {
     val user = reference("user_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val userBook = reference("user_book_id", UserBookTable, onDelete = ReferenceOption.CASCADE)
@@ -14,10 +15,12 @@ object DailyReadingLogTable : UUIDTable("daily_reading_log") {
     val pagesRead = integer("pages_read")
     val creationDate = timestampWithTimeZone("creation_date")
 }
+
 class DailyReadingLog(
     id: EntityID<UUID>,
 ) : UUIDEntity(id) {
     companion object : UUIDEntityClass<DailyReadingLog>(DailyReadingLogTable)
+
     var user by User referencedOn DailyReadingLogTable.user
     var userBook by UserBook referencedOn DailyReadingLogTable.userBook
     var logDate by DailyReadingLogTable.logDate

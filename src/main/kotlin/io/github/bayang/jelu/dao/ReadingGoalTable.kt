@@ -7,6 +7,7 @@ import org.jetbrains.exposed.sql.ReferenceOption
 import org.jetbrains.exposed.sql.javatime.date
 import org.jetbrains.exposed.sql.javatime.timestampWithTimeZone
 import java.util.UUID
+
 object ReadingGoalTable : UUIDTable("reading_goal") {
     val user = reference("user_id", UserTable, onDelete = ReferenceOption.CASCADE)
     val year = integer("year")
@@ -17,10 +18,12 @@ object ReadingGoalTable : UUIDTable("reading_goal") {
     val repeating = bool("repeating")
     val creationDate = timestampWithTimeZone("creation_date")
 }
+
 class ReadingGoal(
     id: EntityID<UUID>,
 ) : UUIDEntity(id) {
     companion object : UUIDEntityClass<ReadingGoal>(ReadingGoalTable)
+
     var user by User referencedOn ReadingGoalTable.user
     var year by ReadingGoalTable.year
     var targetBooks by ReadingGoalTable.targetBooks

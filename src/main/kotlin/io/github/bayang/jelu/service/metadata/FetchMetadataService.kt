@@ -15,12 +15,6 @@ class FetchMetadataService(
     private val providers: List<IMetaDataProvider>,
     private val pluginInfoHolder: PluginInfoHolder,
 ) {
-
-
-
-
-
-
     fun searchMetadata(
         metadataRequestDto: MetadataRequestDto,
         config: Map<String, String> = mapOf(),
@@ -75,7 +69,6 @@ class FetchMetadataService(
         }
         return allResults.take(limit)
     }
-
 
     fun fetchMetadata(
         metadataRequestDto: MetadataRequestDto,

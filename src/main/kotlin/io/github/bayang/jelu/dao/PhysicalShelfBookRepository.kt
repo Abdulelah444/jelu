@@ -100,8 +100,10 @@ class PhysicalShelfBookRepository {
                 .select(PhysicalShelfBookTable.userBook)
                 .map { it[PhysicalShelfBookTable.userBook] }
 
-        val query = UserBookTable.selectAll()
-            .andWhere { UserBookTable.owned eq true }
+        val query =
+            UserBookTable
+                .selectAll()
+                .andWhere { UserBookTable.owned eq true }
         if (assignedUserBookIds.isNotEmpty()) {
             query.andWhere { UserBookTable.id notInList assignedUserBookIds }
         }

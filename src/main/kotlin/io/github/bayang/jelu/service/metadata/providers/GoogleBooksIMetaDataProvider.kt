@@ -84,7 +84,6 @@ class GoogleBooksIMetaDataProvider(
         return ""
     }
 
-
     override fun name(): String = name
 
     override fun searchMetadata(
@@ -99,36 +98,36 @@ class GoogleBooksIMetaDataProvider(
         val queryString = query(metadataRequestDto)
         if (queryString.isBlank()) return emptyList()
 
-        val res = restClient
-            .get()
-            .uri { uriBuilder: UriBuilder ->
-                uriBuilder
-                    .scheme("https")
-                    .host("www.googleapis.com")
-                    .path("/books/v1/volumes")
-                    .queryParam("q", queryString)
-                    .queryParam("maxResults", 20)
-                    .queryParam("key", googleProviderApiKey)
-                    .build()
-            }
-            .exchangeToMono {
-                if (it.statusCode() == HttpStatus.OK) {
-                    it.bodyToMono(String::class.java).map { bodyString ->
-                        val items = objectMapper.readTree(bodyString).get("items")
-                        if (items == null || items.isEmpty) {
-                            emptyList<MetadataDto>()
-                        } else {
-                            items.asIterable()
-                                .mapNotNull { item -> safeParseBook(item) }
-                                .distinctBy { dto -> dto.isbn13 ?: dto.title }
+        val res =
+            restClient
+                .get()
+                .uri { uriBuilder: UriBuilder ->
+                    uriBuilder
+                        .scheme("https")
+                        .host("www.googleapis.com")
+                        .path("/books/v1/volumes")
+                        .queryParam("q", queryString)
+                        .queryParam("maxResults", 20)
+                        .queryParam("key", googleProviderApiKey)
+                        .build()
+                }.exchangeToMono {
+                    if (it.statusCode() == HttpStatus.OK) {
+                        it.bodyToMono(String::class.java).map { bodyString ->
+                            val items = objectMapper.readTree(bodyString).get("items")
+                            if (items == null || items.isEmpty) {
+                                emptyList<MetadataDto>()
+                            } else {
+                                items
+                                    .asIterable()
+                                    .mapNotNull { item -> safeParseBook(item) }
+                                    .distinctBy { dto -> dto.isbn13 ?: dto.title }
+                            }
                         }
+                    } else {
+                        logger.error { "error searching google books: ${it.statusCode()}" }
+                        it.bodyToMono(String::class.java).map { emptyList<MetadataDto>() }
                     }
-                } else {
-                    logger.error { "error searching google books: ${it.statusCode()}" }
-                    it.bodyToMono(String::class.java).map { emptyList<MetadataDto>() }
-                }
-            }
-            .block(Duration.ofSeconds(60))
+                }.block(Duration.ofSeconds(60))
 
         return res ?: emptyList()
     }

@@ -16,9 +16,11 @@ import java.util.UUID
 
 @Service
 class WishlistService {
-
     @Transactional
-    fun findAll(userId: UUID, itemType: String? = null): List<WishlistItemDto> {
+    fun findAll(
+        userId: UUID,
+        itemType: String? = null,
+    ): List<WishlistItemDto> {
         val query = WishlistItemTable.selectAll().andWhere { WishlistItemTable.user eq userId }
         if (itemType != null) {
             query.andWhere { WishlistItemTable.itemType eq itemType }
@@ -28,33 +30,44 @@ class WishlistService {
     }
 
     @Transactional
-    fun create(dto: CreateWishlistItemDto, user: UserDto): WishlistItemDto {
-        val item = WishlistItem.new {
-            this.creationDate = Instant.now()
-            this.modificationDate = Instant.now()
-            this.user = User[user.id!!]
-            this.itemType = dto.itemType.name
-            this.title = dto.title
-            this.description = dto.description
-            this.isbn = dto.isbn
-            this.authors = dto.authors
-            this.image = dto.image
-            this.pageCount = dto.pageCount
-            this.publisher = dto.publisher
-            this.language = dto.language
-        }
+    fun create(
+        dto: CreateWishlistItemDto,
+        user: UserDto,
+    ): WishlistItemDto {
+        val item =
+            WishlistItem.new {
+                this.creationDate = Instant.now()
+                this.modificationDate = Instant.now()
+                this.user = User[user.id!!]
+                this.itemType = dto.itemType.name
+                this.title = dto.title
+                this.description = dto.description
+                this.isbn = dto.isbn
+                this.authors = dto.authors
+                this.image = dto.image
+                this.pageCount = dto.pageCount
+                this.publisher = dto.publisher
+                this.language = dto.language
+            }
         return item.toDto()
     }
 
     @Transactional
-    fun delete(id: UUID, userId: UUID) {
+    fun delete(
+        id: UUID,
+        userId: UUID,
+    ) {
         val item = WishlistItem.findById(id) ?: throw IllegalArgumentException("Wishlist item not found")
         if (item.user.id.value != userId) throw IllegalArgumentException("Not your wishlist item")
         item.delete()
     }
 
     @Transactional
-    fun update(id: UUID, dto: CreateWishlistItemDto, userId: UUID): WishlistItemDto {
+    fun update(
+        id: UUID,
+        dto: CreateWishlistItemDto,
+        userId: UUID,
+    ): WishlistItemDto {
         val item = WishlistItem.findById(id) ?: throw IllegalArgumentException("Wishlist item not found")
         if (item.user.id.value != userId) throw IllegalArgumentException("Not your wishlist item")
         item.modificationDate = Instant.now()
@@ -70,7 +83,5 @@ class WishlistService {
     }
 
     @Transactional
-    fun findById(id: UUID): WishlistItemDto {
-        return WishlistItem[id].toDto()
-    }
+    fun findById(id: UUID): WishlistItemDto = WishlistItem[id].toDto()
 }

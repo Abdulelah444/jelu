@@ -17,7 +17,6 @@ class LabelController(
     private val bookService: BookService,
     private val properties: io.github.bayang.jelu.config.JeluProperties,
 ) {
-
     @GetMapping("/userbooks/{id}/label.png")
     fun getLabel(
         @PathVariable("id") userBookId: UUID,
@@ -29,9 +28,10 @@ class LabelController(
         val ub = bookService.findUserBookById(userBookId)
         val size = LabelSize(widthMm, heightMm)
         val resolvedBase = properties.qrBaseUrl.ifEmpty { baseUrl }
-        val url = "${resolvedBase}/public/book/${ub.book.id}"
+        val url = "$resolvedBase/public/book/${ub.book.id}"
         val png = labelService.generateLabel(ub.book.title, url, size)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"${ub.book.title}.png\"")
             .contentType(MediaType.IMAGE_PNG)
             .body(png)
@@ -46,20 +46,25 @@ class LabelController(
     ): ResponseEntity<ByteArray> {
         val size = LabelSize(widthMm, heightMm)
         val userId = (principal.principal as io.github.bayang.jelu.dto.JeluUser).user.id!!
-        val page = bookService.findUserBookByCriteria(
-            userId = userId,
-            bookId = null,
-            eventTypes = null,
-            toRead = null,
-            owned = true,
-            pageable = org.springframework.data.domain.PageRequest.of(0, 500),
-        )
-        val books = page.content.map { ub ->
-            val resolvedBase = properties.qrBaseUrl.ifEmpty { baseUrl }
-            ub.book.title to "$resolvedBase/public/book/${ub.book.id}"
-        }
+        val page =
+            bookService.findUserBookByCriteria(
+                userId = userId,
+                bookId = null,
+                eventTypes = null,
+                toRead = null,
+                owned = true,
+                pageable =
+                    org.springframework.data.domain.PageRequest
+                        .of(0, 500),
+            )
+        val books =
+            page.content.map { ub ->
+                val resolvedBase = properties.qrBaseUrl.ifEmpty { baseUrl }
+                ub.book.title to "$resolvedBase/public/book/${ub.book.id}"
+            }
         val zip = labelService.generateBulkZip(books, size)
-        return ResponseEntity.ok()
+        return ResponseEntity
+            .ok()
             .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"book-labels.zip\"")
             .header(HttpHeaders.CONTENT_TYPE, "application/zip")
             .body(zip)

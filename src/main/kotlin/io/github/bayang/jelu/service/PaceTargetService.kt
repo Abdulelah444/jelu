@@ -10,7 +10,6 @@ import io.github.bayang.jelu.dto.PaceStatusDto
 import io.github.bayang.jelu.dto.PaceTargetDto
 import io.github.bayang.jelu.utils.nowDateTime
 import org.jetbrains.exposed.sql.SortOrder
-import org.jetbrains.exposed.sql.and
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
@@ -21,7 +20,6 @@ import kotlin.math.max
 
 @Component
 class PaceTargetService {
-
     @Transactional
     fun setTarget(dto: CreatePaceTargetDto): PaceTargetDto {
         val userBook = UserBook[dto.userBookId]
@@ -40,13 +38,14 @@ class PaceTargetService {
         // Remove any existing target for this userbook (latest wins)
         BookPaceTarget.find { BookPaceTargetTable.userBook eq dto.userBookId }.forEach { it.delete() }
 
-        val created = BookPaceTarget.new {
-            this.userBook = userBook
-            this.dailyTargetPages = dto.dailyTargetPages
-            this.startDate = now
-            this.plannedFinishDate = plannedFinish
-            this.creationDate = now
-        }
+        val created =
+            BookPaceTarget.new {
+                this.userBook = userBook
+                this.dailyTargetPages = dto.dailyTargetPages
+                this.startDate = now
+                this.plannedFinishDate = plannedFinish
+                this.creationDate = now
+            }
         return created.toDto()
     }
 
@@ -65,10 +64,11 @@ class PaceTargetService {
 
     @Transactional
     fun getStatus(userBookId: UUID): PaceStatusDto? {
-        val target = BookPaceTarget
-            .find { BookPaceTargetTable.userBook eq userBookId }
-            .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
-            .firstOrNull() ?: return null
+        val target =
+            BookPaceTarget
+                .find { BookPaceTargetTable.userBook eq userBookId }
+                .orderBy(BookPaceTargetTable.creationDate to SortOrder.DESC)
+                .firstOrNull() ?: return null
 
         val userBook = UserBook[userBookId]
         val pageCount = userBook.book.pageCount
@@ -77,11 +77,12 @@ class PaceTargetService {
 
         // Anchor pace to the actual reading start date (the CURRENTLY_READING event),
         // falling back to the target creation date if none exists.
-        val readingStart = userBook.readingEvents
-            .filter { it.eventType == ReadingEventType.CURRENTLY_READING }
-            .maxByOrNull { it.startDate }
-            ?.startDate
-            ?: target.startDate
+        val readingStart =
+            userBook.readingEvents
+                .filter { it.eventType == ReadingEventType.CURRENTLY_READING }
+                .maxByOrNull { it.startDate }
+                ?.startDate
+                ?: target.startDate
 
         // Days elapsed since reading start (inclusive of day 1)
         val daysElapsed = max(1, Duration.between(readingStart, now).toDays().toInt() + 1)
@@ -89,12 +90,13 @@ class PaceTargetService {
         val expectedCapped = if (pageCount != null) minOf(expectedPage, pageCount) else expectedPage
         val diff = currentPage - expectedCapped
 
-        val status = when {
-            currentPage == 0 && daysElapsed <= 1 -> PaceStatus.NOT_STARTED
-            diff >= target.dailyTargetPages -> PaceStatus.AHEAD
-            diff <= -target.dailyTargetPages -> PaceStatus.BEHIND
-            else -> PaceStatus.ON_PACE
-        }
+        val status =
+            when {
+                currentPage == 0 && daysElapsed <= 1 -> PaceStatus.NOT_STARTED
+                diff >= target.dailyTargetPages -> PaceStatus.AHEAD
+                diff <= -target.dailyTargetPages -> PaceStatus.BEHIND
+                else -> PaceStatus.ON_PACE
+            }
 
         // Estimate finish based on actual pace so far
         val estimatedFinish: OffsetDateTime? =
@@ -103,8 +105,12 @@ class PaceTargetService {
                 if (pagesPerDay > 0) {
                     val remainingDays = ceil((pageCount - currentPage) / pagesPerDay).toLong()
                     now.plusDays(max(0, remainingDays))
-                } else null
-            } else null
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
 
         return PaceStatusDto(
             userBookId = userBookId,
@@ -121,11 +127,12 @@ class PaceTargetService {
         )
     }
 
-    private fun BookPaceTarget.toDto(): PaceTargetDto = PaceTargetDto(
-        id = this.id.value,
-        userBookId = this.userBook.id.value,
-        dailyTargetPages = this.dailyTargetPages,
-        startDate = this.startDate,
-        plannedFinishDate = this.plannedFinishDate,
-    )
+    private fun BookPaceTarget.toDto(): PaceTargetDto =
+        PaceTargetDto(
+            id = this.id.value,
+            userBookId = this.userBook.id.value,
+            dailyTargetPages = this.dailyTargetPages,
+            startDate = this.startDate,
+            plannedFinishDate = this.plannedFinishDate,
+        )
 }

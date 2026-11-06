@@ -20,7 +20,6 @@ class OpenLibraryMetadataProvider(
     @Resource(name = "restClient") private val restClient: WebClient,
     private val objectMapper: ObjectMapper,
 ) : IMetaDataProvider {
-
     private val name = "openlibrary"
 
     override fun name(): String = name
@@ -37,42 +36,44 @@ class OpenLibraryMetadataProvider(
         val query = buildQuery(metadataRequestDto)
         if (query.isBlank()) return emptyList()
 
-        val res = restClient
-            .get()
-            .uri { uriBuilder: UriBuilder ->
-                uriBuilder
-                    .scheme("https")
-                    .host("openlibrary.org")
-                    .path("/search.json")
-                    .queryParam("q", query)
-                    .queryParam("limit", 20)
-                    .queryParam("fields", "title,author_name,isbn,cover_i,first_publish_year,publisher,number_of_pages_median,language,subject,key")
-                    .build()
-            }
-            .exchangeToMono {
-                if (it.statusCode() == HttpStatus.OK) {
-                    it.bodyToMono(String::class.java).map { bodyString ->
-                        val docs = objectMapper.readTree(bodyString).get("docs")
-                        if (docs == null || docs.isEmpty) {
-                            emptyList<MetadataDto>()
-                        } else {
-                            docs.asIterable()
-                                .mapNotNull { doc -> safeParseDoc(doc) }
-                                .distinctBy { dto -> dto.isbn13 ?: dto.title }
+        val res =
+            restClient
+                .get()
+                .uri { uriBuilder: UriBuilder ->
+                    uriBuilder
+                        .scheme("https")
+                        .host("openlibrary.org")
+                        .path("/search.json")
+                        .queryParam("q", query)
+                        .queryParam("limit", 20)
+                        .queryParam(
+                            "fields",
+                            "title,author_name,isbn,cover_i,first_publish_year,publisher,number_of_pages_median,language,subject,key",
+                        ).build()
+                }.exchangeToMono {
+                    if (it.statusCode() == HttpStatus.OK) {
+                        it.bodyToMono(String::class.java).map { bodyString ->
+                            val docs = objectMapper.readTree(bodyString).get("docs")
+                            if (docs == null || docs.isEmpty) {
+                                emptyList<MetadataDto>()
+                            } else {
+                                docs
+                                    .asIterable()
+                                    .mapNotNull { doc -> safeParseDoc(doc) }
+                                    .distinctBy { dto -> dto.isbn13 ?: dto.title }
+                            }
                         }
+                    } else {
+                        logger.error { "error searching openlibrary: ${it.statusCode()}" }
+                        it.bodyToMono(String::class.java).map { emptyList<MetadataDto>() }
                     }
-                } else {
-                    logger.error { "error searching openlibrary: ${it.statusCode()}" }
-                    it.bodyToMono(String::class.java).map { emptyList<MetadataDto>() }
-                }
-            }
-            .block(Duration.ofSeconds(60))
+                }.block(Duration.ofSeconds(60))
 
         return res ?: emptyList()
     }
 
-    private fun buildQuery(metadataRequestDto: MetadataRequestDto): String {
-        return when {
+    private fun buildQuery(metadataRequestDto: MetadataRequestDto): String =
+        when {
             !metadataRequestDto.isbn.isNullOrBlank() -> "isbn:${metadataRequestDto.isbn}"
             !metadataRequestDto.title.isNullOrBlank() && !metadataRequestDto.authors.isNullOrBlank() ->
                 "title:${metadataRequestDto.title} author:${metadataRequestDto.authors}"
@@ -80,15 +81,18 @@ class OpenLibraryMetadataProvider(
             !metadataRequestDto.authors.isNullOrBlank() -> "author:${metadataRequestDto.authors}"
             else -> ""
         }
-    }
 
     private fun safeParseDoc(doc: JsonNode): MetadataDto? {
         return try {
             val title = doc.get("title")?.asText() ?: return null
             if (title.isBlank()) return null
 
-            val authors = doc.get("author_name")?.asIterable()
-                ?.map { it.asText() }?.toMutableSet() ?: mutableSetOf()
+            val authors =
+                doc
+                    .get("author_name")
+                    ?.asIterable()
+                    ?.map { it.asText() }
+                    ?.toMutableSet() ?: mutableSetOf()
 
             val isbns = doc.get("isbn")?.asIterable()?.map { it.asText() } ?: emptyList()
             val isbn13 = isbns.firstOrNull { it.length == 13 }
@@ -99,8 +103,18 @@ class OpenLibraryMetadataProvider(
 
             val year = doc.get("first_publish_year")?.asText()
             val pages = doc.get("number_of_pages_median")?.asInt()
-            val publisher = doc.get("publisher")?.asIterable()?.firstOrNull()?.asText()
-            val language = doc.get("language")?.asIterable()?.firstOrNull()?.asText()
+            val publisher =
+                doc
+                    .get("publisher")
+                    ?.asIterable()
+                    ?.firstOrNull()
+                    ?.asText()
+            val language =
+                doc
+                    .get("language")
+                    ?.asIterable()
+                    ?.firstOrNull()
+                    ?.asText()
 
             MetadataDto(
                 title = title,

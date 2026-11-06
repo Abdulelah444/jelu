@@ -32,9 +32,7 @@ class ReadingGoalController(
 
     @Operation(description = "get the reading goal with progress")
     @GetMapping(path = ["/userbooks/reading-goal"])
-    fun getGoal(
-        principal: Authentication,
-    ): ResponseEntity<ReadingGoalDto> {
+    fun getGoal(principal: Authentication): ResponseEntity<ReadingGoalDto> {
         assertIsJeluUser(principal.principal)
         val goal = readingGoalService.getGoal((principal.principal as JeluUser).user.id!!)
         return if (goal != null) ResponseEntity.ok(goal) else ResponseEntity.noContent().build()
@@ -42,9 +40,7 @@ class ReadingGoalController(
 
     @Operation(description = "delete the reading goal")
     @DeleteMapping(path = ["/userbooks/reading-goal"])
-    fun deleteGoal(
-        principal: Authentication,
-    ): ResponseEntity<Void> {
+    fun deleteGoal(principal: Authentication): ResponseEntity<Void> {
         assertIsJeluUser(principal.principal)
         readingGoalService.deleteGoal((principal.principal as JeluUser).user.id!!)
         return ResponseEntity.noContent().build()
