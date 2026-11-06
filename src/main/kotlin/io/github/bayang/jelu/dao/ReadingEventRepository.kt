@@ -196,11 +196,23 @@ class ReadingEventRepository {
         if (createReadingEventDto.eventType == ReadingEventType.FINISHED ||
             createReadingEventDto.eventType == ReadingEventType.DROPPED
         ) {
-            val mostRecent = userBook.readingEvents
-                .sortedByDescending { it.endDate ?: it.startDate ?: it.creationDate }
-                .firstOrNull()
-            if (mostRecent != null && mostRecent.eventType == createReadingEventDto.eventType) {
-                mostRecent.endDate = createReadingEventDto.eventDate ?: instant
+            val mostRecent =
+                userBook.readingEvents
+                    .sortedByDescending { it.endDate ?: it.startDate ?: it.creationDate }
+                    .firstOrNull()
+            val eventDate = createReadingEventDto.eventDate
+            val mostRecentDate = mostRecent?.let { it.endDate ?: it.startDate ?: it.creationDate }
+            // Only collapse an accidental duplicate of the same read (a double submit): a
+            // different date is a separate read or drop of the book and keeps its own entry.
+            // Dates are compared to the second, since they are stored with less precision
+            // than the value submitted (SQLite keeps milliseconds, not nanoseconds).
+            val isSameRead =
+                eventDate == null ||
+                    mostRecentDate == null ||
+                    eventDate.truncatedTo(ChronoUnit.SECONDS).toInstant() ==
+                    mostRecentDate.truncatedTo(ChronoUnit.SECONDS).toInstant()
+            if (mostRecent != null && mostRecent.eventType == createReadingEventDto.eventType && isSameRead) {
+                mostRecent.endDate = eventDate ?: instant
                 mostRecent.modificationDate = instant
                 synchronizeReadingProgress(createReadingEventDto, userBook)
                 return mostRecent

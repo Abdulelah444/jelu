@@ -120,8 +120,10 @@ class BookService(
         }
 
     @Transactional
-    fun reorderToRead(userId: java.util.UUID, orderedIds: List<java.util.UUID>) =
-        bookRepository.reorderToRead(userId, orderedIds)
+    fun reorderToRead(
+        userId: java.util.UUID,
+        orderedIds: List<java.util.UUID>,
+    ) = bookRepository.reorderToRead(userId, orderedIds)
 
     @Transactional
     fun findAllAuthors(
@@ -142,9 +144,12 @@ class BookService(
         userId: UUID?,
         pageable: Pageable,
     ): Page<SeriesDto> = bookRepository.findAllSeries(name, userId, pageable).map { it.toSeriesDto() }
-    @Transactional
-    fun findBooksMissingPageCount(pageable: Pageable): Page<BookDto> = bookRepository.findBooksMissingPageCount(pageable).map { it.toBookDto() }
 
+    @Transactional
+    fun findBooksMissingPageCount(pageable: Pageable): Page<BookDto> =
+        bookRepository.findBooksMissingPageCount(pageable).map { it.toBookDto() }
+
+    @Transactional
     fun findBookById(bookId: UUID): BookDto = bookRepository.findBookById(bookId).toBookDto()
 
     @Transactional
@@ -506,9 +511,20 @@ class BookService(
         hasDigitalFile: Boolean? = null,
         pageable: Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> =
-        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable).map {
-            it.toUserBookWthoutEventsAndUserDto()
-        }
+        bookRepository
+            .findUserBookByCriteria(
+                userId,
+                bookId,
+                eventTypes,
+                toRead,
+                owned,
+                borrowed,
+                hasPageCount,
+                hasDigitalFile,
+                pageable,
+            ).map {
+                it.toUserBookWthoutEventsAndUserDto()
+            }
 
     @Transactional
     fun findOrphanTags(pageable: Pageable): Page<TagDto> = bookRepository.findOrphanTags(pageable).map { tag -> tag.toTagDto() }
@@ -833,9 +849,13 @@ class BookService(
         fileFormat: String?,
         fileSizeBytes: Long?,
         fileAddedDate: Instant?,
-    ): UserBookLightDto {
-        return bookRepository.updateDigitalFileFields(
-            userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
-        ).toUserBookLightDto()
-    }
+    ): UserBookLightDto =
+        bookRepository
+            .updateDigitalFileFields(
+                userbookId,
+                filePath,
+                fileFormat,
+                fileSizeBytes,
+                fileAddedDate,
+            ).toUserBookLightDto()
 }

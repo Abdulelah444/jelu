@@ -167,3 +167,11 @@ tasks.register<Sync>("copyWebDist") {
     from("${layout.buildDirectory.get()}/npm-output")
     into("$projectDir/src/main/resources/public/")
 }
+
+// copyWebDist writes into src/main/resources/public, which processResources
+// consumes. Declare the edge explicitly so Gradle's validation is satisfied
+// (it refuses to infer the order on its own) and the frontend is always
+// packaged after it has been built.
+tasks.named<ProcessResources>("processResources") {
+    dependsOn("copyWebDist")
+}

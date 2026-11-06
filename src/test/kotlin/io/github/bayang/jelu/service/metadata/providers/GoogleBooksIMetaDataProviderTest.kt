@@ -137,7 +137,8 @@ class GoogleBooksIMetaDataProviderTest {
         Assertions.assertEquals("9781785650406", result.isbn13)
         Assertions.assertEquals(mutableSetOf("Jack Campbell"), result.authors)
         Assertions.assertEquals(
-            "http://books.google.com/books/content?id=0GJOMQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
+            // cover URLs are upgraded to https:// (see extractImage)
+            "https://books.google.com/books/content?id=0GJOMQAACAAJ&printsec=frontcover&img=1&zoom=1&source=gbs_api",
             result.image,
         )
         Assertions.assertEquals("en", result.language)

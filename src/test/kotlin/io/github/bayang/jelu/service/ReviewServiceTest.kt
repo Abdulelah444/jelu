@@ -47,10 +47,10 @@ class ReviewServiceTest(
     @AfterAll
     fun teardDown() {
         reviewService
-            .find(null, null, null, null, null, Pageable.ofSize(200))
+            .find(null, null, null, null, null, pageable = Pageable.ofSize(200))
             .forEach { reviewDto -> reviewService.delete(reviewDto.id!!) }
         bookService
-            .findUserBookByCriteria(user().id!!, null, null, null, null, null, Pageable.ofSize(30))
+            .findUserBookByCriteria(user().id!!, null, null, null, null, null, pageable = Pageable.ofSize(30))
             .forEach { bookService.deleteUserBookById(it.id!!) }
         userService.findAll(null).forEach { userService.deleteUser(it.id!!) }
     }
@@ -88,7 +88,7 @@ class ReviewServiceTest(
         Assertions.assertEquals(update.text, updated.text)
         Assertions.assertEquals(createReviewDto.visibility, updated.visibility)
 
-        var found = reviewService.find(null, null, null, null, null, Pageable.ofSize(200))
+        var found = reviewService.find(null, null, null, null, null, pageable = Pageable.ofSize(200))
         Assertions.assertEquals(1L, found.totalElements)
         val oneYearBefore = OffsetDateTime.now(ZoneId.systemDefault()).minusYears(1).toInstant()
         val createReviewDto1 =
@@ -105,7 +105,7 @@ class ReviewServiceTest(
                 user(),
             )
         Assertions.assertEquals(oneYearBefore, saved1.reviewDate)
-        found = reviewService.find(null, null, null, null, null, Pageable.ofSize(200))
+        found = reviewService.find(null, null, null, null, null, pageable = Pageable.ofSize(200))
         Assertions.assertEquals(2L, found.totalElements)
 
         found =
@@ -131,7 +131,7 @@ class ReviewServiceTest(
         Assertions.assertEquals(1L, found.totalElements)
 
         reviewService.delete(found.content[0].id!!)
-        found = reviewService.find(null, null, null, null, null, Pageable.ofSize(200))
+        found = reviewService.find(null, null, null, null, null, pageable = Pageable.ofSize(200))
         Assertions.assertEquals(1L, found.totalElements)
     }
 
@@ -188,7 +188,7 @@ class ReviewServiceTest(
                 null,
                 null,
                 null,
-                PageRequest.ofSize(20),
+                pageable = PageRequest.ofSize(20),
             )
         // 2 reviews from our main user + 1 review from another user
         var dbl = (1.5 * 2 + 8.5) / 3
@@ -221,7 +221,7 @@ class ReviewServiceTest(
                 null,
                 null,
                 null,
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "usrAvgRating")),
+                pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "usrAvgRating")),
             )
         Assertions.assertEquals(2, userBookByCriteriaSorted.totalElements)
         Assertions.assertEquals(5.0, userBookByCriteriaSorted.content[0].userAvgRating)
@@ -234,7 +234,7 @@ class ReviewServiceTest(
                 null,
                 null,
                 null,
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "usrAvgRating")),
+                pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "usrAvgRating")),
             )
         Assertions.assertEquals(2, userBookByCriteriaSorted.totalElements)
         Assertions.assertEquals(8.0, userBookByCriteriaSorted.content[0].userAvgRating)
@@ -261,7 +261,7 @@ class ReviewServiceTest(
                 null,
                 null,
                 null,
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "usrAvgRating")),
+                pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "usrAvgRating")),
             )
         Assertions.assertEquals(3, userBookByCriteriaSorted.totalElements)
         Assertions.assertEquals(8.0, userBookByCriteriaSorted.content[0].userAvgRating)
@@ -276,7 +276,7 @@ class ReviewServiceTest(
                 null,
                 null,
                 null,
-                PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "usrAvgRating")),
+                pageable = PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "usrAvgRating")),
             )
         Assertions.assertEquals(3, userBookByCriteriaSorted.totalElements)
         Assertions.assertEquals(5.0, userBookByCriteriaSorted.content[0].userAvgRating)
