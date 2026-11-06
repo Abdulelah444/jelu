@@ -10,9 +10,9 @@ import io.github.bayang.jelu.dto.UserDto
 import io.github.bayang.jelu.service.metadata.FetchMetadataService
 import io.github.bayang.jelu.service.metadata.PluginInfoHolder
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.jetbrains.exposed.sql.update
 import org.jetbrains.exposed.sql.or
 import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.update
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
@@ -25,10 +25,12 @@ class BookEnrichmentService(
     private val fetchMetadataService: FetchMetadataService,
     private val pluginInfoHolder: PluginInfoHolder,
 ) {
-
     @Async
     @Transactional
-    fun enrichBook(book: BookDto, user: UserDto) {
+    fun enrichBook(
+        book: BookDto,
+        user: UserDto,
+    ) {
         try {
             val missingPageCount = book.pageCount == null
             val missingSummary = book.summary.isNullOrBlank()
@@ -42,9 +44,10 @@ class BookEnrichmentService(
                 val titleHint = SeriesDetectionService.detectFromTitle(book.title)
                 if (titleHint != null) {
                     logger.info { "Series hint from title for \"${book.title}\": ${titleHint.detail}" }
-                    val message = "\"${book.title}\" may be part of a series. ${titleHint.detail}" +
-                        (if (titleHint.suggestedPosition != null) " (position ${titleHint.suggestedPosition.toInt()})" else "") +
-                        ". Check and assign the series if appropriate."
+                    val message =
+                        "\"${book.title}\" may be part of a series. ${titleHint.detail}" +
+                            (if (titleHint.suggestedPosition != null) " (position ${titleHint.suggestedPosition.toInt()})" else "") +
+                            ". Check and assign the series if appropriate."
                     userMessageService.save(
                         CreateUserMessageDto(
                             message = message,
@@ -66,13 +69,14 @@ class BookEnrichmentService(
                 }
 
                 logger.info { "Fetching metadata for \"${book.title}\" (ISBN: $isbn)" }
-                val metadata = fetchMetadataService.fetchMetadata(
-                    MetadataRequestDto(
-                        isbn = isbn,
-                        title = book.title,
-                        authors = authorsString,
-                    ),
-                )
+                val metadata =
+                    fetchMetadataService.fetchMetadata(
+                        MetadataRequestDto(
+                            isbn = isbn,
+                            title = book.title,
+                            authors = authorsString,
+                        ),
+                    )
 
                 val updates = mutableListOf<String>()
 
@@ -101,8 +105,9 @@ class BookEnrichmentService(
 
                 if (missingSeries && !metadata.series.isNullOrBlank()) {
                     val positionText = if (metadata.numberInSeries != null) " (#${metadata.numberInSeries!!.toInt()})" else ""
-                    val message = "\"${book.title}\" may be part of series \"${metadata.series}\"$positionText. " +
-                        "This was found via metadata lookup. Check and assign the series if appropriate."
+                    val message =
+                        "\"${book.title}\" may be part of series \"${metadata.series}\"$positionText. " +
+                            "This was found via metadata lookup. Check and assign the series if appropriate."
                     userMessageService.save(
                         CreateUserMessageDto(
                             message = message,
@@ -128,13 +133,15 @@ class BookEnrichmentService(
             return
         }
 
-        val booksToEnrich = Book.wrapRows(
-            BookTable.selectAll().where {
-                (BookTable.pageCount eq null) or
-                (BookTable.summary eq null) or
-                (BookTable.publisher eq null)
-            }
-        ).toList()
+        val booksToEnrich =
+            Book
+                .wrapRows(
+                    BookTable.selectAll().where {
+                        (BookTable.pageCount eq null) or
+                            (BookTable.summary eq null) or
+                            (BookTable.publisher eq null)
+                    },
+                ).toList()
 
         logger.info { "Found ${booksToEnrich.size} books to enrich" }
         var enriched = 0
@@ -153,13 +160,14 @@ class BookEnrichmentService(
                 }
 
                 logger.info { "Enriching [${enriched + failed + 1}/${booksToEnrich.size}] \"${book.title}\"" }
-                val metadata = fetchMetadataService.fetchMetadata(
-                    MetadataRequestDto(
-                        isbn = isbn,
-                        title = book.title,
-                        authors = authorsString,
-                    ),
-                )
+                val metadata =
+                    fetchMetadataService.fetchMetadata(
+                        MetadataRequestDto(
+                            isbn = isbn,
+                            title = book.title,
+                            authors = authorsString,
+                        ),
+                    )
 
                 val updates = mutableListOf<String>()
 

@@ -13,6 +13,8 @@ import io.github.bayang.jelu.service.metadata.WikipediaService
 import io.github.oshai.kotlinlogging.KotlinLogging
 import io.swagger.v3.oas.annotations.Operation
 import jakarta.validation.Valid
+import org.springframework.http.ResponseEntity
+import org.springframework.security.core.Authentication
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -20,8 +22,6 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
-import org.springframework.security.core.Authentication
-import org.springframework.http.ResponseEntity
 import org.springframework.web.multipart.MultipartFile
 import reactor.core.publisher.Mono
 
@@ -37,9 +37,6 @@ class MetadataController(
     private val fileMetadataService: FileMetadataService,
     private val bookEnrichmentService: io.github.bayang.jelu.service.BookEnrichmentService,
 ) {
-
-
-
     @Operation(description = "search metadata providers and return multiple results")
     @GetMapping(path = ["/metadata/search"])
     fun searchMetadata(
@@ -49,14 +46,14 @@ class MetadataController(
         if (pluginInfoHolder.plugins().isEmpty()) {
             throw JeluException("Automatic fetching of metadata is disabled, install calibre or configure a metadata plugin")
         }
-        val (title, authors) = if (query.startsWith("author:", ignoreCase = true)) {
-            null to query.removePrefix("author:").removePrefix("Author:").trim()
-        } else {
-            query to null
-        }
+        val (title, authors) =
+            if (query.startsWith("author:", ignoreCase = true)) {
+                null to query.removePrefix("author:").removePrefix("Author:").trim()
+            } else {
+                query to null
+            }
         return metadataService.searchMetadata(MetadataRequestDto(null, title, authors, listOf()), source = source)
     }
-
 
     @Operation(description = "fetch metadata from the configured providers")
     @GetMapping(path = ["/metadata"])
@@ -117,9 +114,7 @@ class MetadataController(
 
     @Operation(description = "enrich all books with missing metadata (page count, summary, publisher)")
     @PostMapping(path = ["/metadata/enrich-all"])
-    fun enrichAllBooks(
-        principal: Authentication,
-    ): ResponseEntity<String> {
+    fun enrichAllBooks(principal: Authentication): ResponseEntity<String> {
         bookEnrichmentService.enrichAllBooks((principal.principal as io.github.bayang.jelu.dto.JeluUser).user)
         return ResponseEntity.ok("Bulk enrichment started in background")
     }

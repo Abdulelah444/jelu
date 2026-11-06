@@ -8,7 +8,6 @@ import org.junit.jupiter.api.TestInstance
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class SeriesDetectionServiceTitleTest {
-
     @Test
     fun `detects Book N pattern`() {
         val hint = SeriesDetectionService.detectFromTitle("The Great Adventure Book 3")
@@ -81,42 +80,60 @@ class SeriesDetectionServiceTitleTest {
 
     @Test
     fun `detects Arabic juz pattern with ordinal`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0633\u0644\u0627\u0645 - \u0627\u0644\u062C\u0632\u0621 \u0627\u0644\u062B\u0627\u0646\u064A")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "تاريخ الإسلام - الجزء الثاني",
+            )
         assertNotNull(hint)
         assertEquals(2.0, hint!!.suggestedPosition)
     }
 
     @Test
     fun `detects Arabic juz pattern with number`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u062A\u0627\u0631\u064A\u062E \u0627\u0644\u0625\u0633\u0644\u0627\u0645 - \u0627\u0644\u062C\u0632\u0621 3")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "تاريخ الإسلام - الجزء 3",
+            )
         assertNotNull(hint)
         assertEquals(3.0, hint!!.suggestedPosition)
     }
 
     @Test
     fun `detects Arabic kitab pattern`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u0627\u0644\u0643\u062A\u0627\u0628 \u0627\u0644\u062B\u0627\u0644\u062B \u0645\u0646 \u0627\u0644\u0633\u0644\u0633\u0644\u0629")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "الكتاب الثالث من السلسلة",
+            )
         assertNotNull(hint)
         assertEquals(3.0, hint!!.suggestedPosition)
     }
 
     @Test
     fun `detects Arabic mujallad pattern`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u0627\u0644\u0645\u062C\u0644\u062F \u0627\u0644\u0623\u0648\u0644")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "المجلد الأول",
+            )
         assertNotNull(hint)
         assertEquals(1.0, hint!!.suggestedPosition)
     }
 
     @Test
     fun `detects Arabic abbreviated jeem pattern`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u062F\u064A\u0648\u0627\u0646 \u0627\u0644\u0645\u062A\u0646\u0628\u064A \u062C2")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "ديوان المتنبي ج2",
+            )
         assertNotNull(hint)
         assertEquals(2.0, hint!!.suggestedPosition)
     }
 
     @Test
     fun `no false positive on plain Arabic title`() {
-        val hint = SeriesDetectionService.detectFromTitle("\u062D\u064A\u0627\u0629 \u0641\u064A \u0627\u0644\u0625\u062F\u0627\u0631\u0629")
+        val hint =
+            SeriesDetectionService.detectFromTitle(
+                "حياة في الإدارة",
+            )
         assertNull(hint)
     }
 }

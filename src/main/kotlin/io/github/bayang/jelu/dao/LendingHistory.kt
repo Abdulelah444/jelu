@@ -18,8 +18,11 @@ object LendingHistoryTable : UUIDTable("lending_history") {
     val notes: Column<String?> = varchar("notes", 5000).nullable()
 }
 
-class LendingHistory(id: EntityID<UUID>) : UUIDEntity(id) {
+class LendingHistory(
+    id: EntityID<UUID>,
+) : UUIDEntity(id) {
     companion object : UUIDEntityClass<LendingHistory>(LendingHistoryTable)
+
     var creationDate by LendingHistoryTable.creationDate
     var userBook by UserBook referencedOn LendingHistoryTable.userBook
     var borrowerName by LendingHistoryTable.borrowerName
@@ -27,18 +30,19 @@ class LendingHistory(id: EntityID<UUID>) : UUIDEntity(id) {
     var returnDate by LendingHistoryTable.returnDate
     var notes by LendingHistoryTable.notes
 
-    fun toDto(): LendingHistoryDto = LendingHistoryDto(
-        id = this.id.value,
-        creationDate = this.creationDate,
-        userBookId = this.userBook.id.value,
-        bookTitle = this.userBook.book.title,
-        bookId = this.userBook.book.id.value,
-        bookImage = this.userBook.book.image,
-        borrowerName = this.borrowerName,
-        lendDate = this.lendDate,
-        returnDate = this.returnDate,
-        notes = this.notes,
-    )
+    fun toDto(): LendingHistoryDto =
+        LendingHistoryDto(
+            id = this.id.value,
+            creationDate = this.creationDate,
+            userBookId = this.userBook.id.value,
+            bookTitle = this.userBook.book.title,
+            bookId = this.userBook.book.id.value,
+            bookImage = this.userBook.book.image,
+            borrowerName = this.borrowerName,
+            lendDate = this.lendDate,
+            returnDate = this.returnDate,
+            notes = this.notes,
+        )
 }
 
 data class LendingHistoryDto(

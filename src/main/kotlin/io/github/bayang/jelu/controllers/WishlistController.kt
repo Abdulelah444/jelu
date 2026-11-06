@@ -27,9 +27,7 @@ class WishlistController(
     fun create(
         principal: Authentication,
         @RequestBody dto: CreateWishlistItemDto,
-    ): WishlistItemDto {
-        return wishlistService.create(dto, (principal.principal as JeluUser).user)
-    }
+    ): WishlistItemDto = wishlistService.create(dto, (principal.principal as JeluUser).user)
 
     @DeleteMapping("/wishlist/{id}")
     fun delete(
@@ -47,7 +45,8 @@ class WishlistController(
         @org.springframework.web.bind.annotation.RequestBody dto: io.github.bayang.jelu.dto.CreateWishlistItemDto,
         principal: org.springframework.security.core.Authentication,
     ): io.github.bayang.jelu.dto.WishlistItemDto {
-        io.github.bayang.jelu.dto.assertIsJeluUser(principal.principal)
+        io.github.bayang.jelu.dto
+            .assertIsJeluUser(principal.principal)
         val user = principal.principal as io.github.bayang.jelu.dto.JeluUser
         return wishlistService.update(id, dto, user.user.id!!)
     }
@@ -55,7 +54,5 @@ class WishlistController(
     @GetMapping("/wishlist/{id}")
     fun getById(
         @PathVariable id: UUID,
-    ): WishlistItemDto {
-        return wishlistService.findById(id)
-    }
+    ): WishlistItemDto = wishlistService.findById(id)
 }

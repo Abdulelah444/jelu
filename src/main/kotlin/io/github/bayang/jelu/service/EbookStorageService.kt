@@ -26,7 +26,10 @@ class EbookStorageService(
         }
     }
 
-    fun save(bookId: UUID, file: MultipartFile): EbookFileInfo {
+    fun save(
+        bookId: UUID,
+        file: MultipartFile,
+    ): EbookFileInfo {
         init()
         val originalFilename = file.originalFilename ?: "unknown"
         val extension = originalFilename.substringAfterLast('.', "").lowercase()
@@ -84,9 +87,10 @@ class EbookStorageService(
         }
     }
 
-    fun getFilePath(bookId: UUID, format: String): Path {
-        return storagePath().resolve("${bookId}.$format")
-    }
+    fun getFilePath(
+        bookId: UUID,
+        format: String,
+    ): Path = storagePath().resolve("$bookId.$format")
 }
 
 data class EbookFileInfo(

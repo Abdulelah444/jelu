@@ -34,7 +34,6 @@ data class AuthenticationDto(
     val token: String?,
 )
 
-
 data class UpNextCountDto(
     val count: Int,
 )

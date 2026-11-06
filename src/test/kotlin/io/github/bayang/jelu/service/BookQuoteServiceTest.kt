@@ -43,7 +43,7 @@ class BookQuoteServiceTest(
             .find(null, null, null, Pageable.ofSize(200))
             .forEach { quoteDto -> bookQuoteService.delete(quoteDto.id!!) }
         bookService
-            .findUserBookByCriteria(user().id!!, null, null, null, null, null, Pageable.ofSize(30))
+            .findUserBookByCriteria(user().id!!, null, null, null, null, null, pageable = Pageable.ofSize(30))
             .forEach { bookService.deleteUserBookById(it.id!!) }
         userService.findAll(null).forEach { userService.deleteUser(it.id!!) }
     }

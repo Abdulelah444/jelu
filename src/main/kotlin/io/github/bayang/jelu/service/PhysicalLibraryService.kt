@@ -1,10 +1,10 @@
 package io.github.bayang.jelu.service
 
+import io.github.bayang.jelu.dao.PhysicalBookcase
 import io.github.bayang.jelu.dao.PhysicalBookcaseRepository
 import io.github.bayang.jelu.dao.PhysicalLocationRepository
-import io.github.bayang.jelu.dao.PhysicalShelfBookRepository
-import io.github.bayang.jelu.dao.PhysicalBookcase
 import io.github.bayang.jelu.dao.PhysicalShelf
+import io.github.bayang.jelu.dao.PhysicalShelfBookRepository
 import io.github.bayang.jelu.dao.PhysicalShelfRepository
 import io.github.bayang.jelu.dao.PhysicalShelfTable
 import io.github.bayang.jelu.dto.AssignBookToShelfDto
@@ -20,8 +20,8 @@ import io.github.bayang.jelu.dto.ShelfLocationDto
 import io.github.bayang.jelu.dto.UpdatePhysicalBookcaseDto
 import io.github.bayang.jelu.dto.UpdatePhysicalLocationDto
 import io.github.bayang.jelu.dto.UpdatePhysicalShelfDto
-import io.github.bayang.jelu.utils.nowInstant
 import io.github.bayang.jelu.dto.UserBookLightDto
+import io.github.bayang.jelu.utils.nowInstant
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.Pageable
 import org.springframework.stereotype.Component
@@ -133,21 +133,28 @@ class PhysicalLibraryService(
     }
 
     @Transactional
-    fun reorderShelves(bookcaseId: UUID, shelfIds: List<UUID>) {
+    fun reorderShelves(
+        bookcaseId: UUID,
+        shelfIds: List<UUID>,
+    ) {
         shelfIds.forEachIndexed { index, shelfId ->
             shelfRepository.update(shelfId, UpdatePhysicalShelfDto(position = index + 1))
         }
     }
 
     @Transactional
-    fun moveShelf(shelfId: UUID, targetBookcaseId: UUID): PhysicalShelfDto {
+    fun moveShelf(
+        shelfId: UUID,
+        targetBookcaseId: UUID,
+    ): PhysicalShelfDto {
         val shelf = PhysicalShelf[shelfId]
         // Get max position in target bookcase
-        val maxPos = PhysicalShelfTable
-            .select(PhysicalShelfTable.position)
-            .where { PhysicalShelfTable.bookcase eq targetBookcaseId }
-            .maxByOrNull { it[PhysicalShelfTable.position] }
-            ?.get(PhysicalShelfTable.position) ?: 0
+        val maxPos =
+            PhysicalShelfTable
+                .select(PhysicalShelfTable.position)
+                .where { PhysicalShelfTable.bookcase eq targetBookcaseId }
+                .maxByOrNull { it[PhysicalShelfTable.position] }
+                ?.get(PhysicalShelfTable.position) ?: 0
         shelf.bookcase = PhysicalBookcase[targetBookcaseId]
         shelf.position = maxPos + 1
         shelf.modificationDate = nowInstant()

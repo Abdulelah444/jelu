@@ -20,6 +20,7 @@ class ReadingProgressHistory(
     id: EntityID<UUID>,
 ) : UUIDEntity(id) {
     companion object : UUIDEntityClass<ReadingProgressHistory>(ReadingProgressHistoryTable)
+
     var userBook by UserBook referencedOn ReadingProgressHistoryTable.userBook
     var pageNumber by ReadingProgressHistoryTable.pageNumber
     var percentRead by ReadingProgressHistoryTable.percentRead

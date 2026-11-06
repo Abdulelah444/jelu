@@ -13,14 +13,17 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 import javax.imageio.ImageIO
 
-data class LabelSize(val widthMm: Int, val heightMm: Int, val dpi: Int = 600) {
+data class LabelSize(
+    val widthMm: Int,
+    val heightMm: Int,
+    val dpi: Int = 600,
+) {
     val widthPx: Int get() = (widthMm * dpi / 25.4).toInt()
     val heightPx: Int get() = (heightMm * dpi / 25.4).toInt()
 }
 
 @Service
 class LabelGeneratorService {
-
     private val logo: BufferedImage? by lazy {
         try {
             val resource = ClassPathResource("public/android-chrome-192x192.png")
@@ -30,7 +33,11 @@ class LabelGeneratorService {
         }
     }
 
-    fun generateLabel(title: String, bookUrl: String, size: LabelSize): ByteArray {
+    fun generateLabel(
+        title: String,
+        bookUrl: String,
+        size: LabelSize,
+    ): ByteArray {
         val w = size.widthPx
         val h = size.heightPx
         val img = BufferedImage(w, h, BufferedImage.TYPE_INT_ARGB)
@@ -119,10 +126,13 @@ class LabelGeneratorService {
         g.color = Color.BLACK
         g.font = Font("SansSerif", Font.BOLD, titleSize.toInt())
         for (i in 0 until maxLines) {
-            val line = if (i == maxLines - 1 && i < titleLines.size - 1) {
-                val t = titleLines[i]
-                if (t.length > 3) t.dropLast(3) + "..." else t
-            } else titleLines[i]
+            val line =
+                if (i == maxLines - 1 && i < titleLines.size - 1) {
+                    val t = titleLines[i]
+                    if (t.length > 3) t.dropLast(3) + "..." else t
+                } else {
+                    titleLines[i]
+                }
             val tw = titleFm.stringWidth(line)
             g.drawString(line, leftCenter - tw / 2, y + titleFm.ascent)
             y += titleFm.height
@@ -135,11 +145,19 @@ class LabelGeneratorService {
         return baos.toByteArray()
     }
 
-    fun generateBulkZip(books: List<Pair<String, String>>, size: LabelSize): ByteArray {
+    fun generateBulkZip(
+        books: List<Pair<String, String>>,
+        size: LabelSize,
+    ): ByteArray {
         val baos = ByteArrayOutputStream()
         ZipOutputStream(baos).use { zip ->
             books.forEachIndexed { index, (title, url) ->
-                val safeTitle = title.replace(Regex("[^a-zA-Z0-9\u0600-\u06FF _-]"), "").trim().take(50).ifEmpty { "book" }
+                val safeTitle =
+                    title
+                        .replace(Regex("[^a-zA-Z0-9\u0600-\u06FF _-]"), "")
+                        .trim()
+                        .take(50)
+                        .ifEmpty { "book" }
                 val label = generateLabel(title, url, size)
                 zip.putNextEntry(ZipEntry("${String.format("%03d", index + 1)}_$safeTitle.png"))
                 zip.write(label)
@@ -149,7 +167,10 @@ class LabelGeneratorService {
         return baos.toByteArray()
     }
 
-    private fun generateQrCode(data: String, size: Int): BufferedImage {
+    private fun generateQrCode(
+        data: String,
+        size: Int,
+    ): BufferedImage {
         val writer = QRCodeWriter()
         val matrix = writer.encode(data, BarcodeFormat.QR_CODE, size, size)
         val img = BufferedImage(size, size, BufferedImage.TYPE_INT_RGB)
@@ -161,7 +182,11 @@ class LabelGeneratorService {
         return img
     }
 
-    private fun wrapText(text: String, fm: java.awt.FontMetrics, maxWidth: Int): List<String> {
+    private fun wrapText(
+        text: String,
+        fm: java.awt.FontMetrics,
+        maxWidth: Int,
+    ): List<String> {
         val words = text.split(" ")
         val lines = mutableListOf<String>()
         var current = ""

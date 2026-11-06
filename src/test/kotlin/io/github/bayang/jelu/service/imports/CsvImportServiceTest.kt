@@ -68,7 +68,7 @@ class CsvImportServiceTest(
             readingEventService.deleteReadingEventById(it.id!!)
         }
         bookService
-            .findUserBookByCriteria(user().id!!, null, null, null, null, null, Pageable.ofSize(30))
+            .findUserBookByCriteria(user().id!!, null, null, null, null, null, pageable = Pageable.ofSize(30))
             .forEach { bookService.deleteUserBookById(it.id!!) }
         bookService.findAllAuthors(null, pageable = Pageable.ofSize(30)).forEach {
             bookService.deleteAuthorById(it.id!!)
@@ -200,7 +200,7 @@ class CsvImportServiceTest(
         Assertions.assertEquals(5, success)
         Assertions.assertEquals(0, failures)
         val userbooksPage: Page<UserBookWithoutEventsAndUserDto> =
-            bookService.findUserBookByCriteria(userId, null, null, null, null, null, Pageable.ofSize(30))
+            bookService.findUserBookByCriteria(userId, null, null, null, null, null, pageable = Pageable.ofSize(30))
         userbooksPage.content.forEach {
             val userbook = bookService.findUserBookById(it.id!!)
             if (userbook.book.title == "The Gulag Archipelago 1918–1956 (Abridged)") {
@@ -224,7 +224,7 @@ class CsvImportServiceTest(
         Assertions.assertEquals(1, success)
         Assertions.assertEquals(0, failures)
         var userbooksPage: Page<UserBookWithoutEventsAndUserDto> =
-            bookService.findUserBookByCriteria(userId, null, null, null, null, null, Pageable.ofSize(30))
+            bookService.findUserBookByCriteria(userId, null, null, null, null, null, pageable = Pageable.ofSize(30))
         Assertions.assertEquals(1, userbooksPage.content.size)
         var imported = userbooksPage.content[0]
         Assertions.assertEquals("2018", imported.book.publishedDate)
@@ -244,7 +244,7 @@ class CsvImportServiceTest(
                 price = null,
             )
         bookService.update(imported.id!!, u, null)
-        userbooksPage = bookService.findUserBookByCriteria(userId, null, null, null, null, null, Pageable.ofSize(30))
+        userbooksPage = bookService.findUserBookByCriteria(userId, null, null, null, null, null, pageable = Pageable.ofSize(30))
         Assertions.assertEquals(1, userbooksPage.content.size)
         imported = userbooksPage.content[0]
         Assertions.assertTrue(imported.book.image!!.contains("Epidemie", true))
@@ -257,7 +257,7 @@ class CsvImportServiceTest(
         val (success1, failures1) = csvImportService.importFromDb(userId, importConfigurationDto())
         Assertions.assertEquals(1, success1)
         Assertions.assertEquals(0, failures1)
-        userbooksPage = bookService.findUserBookByCriteria(userId, null, null, null, null, null, Pageable.ofSize(30))
+        userbooksPage = bookService.findUserBookByCriteria(userId, null, null, null, null, null, pageable = Pageable.ofSize(30))
         Assertions.assertEquals(1, userbooksPage.content.size)
         imported = userbooksPage.content[0]
         // publishedDate is different in 2nd csv, first import date should not have been modified

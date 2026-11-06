@@ -1,0 +1,27 @@
+# `.dockerignore` — only matters for the build stage of the Dockerfile; the
+# runtime stage copies the unpacked jar from the builder stage.
+# Keeping node_modules/build out of the context makes builds fast and avoids
+# the frontend build tripping over host-built artifacts.
+
+.git
+.github
+.idea
+.vscode
+
+# Build outputs (rebuilt inside the image)
+build/
+src/jelu-ui/dist/
+
+# Dependencies
+src/jelu-ui/node_modules/
+**/node_modules/
+
+# Local data / runtime files
+data/
+**.log
+*.db
+*.db-shm
+*.db-wal
+
+# Local env files
+.env

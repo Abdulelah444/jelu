@@ -11,10 +11,22 @@ spring:
     drop-first: false
     change-log: classpath:liquibase.xml
   datasource:
-    url: jdbc:sqlite::memory:?foreign_keys=on;
+    # A shared-cache in-memory database (file:...?mode=memory&cache=shared) instead of the
+    # plain ':memory:' URL, which gives every pooled connection its own empty database and
+    # makes tables created by Liquibase invisible to later queries once a connection is
+    # replaced. cache=shared keeps one database for the whole pool; keep-alive keeps it
+    # alive while at least one connection is open.
+    url: jdbc:sqlite:file:jelutest?mode=memory&cache=shared&foreign_keys=on
     username: test
     password: test
     driver-class-name: org.sqlite.JDBC
     generate-unique-name: true
+    # One fixed connection: a shared-cache in-memory database exists only while a
+    # connection to it is open, so the pool must not close its last connection.
+    hikari:
+      maximum-pool-size: 1
+      minimum-idle: 1
+      idle-timeout: 0
+      max-lifetime: 0
   exposed:
     show-sql: true

@@ -186,7 +186,6 @@ data class UserBookBulkUpdateDto(
     val lastReadingEvent: ReadingEventType?,
 )
 
-
 data class ReorderToReadDto(
     val orderedIds: List<java.util.UUID>,
 )

@@ -18,6 +18,7 @@ class AppSettings(
     id: EntityID<UUID>,
 ) : UUIDEntity(id) {
     companion object : UUIDEntityClass<AppSettings>(AppSettingsTable)
+
     var settingKey by AppSettingsTable.settingKey
     var settingValue by AppSettingsTable.settingValue
     var creationDate by AppSettingsTable.creationDate

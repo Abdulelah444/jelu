@@ -586,10 +586,11 @@ class BookRepository(
 
     fun findDuplicateBooks(pageable: Pageable): Page<Book> {
         // Find books whose normalized (lowercased) title is shared by more than one book.
-        val dupTitles = BookTable
-            .select(BookTable.title.lowerCase())
-            .groupBy(BookTable.title.lowerCase())
-            .having { BookTable.id.count() greater 1L }
+        val dupTitles =
+            BookTable
+                .select(BookTable.title.lowerCase())
+                .groupBy(BookTable.title.lowerCase())
+                .having { BookTable.id.count() greater 1L }
         val query = BookTable.selectAll().where { BookTable.title.lowerCase() inSubQuery dupTitles }
         val total = query.count()
         query.limit(pageable.pageSize).offset(pageable.offset)
@@ -597,19 +598,27 @@ class BookRepository(
         return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
     }
 
-    fun findBooksMissing(field: String, pageable: Pageable): Page<Book> {
-        val query = when (field) {
-            "pagecount" -> BookTable.selectAll().where { BookTable.pageCount eq null }
-            "isbn" -> BookTable.selectAll().where { (BookTable.isbn10 eq null or (BookTable.isbn10 eq "")) and (BookTable.isbn13 eq null or (BookTable.isbn13 eq "")) }
-            "cover" -> BookTable.selectAll().where { BookTable.image eq null or (BookTable.image eq "") }
-            "summary" -> BookTable.selectAll().where { BookTable.summary eq null or (BookTable.summary eq "") }
-            "author" -> {
-                // books that have no row in the BookAuthors join table
-                val withAuthors = BookAuthors.select(BookAuthors.book).withDistinct()
-                BookTable.selectAll().where { BookTable.id notInSubQuery withAuthors }
+    fun findBooksMissing(
+        field: String,
+        pageable: Pageable,
+    ): Page<Book> {
+        val query =
+            when (field) {
+                "pagecount" -> BookTable.selectAll().where { BookTable.pageCount eq null }
+                "isbn" ->
+                    BookTable.selectAll().where {
+                        (BookTable.isbn10 eq null or (BookTable.isbn10 eq "")) and
+                            (BookTable.isbn13 eq null or (BookTable.isbn13 eq ""))
+                    }
+                "cover" -> BookTable.selectAll().where { BookTable.image eq null or (BookTable.image eq "") }
+                "summary" -> BookTable.selectAll().where { BookTable.summary eq null or (BookTable.summary eq "") }
+                "author" -> {
+                    // books that have no row in the BookAuthors join table
+                    val withAuthors = BookAuthors.select(BookAuthors.book).withDistinct()
+                    BookTable.selectAll().where { BookTable.id notInSubQuery withAuthors }
+                }
+                else -> BookTable.selectAll().where { BookTable.pageCount eq null }
             }
-            else -> BookTable.selectAll().where { BookTable.pageCount eq null }
-        }
         val total = query.count()
         query.limit(pageable.pageSize).offset(pageable.offset)
         query.orderBy(BookTable.title to SortOrder.ASC_NULLS_LAST)
@@ -1185,9 +1194,12 @@ class BookRepository(
             found.toRead = book.toRead
             if (book.toRead && !wasToRead) {
                 // newly added to To-Read -> goes to the bottom of the queue
-                val maxPos = UserBook.find {
-                    (UserBookTable.user eq found.user.id) and (UserBookTable.toRead eq true)
-                }.mapNotNull { it.toReadPosition }.maxOrNull()
+                val maxPos =
+                    UserBook
+                        .find {
+                            (UserBookTable.user eq found.user.id) and (UserBookTable.toRead eq true)
+                        }.mapNotNull { it.toReadPosition }
+                        .maxOrNull()
                 found.toReadPosition = (maxPos ?: -1) + 1
             } else if (!book.toRead) {
                 found.toReadPosition = null
@@ -1225,16 +1237,22 @@ class BookRepository(
         // Baseline is the most recent recorded page for this book (the real prior position),
         // NOT the in-memory field which is unreliable depending on how the update is sent.
         if (book.currentPageNumber != null || book.percentRead != null) {
-            val isCurrentlyReading = ReadingEventTable.selectAll().where {
-                (ReadingEventTable.userBook eq found.id) and
-                    (ReadingEventTable.eventType eq io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING)
-            }.empty().not()
+            val isCurrentlyReading =
+                ReadingEventTable
+                    .selectAll()
+                    .where {
+                        (ReadingEventTable.userBook eq found.id) and
+                            (ReadingEventTable.eventType eq io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING)
+                    }.empty()
+                    .not()
             val newPage = found.currentPageNumber ?: 0
-            val lastRow = ReadingProgressHistory.find {
-                ReadingProgressHistoryTable.userBook eq found.id
-            }.orderBy(ReadingProgressHistoryTable.recordedAt to org.jetbrains.exposed.sql.SortOrder.DESC)
-                .limit(1)
-                .firstOrNull()
+            val lastRow =
+                ReadingProgressHistory
+                    .find {
+                        ReadingProgressHistoryTable.userBook eq found.id
+                    }.orderBy(ReadingProgressHistoryTable.recordedAt to org.jetbrains.exposed.sql.SortOrder.DESC)
+                    .limit(1)
+                    .firstOrNull()
             // First-ever row just anchors the starting position (delta 0); later rows are real reading
             val delta = if (lastRow == null) 0 else newPage - (lastRow.pageNumber ?: 0)
             if (isCurrentlyReading && (lastRow == null || delta != 0)) {
@@ -1248,10 +1266,12 @@ class BookRepository(
                 // Update the daily reading log for streaks/heatmap (only positive reading)
                 if (delta > 0) {
                     val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
-                    val existing = DailyReadingLog.find {
-                        (DailyReadingLogTable.userBook eq found.id) and
-                            (DailyReadingLogTable.logDate eq today)
-                    }.firstOrNull()
+                    val existing =
+                        DailyReadingLog
+                            .find {
+                                (DailyReadingLogTable.userBook eq found.id) and
+                                    (DailyReadingLogTable.logDate eq today)
+                            }.firstOrNull()
                     if (existing != null) {
                         existing.pagesRead = existing.pagesRead + delta
                     } else {
@@ -1387,7 +1407,10 @@ class BookRepository(
                 SeriesRatingTable.series eq seriesId and (SeriesRatingTable.user eq userId)
             }.firstOrNull()
 
-    fun reorderToRead(userId: UUID, orderedIds: List<UUID>) {
+    fun reorderToRead(
+        userId: UUID,
+        orderedIds: List<UUID>,
+    ) {
         orderedIds.forEachIndexed { index, ubId ->
             val ub = UserBook.findById(ubId)
             if (ub != null && ub.user.id.value == userId && ub.toRead == true) {
@@ -2105,5 +2128,4 @@ class BookRepository(
         userBook.modificationDate = Instant.now()
         return userBook
     }
-
 }

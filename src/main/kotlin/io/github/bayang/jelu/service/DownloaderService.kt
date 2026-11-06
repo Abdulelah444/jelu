@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties
 import com.fasterxml.jackson.annotation.JsonProperty
 import io.github.bayang.jelu.config.JeluProperties
 import io.github.oshai.kotlinlogging.KotlinLogging
+import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
@@ -16,16 +17,26 @@ class DownloaderService(
     private val properties: JeluProperties,
     private val appSettingsService: AppSettingsService,
 ) {
-    private fun client(): WebClient {
-        val url = appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
-        return WebClient.builder()
-            .baseUrl(url)
-            .build()
+    private fun client(baseUrl: String? = null): WebClient {
+        val url = baseUrl ?: appSettingsService.getString("shelfmark_url", properties.ebooks.downloaderUrl)
+        val builder =
+            WebClient
+                .builder()
+                .baseUrl(url)
+        if (properties.ebooks.apiKey.isNotBlank()) {
+            builder.defaultHeader("Authorization", "Bearer ${properties.ebooks.apiKey}")
+        }
+        return builder.build()
     }
 
-    fun search(query: String, lang: String = "en", ext: String = "epub"): CwaSearchResponse {
+    fun search(
+        query: String,
+        lang: String = "en",
+        ext: String = "epub",
+    ): CwaSearchResponse {
         logger.info { "Searching CWA for: $query (lang=$lang, ext=$ext)" }
-        return client().get()
+        return client()
+            .get()
             .uri { uriBuilder ->
                 uriBuilder
                     .path("/api/releases")
@@ -34,8 +45,7 @@ class DownloaderService(
                     .queryParam("lang", lang)
                     .queryParam("ext", ext)
                     .build()
-            }
-            .retrieve()
+            }.retrieve()
             .bodyToMono<CwaSearchResponse>()
             .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
             ?: throw RuntimeException("CWA search returned null")
@@ -43,7 +53,8 @@ class DownloaderService(
 
     fun triggerDownload(release: CwaDownloadRequest) {
         logger.info { "Triggering CWA download: ${release.title} (${release.sourceId})" }
-        client().post()
+        client()
+            .post()
             .uri("/api/releases/download")
             .bodyValue(release)
             .retrieve()
@@ -51,14 +62,37 @@ class DownloaderService(
             .block(Duration.ofSeconds(30))
     }
 
-    fun getStatus(): Map<String, Any> {
-        return client().get()
+    fun getStatus(baseUrl: String? = null): Map<String, Any> =
+        client(baseUrl)
+            .get()
             .uri("/api/status")
             .retrieve()
             .bodyToMono<Map<String, Any>>()
             .block(Duration.ofSeconds(10))
             ?: emptyMap()
-    }
+
+    fun getSettings(tab: String): Map<String, Any?> =
+        client()
+            .get()
+            .uri("/api/settings/{tab}", tab)
+            .retrieve()
+            .bodyToMono<Map<String, Any?>>()
+            .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
+            ?: emptyMap()
+
+    fun updateSettings(
+        tab: String,
+        values: Map<String, Any?>,
+    ): Map<String, Any?> =
+        client()
+            .put()
+            .uri("/api/settings/{tab}", tab)
+            .contentType(MediaType.APPLICATION_JSON)
+            .bodyValue(values)
+            .retrieve()
+            .bodyToMono<Map<String, Any?>>()
+            .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
+            ?: emptyMap()
 }
 
 @JsonIgnoreProperties(ignoreUnknown = true)

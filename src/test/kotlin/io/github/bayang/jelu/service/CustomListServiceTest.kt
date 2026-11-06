@@ -44,15 +44,15 @@ class CustomListServiceTest(
     @AfterEach
     fun cleanTest() {
         bookService
-            .findUserBookByCriteria(user().id!!, null, null, null, null, null, Pageable.ofSize(100))
+            .findUserBookByCriteria(user().id!!, null, null, null, null, null, pageable = Pageable.ofSize(100))
             .forEach { bookService.deleteUserBookById(it.id!!) }
         bookService.findAllAuthors(null, pageable = Pageable.ofSize(30)).forEach {
             bookService.deleteAuthorById(it.id!!)
         }
-        bookService.findAllTags(null, Pageable.ofSize(20)).content.forEach {
+        bookService.findAllTags(null, pageable = Pageable.ofSize(20)).content.forEach {
             bookService.deleteTagById(it.id!!)
         }
-        bookService.findAllSeries(null, null, Pageable.ofSize(20)).content.forEach {
+        bookService.findAllSeries(null, null, pageable = Pageable.ofSize(20)).content.forEach {
             bookService.deleteSeriesById(it.id!!)
         }
         bookService.findAll(null, Pageable.ofSize(100), user(), null, null, null, null, LibraryFilter.ANY).forEach {

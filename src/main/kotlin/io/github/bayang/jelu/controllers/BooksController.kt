@@ -96,8 +96,8 @@ class BooksController(
     fun booksDuplicates(
         @PageableDefault(page = 0, size = 200, direction = Sort.Direction.ASC, sort = ["title"]) @ParameterObject pageable: Pageable,
     ): Page<BookDto> = repository.findDuplicateBooks(pageable)
-    @GetMapping(path = ["/books/{id}/users"])
 
+    @GetMapping(path = ["/books/{id}/users"])
     fun bookUsersById(
         @PathVariable("id") bookId: UUID,
         @PageableDefault(page = 0, size = 20, direction = Sort.Direction.ASC, sort = ["login"]) @ParameterObject pageable: Pageable,
@@ -219,7 +219,17 @@ class BooksController(
     ): Page<UserBookWithoutEventsAndUserDto> {
         assertIsJeluUser(principal.principal)
         val finalUserId = userId ?: (principal.principal as JeluUser).user.id!!
-        return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable)
+        return repository.findUserBookByCriteria(
+            finalUserId,
+            bookId,
+            eventTypes,
+            toRead,
+            owned,
+            borrowed,
+            hasPageCount,
+            hasDigitalFile,
+            pageable,
+        )
     }
 
     @PutMapping(path = ["/userbooks/to-read/order"])
