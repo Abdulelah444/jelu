@@ -34,10 +34,19 @@ jobs:
       - name: Build Jelu image
         run: docker compose build jelu
 
+      # The Dockerfile copies the *contents* of each unpacked layer into /app, so the
+      # layout is BOOT-INF/, META-INF/ and org/ at the root — not /app/application/.
       - name: Confirm the unpacked jar layout is present
         run: |
-          docker run --rm --entrypoint sh jelu:local -c \
-            'set -e; echo "--- /app ---"; ls /app; echo "--- /app/application ---"; ls /app/application | head -5; test -n "$(ls -A /app/application)"; test -f /app/org/springframework/boot/loader/launch/JarLauncher.class'
+          docker run --rm --entrypoint sh jelu:local -c '
+            set -e
+            echo "--- /app ---"; ls /app
+            test -d /app/BOOT-INF/classes
+            test -d /app/BOOT-INF/lib
+            test -f /app/org/springframework/boot/loader/launch/JarLauncher.class
+            echo "--- classes ---"; ls /app/BOOT-INF/classes | head -5
+            echo "--- runtime jars: $(ls /app/BOOT-INF/lib | wc -l) ---"
+          '
 
   compose-smoke:
     runs-on: ubuntu-latest
