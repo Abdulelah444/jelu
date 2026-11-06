@@ -181,6 +181,7 @@ class ReadingEventRepository {
                 // if we  mark book as read, remove to-read flag from the userbook
                 if (alreadyReadingEvent.userBook.toRead == true) {
                     alreadyReadingEvent.userBook.toRead = null
+                    alreadyReadingEvent.userBook.toReadPosition = null
                 }
                 synchronizeReadingProgress(createReadingEventDto, userBook)
                 return alreadyReadingEvent
@@ -188,6 +189,22 @@ class ReadingEventRepository {
             // FIXME else : alreadyReadingEvent is not null and createReadingEventDto.eventDate is before an already existing CURRENTLY_READING EVENT
             // this could create CURRENTLY_READING events in the past
             // should we allow this ? Let's wait and see for the moment, user can edit events in bookdetail page
+        }
+        // Prevent duplicate terminal events (FINISHED/DROPPED): if the most recent event
+        // is already the same terminal type and there has been no CURRENTLY_READING since,
+        // update that event instead of creating a duplicate.
+        if (createReadingEventDto.eventType == ReadingEventType.FINISHED ||
+            createReadingEventDto.eventType == ReadingEventType.DROPPED
+        ) {
+            val mostRecent = userBook.readingEvents
+                .sortedByDescending { it.endDate ?: it.startDate ?: it.creationDate }
+                .firstOrNull()
+            if (mostRecent != null && mostRecent.eventType == createReadingEventDto.eventType) {
+                mostRecent.endDate = createReadingEventDto.eventDate ?: instant
+                mostRecent.modificationDate = instant
+                synchronizeReadingProgress(createReadingEventDto, userBook)
+                return mostRecent
+            }
         }
         synchronizeReadingProgress(createReadingEventDto, userBook)
         val startDate = computeStartDate(createReadingEventDto, instant)
@@ -289,6 +306,7 @@ class ReadingEventRepository {
                 this.userBook.readingEvents
                     .maxByOrNull { e -> e.lastEventDate }
             if (updateReadingEventDto.eventType == ReadingEventType.FINISHED && this.userBook.toRead == true) {
+                this.userBook.toReadPosition = null
                 this.userBook.toRead = null
             }
             if (lastEvent == null) {

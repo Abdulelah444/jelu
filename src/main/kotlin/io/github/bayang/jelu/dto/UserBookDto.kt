@@ -20,6 +20,15 @@ data class UserBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -37,6 +46,15 @@ data class UserBookLightDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -53,6 +71,15 @@ data class UserBookLightWithoutBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -69,6 +96,15 @@ data class UserBookWithoutEventsAndUserDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val avgRating: Double? = null,
     val userAvgRating: Double? = null,
     val price: Double?,
@@ -86,6 +122,15 @@ data class UserBookWithoutEventsDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -99,6 +144,15 @@ data class CreateUserBookDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -111,6 +165,15 @@ data class UserBookUpdateDto(
     val percentRead: Int?,
     val currentPageNumber: Int?,
     val borrowed: Boolean?,
+    val borrowerName: String? = null,
+    val borrowDate: Instant? = null,
+    val expectedReturnDate: Instant? = null,
+    val ownerName: String? = null,
+    val digitalFilePath: String? = null,
+    val digitalFileFormat: String? = null,
+    val digitalFileSizeBytes: Long? = null,
+    val digitalFileAddedDate: Instant? = null,
+    val lastSentToReaderDate: Instant? = null,
     val price: Double?,
 )
 
@@ -121,4 +184,9 @@ data class UserBookBulkUpdateDto(
     val removeTags: List<UUID>?,
     val addTags: List<UUID>?,
     val lastReadingEvent: ReadingEventType?,
+)
+
+
+data class ReorderToReadDto(
+    val orderedIds: List<java.util.UUID>,
 )

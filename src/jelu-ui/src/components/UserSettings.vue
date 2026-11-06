@@ -94,6 +94,49 @@ watch(() => font.value, (newVal, oldVal) => {
   localStorage.setItem("JL_FONT", font.value)
 })
 
+
+// ── Custom logo ──────────────────────────────────────────────────
+import dataService from '../services/DataService'
+import { useOruga } from '@oruga-ui/oruga-next'
+import { ObjectUtils } from '../utils/ObjectUtils'
+import { useAppSettings } from '../composables/appSettings'
+import { ref as vref } from 'vue'
+
+const orugaLogo = useOruga()
+const appS = useAppSettings()
+const logoUploading = vref(false)
+const logoPreview = vref<string | null>(null)
+const customLogoActive = vref(appS.getBool('custom_logo_enabled'))
+
+const onLogoSelected = async (e: Event) => {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  logoUploading.value = true
+  try {
+    await dataService.uploadAppLogo(file)
+    await appS.load(true)
+    customLogoActive.value = true
+    logoPreview.value = '/files/custom-logo.png?v=' + Date.now()
+    ObjectUtils.toast(orugaLogo, 'success', 'Logo updated — reload to see it everywhere', 3000)
+  } catch (err) {
+    ObjectUtils.toast(orugaLogo, 'danger', 'Upload failed: ' + err, 3000)
+  } finally {
+    logoUploading.value = false
+  }
+}
+
+const resetLogo = async () => {
+  try {
+    await dataService.resetAppLogo()
+    await appS.load(true)
+    customLogoActive.value = false
+    logoPreview.value = null
+    ObjectUtils.toast(orugaLogo, 'success', 'Logo reset to default — reload to apply', 3000)
+  } catch (err) {
+    ObjectUtils.toast(orugaLogo, 'danger', 'Reset failed: ' + err, 3000)
+  }
+}
 </script>
 
 <template>
@@ -243,6 +286,32 @@ watch(() => font.value, (newVal, oldVal) => {
       {{ t('settings.choose_font') }}
     </p>
   </div>
+    <!-- Custom App Logo -->
+    <div class="my-6 max-w-md">
+      <h2 class="text-lg font-medium mb-2">App logo</h2>
+      <p class="text-sm opacity-60 mb-3">Upload a custom logo to replace the default in the navigation bar. PNG recommended.</p>
+      <div class="flex items-center gap-4">
+        <div class="w-16 h-16 rounded-lg bg-base-200 flex items-center justify-center overflow-hidden border border-base-content/15">
+          <img
+            v-if="logoPreview || customLogoActive"
+            :src="logoPreview || ('/files/custom-logo.png?v=' + Date.now())"
+            alt="logo preview"
+            class="max-w-full max-h-full object-contain"
+          >
+          <i v-else class="mdi mdi-image-outline mdi-24px opacity-30" />
+        </div>
+        <div class="flex flex-col gap-2">
+          <label class="btn btn-sm btn-outline" :class="{ 'loading': logoUploading }">
+            <i class="mdi mdi-upload mr-1" /> Upload logo
+            <input type="file" accept="image/*" class="hidden" @change="onLogoSelected">
+          </label>
+          <button v-if="customLogoActive" class="btn btn-sm btn-ghost btn-error" @click="resetLogo">
+            <i class="mdi mdi-restore mr-1" /> Reset to default
+          </button>
+        </div>
+      </div>
+      <p class="text-xs opacity-50 mt-2">Reload the app after changing to see it everywhere.</p>
+    </div>
 </template>
 
 <style lang="scss" scoped>

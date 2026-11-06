@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, Ref, ref, watch } from "vue";
+import { computed, Ref, ref, watch, onMounted } from "vue";
 import { useI18n } from 'vue-i18n';
 import { UserBook } from "../model/Book";
 import { ReadingEventType } from "../model/ReadingEvent";
 import { ObjectUtils } from "../utils/ObjectUtils";
+import dataService from "../services/DataService";
+import { ShelfLocation } from "../model/PhysicalLibrary";
 
 const { t } = useI18n({
       inheritLocale: true,
@@ -14,17 +16,33 @@ const props = defineProps<{
   book: UserBook,
   size?: string,
   forceSelect: boolean,
+  checkedIds?: Array<string>,
   showSelect: boolean,
   proposeAdd: boolean,
   seriesId?: string,
-  public: boolean // is it on a public facing page (so hide links etc...)
+  public: boolean, // is it on a public facing page (so hide links etc...)
+  showStats?: boolean,
+  pace?: { pagesPerDay?: number, daysRemaining?: number, currentPage?: number, pagesRemaining?: number } | null,
+  bandLabel?: string,
+  bandClass?: string
 }>();
 const emit = defineEmits<{
   (e: 'update:modalClosed', open: boolean): void,
   (e: 'update:checked', id: string|null, checked: boolean): void
 }>()
 
-const checked: Ref<boolean> = ref(false)
+const bookId = props.book.id != null ? props.book.id as string : props.book.book.id as string
+const checked: Ref<boolean> = ref(props.checkedIds?.includes(bookId) ?? false)
+
+const shelfLocation: Ref<ShelfLocation | null> = ref(null)
+const fetchLocation = async () => {
+  if (props.book.id) {
+    try {
+      shelfLocation.value = await dataService.getBookPhysicalLocation(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+}
+fetchLocation()
 
 watch(() => props.forceSelect, (newVal, oldVal) => {
   checked.value = props.forceSelect
@@ -40,6 +58,8 @@ const eventClass = computed(() => {
       props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING
     ) {
       return "badge-success";
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return "badge-warning";
     } else return "";
   }
   return "";
@@ -49,10 +69,27 @@ const eventText = computed(() => {
   if (props.book.lastReadingEvent) {
     if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else if (props.book.lastReadingEvent === ReadingEventType.DROPPED) {
       return t('reading_events.dropped');
     } else if (props.book.lastReadingEvent === ReadingEventType.FINISHED) {
       return t('reading_events.finished');
+    }
+  }
+  return "";
+});
+
+const bannerClass = computed(() => {
+  if (props.book.lastReadingEvent) {
+    if (props.book.lastReadingEvent === ReadingEventType.FINISHED) {
+      return "bg-emerald-200/70 text-emerald-900 dark:bg-emerald-900/40 dark:text-emerald-100";
+    } else if (props.book.lastReadingEvent === ReadingEventType.DROPPED) {
+      return "bg-rose-200/70 text-rose-900 dark:bg-rose-900/40 dark:text-rose-100";
+    } else if (props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+      return "bg-sky-200/70 text-sky-900 dark:bg-sky-900/40 dark:text-sky-100";
+    } else if (props.book.lastReadingEvent === ReadingEventType.PAUSED) {
+      return "bg-amber-200/70 text-amber-900 dark:bg-amber-900/40 dark:text-amber-100";
     }
   }
   return "";
@@ -83,11 +120,19 @@ const showProgressBar = (book: UserBook) => {
 }
 
 const progressBarTooltip = computed(() => {
-  const pct = Math.round(props.book.percentRead ?? 0)
-  if (props.book.currentPageNumber != null && props.book.book.pageCount != null) {
-    return `Page ${props.book.currentPageNumber} / ${props.book.book.pageCount} (${pct}%)`
+  return props.book.currentPageNumber != null ? `p. ${props.book.currentPageNumber}` : `${props.book.percentRead} %`
+})
+const statsLine = computed(() => {
+  const parts: string[] = []
+  if (props.pace) {
+    if (props.pace.pagesPerDay != null && props.pace.pagesPerDay > 0) {
+      parts.push(`${Math.round(props.pace.pagesPerDay)}/day`)
+    }
+    if (props.pace.daysRemaining != null && props.pace.daysRemaining > 0 && isFinite(props.pace.daysRemaining)) {
+      parts.push(`~${Math.ceil(props.pace.daysRemaining)}d`)
+    }
   }
-  return `${pct}%`
+  return parts.join(' · ')
 })
 
 const currentSeries = computed(() => {
@@ -106,20 +151,107 @@ watch(checked, (newVal, oldVal) => {
   emit("update:checked", props.book.id != null ? props.book.id as string : props.book.book.id as string , checked.value)
 })
 
+const effectiveBandText = computed(() => props.bandLabel ?? (props.book.lastReadingEvent ? eventText.value : null))
+const effectiveBandClass = computed(() => props.bandClass ?? bannerClass.value)
+const localToRead = ref(props.book.toRead)
+const toggleToRead = async () => {
+  if (props.book.id == null) return  // only for books already in library
+  const next = !localToRead.value
+  localToRead.value = next  // optimistic
+  try {
+    const full = await dataService.getUserBookById(props.book.id)
+    full.toRead = next
+    await dataService.updateUserBook(full)
+    emit('update:modalClosed', true)  // trigger parent refresh
+  } catch (e) {
+    localToRead.value = !next  // revert on failure
+    console.log('toggle toRead failed: ' + e)
+  }
+}
+const goalPace = ref<any>(null)
+const dailyStreak = ref<number>(0)
+const todayPages = ref<number>(0)
+
+onMounted(async () => {
+  if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+    try {
+      goalPace.value = await dataService.getPaceStatus(props.book.id)
+    } catch (e) { /* ignore */ }
+    try {
+      const s = await dataService.getBookDailyStreak(props.book.id)
+      dailyStreak.value = s?.streak ?? 0
+    } catch (e) { /* ignore */ }
+    try {
+      todayPages.value = await dataService.getTodayPages(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+})
+
+// Refresh today's pages when progress is logged
+watch(() => props.book.currentPageNumber, async () => {
+  if (props.book.id != null && props.book.lastReadingEvent === ReadingEventType.CURRENTLY_READING) {
+    try {
+      todayPages.value = await dataService.getTodayPages(props.book.id)
+    } catch (e) { /* ignore */ }
+  }
+})
+
+const goalStatusLabel = computed(() => {
+  if (!goalPace.value) return ''
+  const s = goalPace.value.status
+  if (s === 'AHEAD') return 'Ahead'
+  if (s === 'ON_PACE') return 'On pace'
+  if (s === 'BEHIND') return 'Behind'
+  return ''
+})
+
+const goalStatusClass = computed(() => {
+  if (!goalPace.value) return ''
+  const s = goalPace.value.status
+  if (s === 'AHEAD') return 'badge-success'
+  if (s === 'ON_PACE') return 'badge-info'
+  if (s === 'BEHIND') return 'badge-warning'
+  return 'badge-ghost'
+})
+
+const goalLine = computed(() => {
+  if (!goalPace.value) return ''
+  const diff = goalPace.value.pagesAheadBehind
+  const target = goalPace.value.dailyTargetPages
+  let line = `${target}/day`
+  if (diff < 0) line += ` · ${Math.abs(diff)}p behind`
+  else if (diff > 0) line += ` · ${diff}p ahead`
+  else line += ' · on target'
+  return line
+})
+
+const pageCountLabel = computed(() => {
+  const total = props.book.book.pageCount
+  return (total != null && total > 0) ? `${total}p` : null
+})
 const currentTimestamp = ObjectUtils.timestamp()
 
 </script>
 
 <template>
   <div
-    class="card card-sm bg-base-200 border border-base-300 shadow-md"
+    class="card card-sm bg-base-200 border border-base-300 shadow-md w-full overflow-hidden h-full flex flex-col"
   >
-    <div>
+    <div
+      v-if="effectiveBandText"
+      class="text-center text-[10px] font-medium py-0.5 uppercase tracking-wider opacity-90"
+      :class="effectiveBandClass"
+    >{{ effectiveBandText }}</div>
+    <div class="relative">
+      <div
+        v-if="pageCountLabel"
+        class="absolute top-1 right-1 z-10 text-[10px] font-medium px-1.5 py-0.5 rounded bg-base-900/70 text-base-content/80 backdrop-blur-sm"
+      >{{ pageCountLabel }}</div>
       <router-link
         v-if="book.id != null"
         :to="{ name: 'book-detail', params: { bookId: book.id } }"
       >
-        <figure>
+        <figure class="pt-2 px-2 flex justify-center">
           <img
             v-if="book.book.image"
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
@@ -139,7 +271,7 @@ const currentTimestamp = ObjectUtils.timestamp()
         v-else
         :to="{ name: 'book-reviews', params: { bookId: book.book.id } }"
       >
-        <figure>
+        <figure class="pt-2 px-2 flex justify-center">
           <img
             v-if="book.book.image"
             :src="'/files/' + book.book.image"
@@ -156,29 +288,68 @@ const currentTimestamp = ObjectUtils.timestamp()
         </figure>
       </router-link>
       <div
+        v-if="book.digitalFilePath"
+        v-tooltip="'Digital copy'"
+        class="absolute top-1 left-1 z-10 bg-success/90 rounded-full p-0.5"
+      >
+        <i class="mdi mdi-book-open-page-variant mdi-14px text-success-content" />
+      </div>
+      <div
+        v-if="book.digitalFilePath"
+        v-tooltip="'Digital copy'"
+        class="absolute top-1 left-1 z-10 bg-success/90 rounded-full p-0.5"
+      >
+        <i class="mdi mdi-book-open-page-variant mdi-14px text-success-content" />
+      </div>
+      <div
+        v-if="dailyStreak > 0"
+        v-tooltip="'Daily reading streak'"
+        class="absolute bottom-3 left-1 z-10 flex items-center gap-0.5 bg-base-900/75 backdrop-blur-sm text-orange-400 text-xs font-bold px-1.5 py-0.5 rounded-full"
+      >
+        <i class="mdi mdi-fire" />{{ dailyStreak }}
+      </div>
+      <div
         v-if="showProgressBar(book)"
         v-tooltip="progressBarTooltip"
-        class="absolute bottom-0 left-0 right-0"
+        class="absolute bottom-0 left-0 right-0 h-2 bg-base-content/10"
       >
-        <div class="w-full h-1.5 bg-base-300/50">
-          <div
-            class="h-full bg-primary transition-all duration-300"
-            :style="{ width: Math.round(book.percentRead ?? 0) + '%' }"
-          />
-        </div>
+        <div
+          class="bg-emerald-300/80 h-full rounded-r-full transition-all duration-300"
+          :style="{ width: book.percentRead + '%' }"
+        />
       </div>
       <div
         v-if="props.showSelect"
-        class="absolute top-0 left-1"
+        class="absolute top-0 left-0 p-3 z-10"
+        @click.stop
       >
         <input
           v-model="checked"
           type="checkbox"
-          class="checkbox checkbox-accent rounded-full border-2 hover:border-4"
+          class="checkbox checkbox-accent checkbox-lg rounded-md border-2 bg-base-100/80 shadow-md"
         >
       </div>
     </div>
-    <div class="card-body">
+    <div class="card-body flex-grow">
+      <!-- Actual window pace + ETA -->
+      <div
+        v-if="showStats && statsLine"
+        class="text-xs font-medium text-sky-300/90 mb-1"
+      >
+        {{ statsLine }}
+      </div>
+      <!-- Goal-based pace badge (shown in addition when a daily goal is set) -->
+      <div v-if="goalPace" class="flex items-center gap-1.5 flex-wrap mb-1">
+        <span class="badge badge-xs rounded-md" :class="goalStatusClass">{{ goalStatusLabel }}</span>
+        <span class="text-xs opacity-60">{{ goalLine }}</span>
+      </div>
+      <!-- Today's pages vs daily target -->
+      <div v-if="goalPace" class="text-xs mb-1">
+        <span :class="todayPages >= goalPace.dailyTargetPages ? 'text-success font-medium' : 'text-base-content/50'">
+          Today: {{ todayPages }} / {{ goalPace.dailyTargetPages }}p
+        </span>
+        <span v-if="todayPages >= goalPace.dailyTargetPages" class="text-success ml-1">✓</span>
+      </div>
       <router-link
         v-if="book.id != null"
         class="grow"
@@ -186,7 +357,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-2 hover:link""
+          class="card-title text-sm line-clamp-2 min-h-[2.5rem] hover:link"
         >
           {{ book.book.title }}
         </h2>
@@ -198,7 +369,7 @@ const currentTimestamp = ObjectUtils.timestamp()
       >
         <h2
           v-tooltip="book.book.title"
-          class="card-title text-sm line-clamp-2 hover:link""
+          class="card-title text-sm line-clamp-2 min-h-[2.5rem] hover:link"
         >
           {{ book.book.title }}
         </h2>
@@ -224,11 +395,6 @@ const currentTimestamp = ObjectUtils.timestamp()
         >&#8230;</span>
       </div>
       <div class="card-actions justify-end items-center gap-1">
-        <span
-          v-if="book.lastReadingEvent"
-          :class="eventClass"
-          class="badge"
-        >{{ eventText }}</span>
         <div class="flex items-center gap-1">
           <router-link
             v-if="currentSeries != null && ! props.public"
@@ -262,12 +428,15 @@ const currentTimestamp = ObjectUtils.timestamp()
           >
             <i class="mdi mdi-bookshelf mdi-18px" />
           </span>
+
           <span
-            v-if="book.toRead"
-            v-tooltip="t('book.in_read_list')"
-            class="icon text-info"
+            v-if="book.id != null && !public"
+            v-tooltip="localToRead ? 'Remove from To Read' : 'Add to To Read'"
+            class="icon cursor-pointer"
+            :class="localToRead ? 'text-violet-300' : 'text-base-content/50'"
+            @click.prevent.stop="toggleToRead"
           >
-            <i class="mdi mdi-eye mdi-18px" />
+            <i :class="localToRead ? 'mdi mdi-bookmark' : 'mdi mdi-bookmark-outline'" class="mdi-18px" />
           </span>
           <span
             v-if="proposeAdd === true && book.id == null"
@@ -275,6 +444,13 @@ const currentTimestamp = ObjectUtils.timestamp()
             class="icon text-error"
           >
             <i class="mdi mdi-plus-circle mdi-18px" />
+          </span>
+	  <span
+            v-if="shelfLocation"
+            v-tooltip="shelfLocation.displayString"
+            class="icon text-info"
+          >
+            <i class="mdi mdi-map-marker mdi-18px" />
           </span>
           <slot name="icon" />
           <slot name="date" />

@@ -8,7 +8,7 @@ export default function useEvents() {
     useScope: 'global'
   })
 
-  const eventClass = (type: ReadingEventType) => {
+const eventClass = (type: ReadingEventType) => {
     if (type === ReadingEventType.FINISHED) {
       return "badge-info";
     } else if (type === ReadingEventType.DROPPED) {
@@ -17,8 +17,11 @@ export default function useEvents() {
       type === ReadingEventType.CURRENTLY_READING
     ) {
       return "badge-success";
+    } else if (type === ReadingEventType.PAUSED) {
+      return "badge-warning";
     } else return "";
 };
+
 
 const eventLabel = (type: ReadingEventType) => {
     if (type === ReadingEventType.FINISHED) {
@@ -27,6 +30,8 @@ const eventLabel = (type: ReadingEventType) => {
       return t('reading_events.dropped');
     } else if (type === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (type === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else return "";
 };
 

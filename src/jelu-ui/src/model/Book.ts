@@ -42,6 +42,10 @@ export interface UserBook {
     personalNotes?: string,
     owned?: boolean|null,
     borrowed?: boolean|null,
+    borrowerName?: string|null,
+    borrowDate?: string|null,
+    expectedReturnDate?: string|null,
+    ownerName?: string|null,
     toRead?: boolean|null,
     book: Book,
     readingEvents?: Array<ReadingEvent>|null,
@@ -50,6 +54,11 @@ export interface UserBook {
     avgRating?: number|null,
     userAvgRating?: number|null,
     price?: number|null,
+    digitalFilePath?: string|null,
+    digitalFileFormat?: string|null,
+    digitalFileSizeBytes?: number|null,
+    digitalFileAddedDate?: string|null,
+    lastSentToReaderDate?: string|null,
   }
 export interface UserBookBulkUpdate {
     ids: Array<string>,
@@ -74,4 +83,8 @@ export interface UserBookUpdate {
   readingEvents?: Array<ReadingEvent>|null,
   percentRead? : number|null,
   currentPageNumber?: number|null,
+  borrowerName?: string|null,
+  borrowDate?: string|null,
+  expectedReturnDate?: string|null,
+  ownerName?: string|null,
 }

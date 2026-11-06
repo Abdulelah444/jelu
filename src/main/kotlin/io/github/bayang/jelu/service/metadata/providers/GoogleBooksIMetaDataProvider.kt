@@ -84,7 +84,79 @@ class GoogleBooksIMetaDataProvider(
         return ""
     }
 
+
     override fun name(): String = name
+
+    override fun searchMetadata(
+        metadataRequestDto: MetadataRequestDto,
+        config: Map<String, String>,
+    ): List<MetadataDto> {
+        val googleProviderApiKey = getGoogleProviderApiKey()
+        if (googleProviderApiKey.isNullOrBlank()) {
+            logger.warn { "missing google books API key for search" }
+            return emptyList()
+        }
+        val queryString = query(metadataRequestDto)
+        if (queryString.isBlank()) return emptyList()
+
+        val res = restClient
+            .get()
+            .uri { uriBuilder: UriBuilder ->
+                uriBuilder
+                    .scheme("https")
+                    .host("www.googleapis.com")
+                    .path("/books/v1/volumes")
+                    .queryParam("q", queryString)
+                    .queryParam("maxResults", 20)
+                    .queryParam("key", googleProviderApiKey)
+                    .build()
+            }
+            .exchangeToMono {
+                if (it.statusCode() == HttpStatus.OK) {
+                    it.bodyToMono(String::class.java).map { bodyString ->
+                        val items = objectMapper.readTree(bodyString).get("items")
+                        if (items == null || items.isEmpty) {
+                            emptyList<MetadataDto>()
+                        } else {
+                            items.asIterable()
+                                .mapNotNull { item -> safeParseBook(item) }
+                                .distinctBy { dto -> dto.isbn13 ?: dto.title }
+                        }
+                    }
+                } else {
+                    logger.error { "error searching google books: ${it.statusCode()}" }
+                    it.bodyToMono(String::class.java).map { emptyList<MetadataDto>() }
+                }
+            }
+            .block(Duration.ofSeconds(60))
+
+        return res ?: emptyList()
+    }
+
+    private fun safeParseBook(node: JsonNode): MetadataDto? {
+        return try {
+            val volumeInfo = node.get("volumeInfo") ?: return null
+            val title = volumeInfo.get("title")?.asText() ?: return null
+            if (title.isBlank()) return null
+            val identifiers = volumeInfo.get("industryIdentifiers")?.asIterable() ?: emptyList()
+            MetadataDto(
+                title = title,
+                googleId = node.get("id")?.asText(),
+                isbn10 = identifiers.find { it.get("type")?.asText() == "ISBN_10" }?.get("identifier")?.asText(),
+                isbn13 = identifiers.find { it.get("type")?.asText() == "ISBN_13" }?.get("identifier")?.asText(),
+                authors = extractAuthors(volumeInfo),
+                image = extractImage(volumeInfo),
+                language = volumeInfo.get("language")?.asText(),
+                publishedDate = volumeInfo.get("publishedDate")?.asText(),
+                summary = summary(node),
+                pageCount = volumeInfo.get("pageCount")?.asInt(),
+                publisher = volumeInfo.get("publisher")?.asText(),
+            )
+        } catch (e: Exception) {
+            logger.debug { "skipping unparseable book item: ${e.message}" }
+            null
+        }
+    }
 
     private fun getGoogleProviderApiKey(): String? =
         properties
@@ -104,6 +176,8 @@ class GoogleBooksIMetaDataProvider(
             image = extractImage(volumeInfo),
             language = volumeInfo.get("language").asText(),
             publishedDate = volumeInfo.get("publishedDate").asText(),
+            pageCount = if (volumeInfo.has("pageCount")) volumeInfo.get("pageCount").asInt() else null,
+            publisher = if (volumeInfo.has("publisher")) volumeInfo.get("publisher").asText() else null,
             summary = summary(node),
         )
     }
@@ -119,7 +193,6 @@ class GoogleBooksIMetaDataProvider(
             mutableSetOf()
         }
 
-
     private fun extractImage(node: JsonNode): String? {
         val imageLinks = node.get("imageLinks") ?: return null
         // Try largest image first, fall back to smaller ones
@@ -134,7 +207,6 @@ class GoogleBooksIMetaDataProvider(
         }
         return null
     }
-        
 
     private fun summary(node: JsonNode): String? {
         if (node.get("searchInfo") != null && node.get("searchInfo").get("textSnippet") != null) {

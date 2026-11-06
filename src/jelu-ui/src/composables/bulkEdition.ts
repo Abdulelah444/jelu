@@ -4,12 +4,14 @@ import BulkEditModal from "../components/BulkEditModal.vue";
 
 type VoidFunc = () => void;
 
+// Module-level state — survives component re-mounts (back navigation)
+const checkedCards: Ref<Array<string>> = ref([])
+const showSelect = ref(false)
+
 export default function useBulkEdition(onModalClosed: VoidFunc) {
 
     const oruga = useOruga();
-    const showSelect = ref(false)
     const selectAll = ref(false)
-    const checkedCards: Ref<Array<string>> = ref([])
 
     const cardChecked = (id: string | null, checked: boolean) => {
         console.log(`received ${id}, checked ? ${checked}`)

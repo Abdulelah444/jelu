@@ -576,6 +576,14 @@ class BookRepository(
 
     fun findSeriesByName(name: String): List<Series> = Series.find { SeriesTable.name.lowerCase() eq name.lowercase() }.toList()
 
+    fun findBooksMissingPageCount(pageable: Pageable): Page<Book> {
+        val query = BookTable.selectAll().where { BookTable.pageCount eq null }
+        val total = query.count()
+        query.limit(pageable.pageSize).offset(pageable.offset)
+        query.orderBy(BookTable.title to SortOrder.ASC_NULLS_LAST)
+        return PageImpl(query.map { resultRow -> Book.wrapRow(resultRow) }, pageable, total)
+    }
+
     fun findBookById(bookId: UUID): Book = Book[bookId]
 
     fun findAuthorsById(authorId: UUID): Author = Author[authorId]
@@ -1141,7 +1149,17 @@ class BookRepository(
             found.personalNotes = book.personalNotes.trim()
         }
         if (book.toRead != null) {
+            val wasToRead = found.toRead == true
             found.toRead = book.toRead
+            if (book.toRead && !wasToRead) {
+                // newly added to To-Read -> goes to the bottom of the queue
+                val maxPos = UserBook.find {
+                    (UserBookTable.user eq found.user.id) and (UserBookTable.toRead eq true)
+                }.mapNotNull { it.toReadPosition }.maxOrNull()
+                found.toReadPosition = (maxPos ?: -1) + 1
+            } else if (!book.toRead) {
+                found.toReadPosition = null
+            }
         }
         if (book.price != null) {
             found.priceInCents = floatingPriceToLong(book.price)
@@ -1169,6 +1187,51 @@ class BookRepository(
                 found.percentRead = 100
             } else {
                 found.percentRead = current.times(100).div(total)
+            }
+        }
+        // Record progress history (signed delta) only while the book is Currently Reading.
+        // Baseline is the most recent recorded page for this book (the real prior position),
+        // NOT the in-memory field which is unreliable depending on how the update is sent.
+        if (book.currentPageNumber != null || book.percentRead != null) {
+            val isCurrentlyReading = ReadingEventTable.selectAll().where {
+                (ReadingEventTable.userBook eq found.id) and
+                    (ReadingEventTable.eventType eq io.github.bayang.jelu.dao.ReadingEventType.CURRENTLY_READING)
+            }.empty().not()
+            val newPage = found.currentPageNumber ?: 0
+            val lastRow = ReadingProgressHistory.find {
+                ReadingProgressHistoryTable.userBook eq found.id
+            }.orderBy(ReadingProgressHistoryTable.recordedAt to org.jetbrains.exposed.sql.SortOrder.DESC)
+                .limit(1)
+                .firstOrNull()
+            // First-ever row just anchors the starting position (delta 0); later rows are real reading
+            val delta = if (lastRow == null) 0 else newPage - (lastRow.pageNumber ?: 0)
+            if (isCurrentlyReading && (lastRow == null || delta != 0)) {
+                ReadingProgressHistory.new {
+                    this.userBook = found
+                    this.pageNumber = newPage
+                    this.percentRead = found.percentRead
+                    this.pagesDelta = delta
+                    this.recordedAt = java.time.OffsetDateTime.now()
+                }
+                // Update the daily reading log for streaks/heatmap (only positive reading)
+                if (delta > 0) {
+                    val today = java.time.LocalDate.now(java.time.ZoneId.systemDefault())
+                    val existing = DailyReadingLog.find {
+                        (DailyReadingLogTable.userBook eq found.id) and
+                            (DailyReadingLogTable.logDate eq today)
+                    }.firstOrNull()
+                    if (existing != null) {
+                        existing.pagesRead = existing.pagesRead + delta
+                    } else {
+                        DailyReadingLog.new {
+                            this.user = found.user
+                            this.userBook = found
+                            this.logDate = today
+                            this.pagesRead = delta
+                            this.creationDate = java.time.OffsetDateTime.now()
+                        }
+                    }
+                }
             }
         }
         if (book.book != null) {
@@ -1204,6 +1267,14 @@ class BookRepository(
         if (book.borrowed != null) {
             found.borrowed = book.borrowed
         }
+        if (book.borrowerName != null) {
+            found.borrowerName = book.borrowerName
+        }
+        if (book.ownerName != null) {
+            found.ownerName = book.ownerName
+        }
+        found.borrowDate = book.borrowDate
+        found.expectedReturnDate = book.expectedReturnDate
         found.modificationDate = nowInstant()
         return found
     }
@@ -1283,6 +1354,15 @@ class BookRepository(
             .find {
                 SeriesRatingTable.series eq seriesId and (SeriesRatingTable.user eq userId)
             }.firstOrNull()
+
+    fun reorderToRead(userId: UUID, orderedIds: List<UUID>) {
+        orderedIds.forEachIndexed { index, ubId ->
+            val ub = UserBook.findById(ubId)
+            if (ub != null && ub.user.id.value == userId && ub.toRead == true) {
+                ub.toReadPosition = index
+            }
+        }
+    }
 
     fun save(book: BookCreateDto): Book {
         val authorsList = mutableListOf<Author>()
@@ -1538,6 +1618,10 @@ class BookRepository(
             this.personalNotes = cleanString(createUserBookDto.personalNotes)
             this.percentRead = createUserBookDto.percentRead
             this.borrowed = createUserBookDto.borrowed
+            this.borrowerName = createUserBookDto.borrowerName
+            this.borrowDate = createUserBookDto.borrowDate
+            this.expectedReturnDate = createUserBookDto.expectedReturnDate
+            this.ownerName = createUserBookDto.ownerName
             this.priceInCents = toCents
         }
     }
@@ -1553,6 +1637,8 @@ class BookRepository(
         toRead: Boolean?,
         owned: Boolean?,
         borrowed: Boolean?,
+        hasPageCount: Boolean? = null,
+        hasDigitalFile: Boolean? = null,
         pageable: Pageable,
     ): PageImpl<UserBook> {
         val cols = mutableListOf<Expression<*>>()
@@ -1627,6 +1713,20 @@ class BookRepository(
                 query.andWhere { UserBookTable.borrowed eq borrowed or (UserBookTable.borrowed.isNull()) }
             }
         }
+        if (hasPageCount != null) {
+            if (hasPageCount) {
+                query.andWhere { BookTable.pageCount.isNotNull() }
+            } else {
+                query.andWhere { BookTable.pageCount.isNull() }
+            }
+        }
+        if (hasDigitalFile != null) {
+            if (hasDigitalFile) {
+                query.andWhere { UserBookTable.digitalFilePath.isNotNull() }
+            } else {
+                query.andWhere { UserBookTable.digitalFilePath.isNull() }
+            }
+        }
         val total = query.count()
         if (checkIfRandomSorting(pageable)) {
             query.limit(pageable.pageSize)
@@ -1634,9 +1734,17 @@ class BookRepository(
         } else {
             query.limit(pageable.pageSize)
             query.offset(pageable.offset)
-            val orders: Array<Pair<Expression<*>, SortOrder>> =
-                parseSorts(pageable.sort, Pair(UserBookTable.lastReadingEventDate, SortOrder.DESC_NULLS_LAST), cols)
-            query.orderBy(*orders)
+            if (toRead == true) {
+                // To-Read list: honor the user's manual queue order (nulls last), title as tiebreaker
+                query.orderBy(
+                    UserBookTable.toReadPosition to SortOrder.ASC_NULLS_LAST,
+                    BookTable.title to SortOrder.ASC_NULLS_LAST,
+                )
+            } else {
+                val orders: Array<Pair<Expression<*>, SortOrder>> =
+                    parseSorts(pageable.sort, Pair(UserBookTable.lastReadingEventDate, SortOrder.DESC_NULLS_LAST), cols)
+                query.orderBy(*orders)
+            }
         }
         val res = query.map { resultRow -> wrapUserBookRow(resultRow, ratingAlias, userRatingAlias) }
         return PageImpl(
@@ -1902,6 +2010,8 @@ class BookRepository(
                     null,
                     null,
                     null,
+                    null,
+                    null,
                     PageRequest.of(pageNumber, pageSize),
                 )
             books.forEach {
@@ -1943,4 +2053,25 @@ class BookRepository(
             total,
         )
     }
+
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+        lastSentDate: Instant? = null,
+    ): UserBook {
+        val userBook = UserBook[userbookId]
+        userBook.digitalFilePath = filePath
+        userBook.digitalFileFormat = fileFormat
+        userBook.digitalFileSizeBytes = fileSizeBytes
+        userBook.digitalFileAddedDate = fileAddedDate
+        if (lastSentDate != null) {
+            userBook.lastSentToReaderDate = lastSentDate
+        }
+        userBook.modificationDate = Instant.now()
+        return userBook
+    }
+
 }

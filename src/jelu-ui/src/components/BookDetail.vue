@@ -15,6 +15,7 @@ import { Review } from '../model/Review'
 import { Series } from '../model/Series'
 import { User } from '../model/User'
 import dataService from "../services/DataService"
+import { ShelfLocation } from "../model/PhysicalLibrary"
 import { key } from '../store'
 import { ObjectUtils } from '../utils/ObjectUtils'
 import AutoImportFormModalVue from "./AutoImportFormModal.vue"
@@ -24,6 +25,7 @@ import EditBookModal from "./EditBookModal.vue"
 import MergeBookModal from './MergeBookModal.vue'
 import ReadingEventModalVue from './ReadingEventModal.vue'
 import ReadProgressModal from './ReadProgressModal.vue'
+import ProgressHistoryModal from './ProgressHistoryModal.vue'
 import ReviewCard from "./ReviewCard.vue"
 import ReviewModalVue from './ReviewModal.vue'
 import useTypography from "../composables/typography"
@@ -66,7 +68,15 @@ const getBookIsLoading: Ref<boolean> = ref(false)
 const userReviews: Ref<Array<Review>> = ref([])
 
 const bookQuotes: Ref<Array<BookQuote>> = ref([])
+const digitalSearchResults: Ref<Array<any>> = ref([])
+const digitalSearchLoading: Ref<boolean> = ref(false)
+const digitalUploadLoading: Ref<boolean> = ref(false)
+const digitalDownloadLoading: Ref<boolean> = ref(false)
+const digitalDeleteLoading: Ref<boolean> = ref(false)
+const showDigitalSearchModal: Ref<boolean> = ref(false)
+const downloadProgress: Ref<string> = ref("")
 const users: Ref<Array<User>> = ref([])
+const shelfLocation: Ref<ShelfLocation | null> = ref(null)
 
 const getBook = async () => {
   try {
@@ -78,11 +88,168 @@ const getBook = async () => {
     getBookQuotesForBook()
     getAllSeriesInfo()
     getBookUsers()
+    getShelfLocation()
+    initPaceDefault()
+    loadPaceGoal()
   } catch (error) {
     console.log("failed get book : " + error);
     getBookIsLoading.value = false
   }
 };
+
+const getShelfLocation = async () => {
+  try {
+    if (book.value?.id) {
+      shelfLocation.value = await dataService.getBookPhysicalLocation(book.value.id)
+    }
+  } catch (error) {
+    console.log("failed get shelf location : " + error)
+  }
+}
+
+const searchDigitalCopies = async () => {
+  if (!book.value?.id) return
+  digitalSearchLoading.value = true
+  try {
+    const result = await dataService.searchDigitalCandidates(book.value.id)
+    digitalSearchResults.value = result.releases || []
+    showDigitalSearchModal.value = true
+  } catch (error) {
+    oruga.notification.open({ message: "Search failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalSearchLoading.value = false
+  }
+}
+
+const triggerDownload = async (release: any) => {
+  if (!book.value?.id) return
+  digitalDownloadLoading.value = true
+  downloadProgress.value = "Starting download..."
+  showDigitalSearchModal.value = false
+  try {
+    await dataService.triggerDigitalDownload(book.value.id, release)
+    // Poll for completion
+    const sourceId = release.source_id || release.sourceId
+    if (sourceId) {
+      const pollInterval = setInterval(async () => {
+        try {
+          const status = await dataService.checkDownloadStatus(book.value!.id!, sourceId)
+          if (status.status === "complete") {
+            clearInterval(pollInterval)
+            digitalDownloadLoading.value = false
+            downloadProgress.value = ""
+            if (status.linked) {
+              oruga.notification.open({ message: "Downloaded and linked!", variant: "success", duration: 4000 })
+              getBook()
+            } else {
+              oruga.notification.open({ message: "Download complete but could not auto-link", variant: "warning", duration: 4000 })
+            }
+          } else if (status.status === "error" || status.status === "cancelled") {
+            clearInterval(pollInterval)
+            digitalDownloadLoading.value = false
+            downloadProgress.value = ""
+            oruga.notification.open({ message: "Download failed: " + (status.message || status.status), variant: "danger", duration: 4000 })
+          } else {
+            const pct = Math.round(status.progress || 0)
+            downloadProgress.value = status.status + (pct > 0 ? " " + pct + "%" : "...")
+          }
+        } catch (e) {
+          // Keep polling on transient errors
+        }
+      }, 3000)
+      // Safety timeout after 5 minutes
+      setTimeout(() => {
+        clearInterval(pollInterval)
+        if (digitalDownloadLoading.value) {
+          digitalDownloadLoading.value = false
+          downloadProgress.value = ""
+          oruga.notification.open({ message: "Download timed out - check CWA UI", variant: "warning", duration: 4000 })
+        }
+      }, 300000)
+    }
+  } catch (error) {
+    digitalDownloadLoading.value = false
+    downloadProgress.value = ""
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
+  }
+}
+
+const uploadDigitalFile = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file || !book.value?.id) return
+  digitalUploadLoading.value = true
+  try {
+    await dataService.uploadDigitalFile(book.value.id, file)
+    oruga.notification.open({ message: "File uploaded successfully", variant: "success", duration: 4000 })
+    getBook()
+  } catch (error) {
+    oruga.notification.open({ message: "Upload failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalUploadLoading.value = false
+    target.value = ""
+  }
+}
+
+const downloadQrLabel = async () => {
+  if (!book.value?.id) return
+  try {
+    const response = await dataService.apiClient.get(
+      '/userbooks/' + book.value.id + '/label.png',
+      { params: { widthMm: 40, heightMm: 30, baseUrl: localStorage.getItem('qr_base_url') || window.location.origin }, responseType: 'blob' }
+    )
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', (book.value.book.title || 'label') + '.png')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    oruga.notification.open({ message: "Label download failed", variant: "danger", duration: 3000 })
+  }
+}
+
+const printQrLabel = () => {
+  const win = window.open('', '_blank', 'width=400,height=500')
+  if (!win) return
+  const o = window.location.origin
+  win.document.write('<html><head><title>' + (book.value?.book?.title || 'Label') + '</title>')
+  win.document.write('<style>body{margin:0;display:flex;justify-content:center;align-items:center;min-height:100vh;background:#fff;} .label{border:2px solid #333;padding:20px;border-radius:8px;text-align:center;width:260px;font-family:Georgia,serif;} .label .logo{width:40px;height:40px;border-radius:50%;margin:0 auto 8px;display:block;} .label .qr{width:170px;height:170px;} .label .divider{border-bottom:1px solid #ccc;margin:12px 0;} .label .title{font-weight:bold;font-size:14px;line-height:1.3;} @media print{body{margin:0;} @page{size:auto;margin:10mm;}}</style></head><body>')
+  win.document.write('<div class="label">')
+  win.document.write('<img class="logo" src="' + o + '/android-chrome-192x192.png" />')
+  win.document.write('<img class="qr" src="' + qrCodeUrl.value + '" />')
+  win.document.write('<div class="divider"></div>')
+  win.document.write('<div class="title">' + (book.value?.book?.title || '') + '</div>')
+  win.document.write('</div></body></html>')
+  win.document.close()
+  win.onload = () => { win.print() }
+}
+
+const downloadDigital = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.downloadDigitalFile(book.value.id)
+  } catch (error) {
+    oruga.notification.open({ message: "Download failed: " + error, variant: "danger", duration: 4000 })
+  }
+}
+
+const deleteDigitalFile = async () => {
+  if (!book.value?.id) return
+  if (!confirm("Remove the digital copy? The file will be deleted.")) return
+  digitalDeleteLoading.value = true
+  try {
+    await dataService.deleteDigitalFile(book.value.id)
+    oruga.notification.open({ message: "Digital copy removed", variant: "success", duration: 4000 })
+    getBook()
+  } catch (error) {
+    oruga.notification.open({ message: "Delete failed: " + error, variant: "danger", duration: 4000 })
+  } finally {
+    digitalDeleteLoading.value = false
+  }
+}
 
 const getBookUsers = async () => {
   await until(book.value).not.toBeNull()
@@ -139,8 +306,123 @@ const sortedEvents = computed(() => {
   else {
     return []
   }
+})
+
+const qrCodeUrl = computed(() => {
+  if (!book.value?.book?.id) return ""
+  return "https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=" + encodeURIComponent(location.origin + "/public/book/" + book.value.book.id)
+})
+const pacePeriod: Ref<string> = ref("since_start")
+const allPaces: Ref<any> = ref({})
+const serverPace = computed(() => allPaces.value?.[pacePeriod.value] ?? null)
+
+const isPaceAvailable = (period: string) => allPaces.value?.[period]?.available === true
+
+const fetchPace = async () => {
+  // Kept for the @click handlers; just re-selects from already-fetched data.
+  if (!isPaceAvailable(pacePeriod.value)) {
+    // snap to an available window
+    const order = ["since_start", "week", "month", "day"]
+    const fallback = order.find((p) => isPaceAvailable(p))
+    if (fallback) pacePeriod.value = fallback
+  }
 }
-)
+
+const fetchAllPaces = async () => {
+  if (!book.value?.id) return
+  try {
+    allPaces.value = await dataService.getReadingPaceAll(book.value.id) || {}
+  } catch (e) {
+    allPaces.value = {}
+  }
+}
+
+
+
+const paceGoal = ref<any>(null)
+
+const loadPaceGoal = async () => {
+  if (!book.value?.id) return
+  try {
+    paceGoal.value = await dataService.getPaceTarget(book.value.id)
+  } catch (e) {
+    paceGoal.value = null
+  }
+}
+
+const editPaceGoal = async () => {
+  if (!book.value?.id) return
+  const current = paceGoal.value?.dailyTargetPages ?? ''
+  const { value } = await ObjectUtils.baseSwalMixin.fire({
+    title: 'Daily reading goal',
+    input: 'number',
+    inputLabel: 'Pages per day',
+    inputValue: String(current),
+    inputAttributes: { min: '1', step: '1' },
+    showCancelButton: true,
+    confirmButtonText: 'Save',
+  })
+  const pages = value ? parseInt(value) : 0
+  if (pages > 0) {
+    try {
+      paceGoal.value = await dataService.setPaceTarget(book.value.id, pages)
+      ObjectUtils.toast(oruga, 'success', 'Daily goal updated', 2000)
+    } catch (e) {
+      ObjectUtils.toast(oruga, 'danger', 'Could not update goal: ' + e, 3000)
+    }
+  }
+}
+
+const removePaceGoal = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.deletePaceTarget(book.value.id)
+    paceGoal.value = null
+    ObjectUtils.toast(oruga, 'success', 'Daily goal removed', 2000)
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not remove goal: ' + e, 3000)
+  }
+}
+
+const initPaceDefault = async () => {
+  await fetchAllPaces()
+  // Default: a week or more reading and 1W available -> week; else since_start
+  const currentEvent = book.value?.readingEvents?.find(
+    (e: ReadingEvent) => e.eventType === ReadingEventType.CURRENTLY_READING
+  )
+  let want = "since_start"
+  if (currentEvent?.startDate) {
+    const days = dayjs().diff(dayjs(currentEvent.startDate), "day", true)
+    if (days >= 7 && isPaceAvailable("week")) want = "week"
+  }
+  pacePeriod.value = isPaceAvailable(want) ? want : "since_start"
+}
+
+const readingPace = computed(() => {
+  if (!book.value?.readingEvents || !book.value?.book?.pageCount) return null
+  const currentEvent = book.value.readingEvents.find(
+    (e: ReadingEvent) => e.eventType === ReadingEventType.CURRENTLY_READING
+  )
+  if (!currentEvent?.startDate) return null
+  const startDate = dayjs(currentEvent.startDate)
+  const daysReading = dayjs().diff(startDate, "day", true)
+  if (daysReading < 0.01) return null
+  const pagesRead = book.value.currentPageNumber ?? Math.round((book.value.percentRead ?? 0) * book.value.book.pageCount / 100)
+  if (pagesRead <= 0) return null
+  const effectiveDays = Math.max(daysReading, 1)
+  const pace = pagesRead / effectiveDays
+  const pagesRemaining = book.value.book.pageCount - pagesRead
+  const daysRemaining = pagesRemaining > 0 ? Math.ceil(pagesRemaining / pace) : 0
+  const estimatedFinish = dayjs().add(daysRemaining, "day")
+  return {
+    pagesPerDay: Math.round(pace * 10) / 10,
+    daysReading: Math.round(daysReading),
+    daysRemaining,
+    estimatedFinish: estimatedFinish.format('D MMM YYYY'),
+    pagesRead,
+    pagesRemaining,
+  }
+})
 
 const hasExternalLink = computed(() => book.value?.book.amazonId != null
   || book.value?.book.goodreadsId != null
@@ -200,6 +482,20 @@ function toggleReadingEventModal(currentEvent: ReadingEvent, edit: boolean) {
   });
 }
 
+function toggleProgressHistoryModal() {
+  oruga.modal.open({
+    component: ProgressHistoryModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+    props: {
+      "userBookId": book.value?.id,
+      "pageCount": book.value?.book?.pageCount ?? null,
+    },
+    onClose: modalClosed
+  });
+}
 function toggleReviewModal(currentBook: Book|undefined, edit: boolean, review: Review|null) {
   if (currentBook != null && currentBook != undefined) {
     oruga.modal.open({
@@ -291,6 +587,44 @@ const toggleReadProgressModal = (userBookId: string, bookId: string, pageCount: 
     onClose: modalClosed
   });
 }
+
+const deleteReadingEvent = async (eventId: string) => {
+  if (!confirm('Delete this reading event?')) return
+  try {
+    await dataService.deleteReadingEvent(eventId)
+    ObjectUtils.toast(oruga, 'success', 'Event deleted', 2000)
+    await getBook()
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not delete event', 2000)
+  }
+}
+
+const resetBook = async () => {
+  if (!book.value?.id) return
+  if (!confirm('Reset this book? This will delete ALL reading events, progress history, pace targets and streak data for this book. This cannot be undone.')) return
+  try {
+    // Delete all reading events
+    if (book.value.readingEvents) {
+      for (const ev of book.value.readingEvents) {
+        await dataService.deleteReadingEvent(ev.id)
+      }
+    }
+    // Delete pace target
+    await dataService.deletePaceTarget(book.value.id)
+    // Reset progress
+    const full = await dataService.getUserBookById(book.value.id)
+    full.currentPageNumber = 0
+    full.percentRead = 0
+    full.lastReadingEvent = null
+    full.lastReadingEventDate = null
+    await dataService.updateUserBook(full)
+    ObjectUtils.toast(oruga, 'success', 'Book reset to library', 2000)
+    await getBook()
+  } catch (e) {
+    ObjectUtils.toast(oruga, 'danger', 'Could not reset book: ' + e, 3000)
+  }
+}
+
 const deleteBook = async () => {
   let deleteForUserOnly = true
   let abort = false
@@ -359,6 +693,8 @@ const eventClass = (event: ReadingEvent) => {
     event.eventType === ReadingEventType.CURRENTLY_READING
   ) {
     return "bg-success";
+  } else if (event.eventType === ReadingEventType.PAUSED) {
+    return "bg-warning";
   }
   else return "";
 };
@@ -372,6 +708,8 @@ const iconClass = (event: ReadingEvent) => {
     event.eventType === ReadingEventType.CURRENTLY_READING
   ) {
     return "mdi-book-open-page-variant";
+  } else if (event.eventType === ReadingEventType.PAUSED) {
+    return "mdi-pause-circle";
   }
   else return "";
 };
@@ -383,16 +721,47 @@ const eventLabel = (type: ReadingEventType) => {
       return t('reading_events.dropped');
     } else if (type === ReadingEventType.CURRENTLY_READING) {
       return t('reading_events.reading');
+    } else if (type === ReadingEventType.PAUSED) {
+      return t('reading_events.paused');
     } else return "";
 };
 
 function defaultCreateEvent(): CreateReadingEvent {
+  const currentType = book.value?.lastReadingEvent ?? ReadingEventType.CURRENTLY_READING
   return {
-    eventType: ReadingEventType.CURRENTLY_READING,
+    eventType: currentType,
     eventDate: new Date(),
     startDate: new Date(),
     bookId: book.value?.book.id
   }
+}
+const showLendModal = ref(false)
+const lendForm = ref({ borrowerName: "", expectedReturnDate: "" })
+const lendBook = async () => {
+  if (!book.value?.id || !lendForm.value.borrowerName) return
+  try {
+    await dataService.updateUserBook({id: book.value.id,
+      borrowed: true,
+      borrowerName: lendForm.value.borrowerName,
+      borrowDate: new Date().toISOString(),
+      expectedReturnDate: lendForm.value.expectedReturnDate ? new Date(lendForm.value.expectedReturnDate).toISOString() : null,
+    })
+    showLendModal.value = false
+    lendForm.value = { borrowerName: "", expectedReturnDate: "" }
+    book.value = await dataService.getUserBookById(props.bookId)
+  } catch (e) { console.log("lend failed: " + e) }
+}
+const returnBook = async () => {
+  if (!book.value?.id) return
+  try {
+    await dataService.updateUserBook({id: book.value.id,
+      borrowed: false,
+      borrowerName: null,
+      borrowDate: null,
+      expectedReturnDate: null,
+    })
+    book.value = await dataService.getUserBookById(props.bookId)
+  } catch (e) { console.log("return failed: " + e) }
 }
 
 const publisherQuery = computed(() => {
@@ -567,8 +936,8 @@ getBook()
 
 <template>
   <div class="grid grid-cols-1 justify-center justify-items-center">
-    <div class="grid sm:grid-cols-3 mb-4 sm:w-10/12">
-      <div />
+    <div class="flex flex-col sm:grid sm:grid-cols-3 mb-4 w-full px-3 sm:px-0 sm:w-10/12">
+      <div class="hidden sm:block" />
       <div class="grow">
         <h3
           class="text-3xl"
@@ -585,10 +954,10 @@ getBook()
       </div>
       <div
         v-if="book != null"
-        class="flex items-center flex-wrap"
+        class="flex items-center flex-wrap gap-1 mt-2 sm:mt-0"
       >
         <button
-          class="btn btn-primary btn-outline mr-2 p-2 uppercase"
+          class="btn btn-primary btn-outline btn-sm sm:btn-md mr-1 sm:mr-2 p-1.5 sm:p-2 uppercase"
           @click="toggleEdit"
         >
           <span class="icon">
@@ -597,35 +966,26 @@ getBook()
           <span>{{ t('labels.edit') }}</span>
         </button>
         <button
-          class="btn btn-error btn-outline mr-2 p-2 uppercase"
-          @click="deleteBook"
+          class="btn btn-accent btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
+          @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
         >
-          <span class="icon">
-            <i class="mdi mdi-delete mdi-18px" />
-          </span>
-          <span>{{ t('labels.delete') }}</span>
+          <i class="mdi mdi-book-open-page-variant mdi-18px" />
+          <span class="hidden sm:inline">Progress</span>
         </button>
         <button
-          class="btn btn-info btn-outline p-2 uppercase"
+          class="btn btn-success btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
+          @click="toggleProgressHistoryModal()"
+        >
+          <i class="mdi mdi-chart-line mdi-18px" />
+          <span class="hidden sm:inline">History</span>
+        </button>
+        <button
+          class="btn btn-info btn-outline btn-sm sm:btn-md p-1.5 sm:p-2"
           @click="toggleReadingEventModal(defaultCreateEvent(), false)"
         >
-          <span class="icon">
-            <i class="mdi mdi-plus mdi-18px" />
-          </span>
-          <span>{{ t('labels.event') }}</span>
+          <i class="mdi mdi-plus mdi-18px" />
+          <span class="hidden sm:inline">Event</span>
         </button>
-        <label
-          v-tooltip="t('labels.get_embed_code')"
-          for="my-modal-4"
-          class="btn btn-circle btn-outline ml-0 border-none modal-button"
-        ><svg
-          xmlns="http://www.w3.org/2000/svg"
-          class="h-5 w-5"
-          viewBox="0 0 20 20"
-          fill="currentColor"
-        >
-          <path d="M15 8a3 3 0 10-2.977-2.63l-4.94 2.47a3 3 0 100 4.319l4.94 2.47a3 3 0 10.895-1.789l-4.94-2.47a3.027 3.027 0 000-.74l4.94-2.47C13.456 7.68 14.19 8 15 8z" />
-        </svg></label>
         <div class="dropdown dropdown-hover bg-transparent">
           <label
             tabindex="0"
@@ -646,106 +1006,30 @@ getBook()
               />
             </svg>
           </label>
-          <ul
-            tabindex="0"
-            class="dropdown-content menu p-2 shadow-sm bg-base-100 rounded-box w-52"
-          >
-            <li>
-              <button
-                v-tooltip="t('reviews.create_review')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleReviewModal(book?.book, false, null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  class="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('book_merge.fetch_metadata')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleFetchMetadataModal(book?.book)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m5.231 13.481L15 17.25m-4.5-15H5.625c-.621 0-1.125.504-1.125 1.125v16.5c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9zm3.75 11.625a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('labels.set_progress')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                  />
-                </svg>
-              </button>
-            </li>
-            <li>
-              <button
-                v-tooltip="t('labels.add_quote')"
-                class="btn btn-circle btn-outline border-none"
-                @click="toggleBookQuoteModal(book?.book, false, null)"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="size-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M17.593 3.322c1.1.128 1.907 1.077 1.907 2.185V21L12 17.25 4.5 21V5.507c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0Z"
-                  />
-                </svg>
-              </button>
+          <ul tabindex="0" class="dropdown-content menu p-1 shadow-sm bg-base-100 rounded-box w-48 z-50">
+            <li><button class="text-sm" @click="toggleReviewModal(book?.book, false, null)"><i class="mdi mdi-star mdi-18px mr-2" />Write Review</button></li>
+            <li><button class="text-sm" @click="toggleFetchMetadataModal(book?.book)"><i class="mdi mdi-cloud-download mdi-18px mr-2" />Fetch Metadata</button></li>
+            <li><button class="text-sm" @click="toggleBookQuoteModal(book?.book, false, null)"><i class="mdi mdi-bookmark mdi-18px mr-2" />Add Quote</button></li>
+            <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm" v-if="!book?.borrowed" @click="showLendModal = true"><i class="mdi mdi-account-arrow-right mdi-18px mr-2" />Lend Book</button></li>
+            <li v-if="book?.borrowed"><button class="text-sm" @click="returnBook"><i class="mdi mdi-book-check mdi-18px mr-2" />Return Book</button></li>
+            <li><label for="my-modal-4" class="text-sm"><i class="mdi mdi-code-tags mdi-18px mr-2" />Embed Code</label></li>
+            <li><button class="text-sm text-warning" @click="resetBook"><i class="mdi mdi-restore mdi-18px mr-2" />Reset to Library</button></li>
+            <li class="border-t border-base-300 mt-1 pt-1"><button class="text-sm text-error" @click="deleteBook"><i class="mdi mdi-delete mdi-18px mr-2" />Delete</button>
             </li>
           </ul>
         </div>
       </div>
     </div>
     <div
-      class="justify-center justify-items-center sm:gap-10 grid grid-cols-1 sm:grid-cols-2 sm:w-10/12 w-full"
+      class="justify-center justify-items-center sm:gap-10 grid grid-cols-1 sm:grid-cols-2 sm:w-10/12 w-full px-4 sm:px-0"
     >
-      <div class="sm:justify-self-end">
+      <div class="sm:justify-self-end flex flex-row sm:flex-col items-start sm:items-center gap-3">
         <figure>
           <img
             v-if="book?.book?.image"
             :src="'/files/' + book.book.image + '?timestamp=' + currentTimestamp"
             alt="cover image"
-            class="max-h-96"
+            class="max-h-72 sm:max-h-96 mx-auto"
           >
           <img
             v-else
@@ -753,6 +1037,14 @@ getBook()
             alt="cover placeholder"
           >
         </figure>
+        <div class="flex gap-2 mt-1">
+          <button class="btn btn-sm btn-outline gap-1" onclick="document.getElementById('qr-modal').showModal()">
+            <i class="mdi mdi-qrcode mdi-18px" /> QR
+          </button>
+          <button class="btn btn-sm btn-ghost" @click="downloadQrLabel">
+            <i class="mdi mdi-download mdi-18px" />
+          </button>
+        </div>
       </div>
       <div class="text-left sm:justify-self-start">
         <p
@@ -832,31 +1124,61 @@ getBook()
           <span class="font-semibold uppercase">{{ t('book.isbn13') }} :</span>
           {{ book.book.isbn13 }}
         </p>
-        <p v-if="book?.book?.pageCount || book?.currentPageNumber">
-          <span v-if="book?.book?.pageCount">
-            <span class="font-semibold capitalize">{{ t('book.page', 2) }} :</span>
-            {{ book.book.pageCount }}
-          </span>
-          <span v-if="book?.currentPageNumber">&nbsp;(<span class="font-semibold capitalize">{{ t('labels.current') }}</span> : {{ book.currentPageNumber }})</span>
-        </p>
-             <div
-          v-if="book?.percentRead != null && book?.percentRead > 0"
-          class="my-2"
-        >
-          <progress
-            class="progress progress-primary w-full"
-            :value="Math.round(book.percentRead)"
-            max="100"
-          />
-          <p class="text-xs opacity-70 mt-1">
-            <template v-if="book.currentPageNumber != null && book.book.pageCount != null">
-              Page {{ book.currentPageNumber }} / {{ book.book.pageCount }}
-              ({{ Math.round(book.percentRead) }}%)
+        <div v-if="book?.percentRead != null || book?.currentPageNumber || book?.book?.pageCount" class="my-2">
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-semibold capitalize text-sm">{{ t('book.percent_read') }}</span>
+            <span class="text-sm font-bold">{{ Math.round(book?.percentRead ?? 0) }}%</span>
+          </div>
+          <progress class="progress progress-primary w-full cursor-pointer" :value="Math.round(book?.percentRead ?? 0)" max="100" @click="toggleReadProgressModal(book?.id!!, book?.book.id!!, book?.book.pageCount ?? null, book?.percentRead ?? null, book?.currentPageNumber ?? null)"></progress>
+          <div v-if="book?.book?.pageCount || book?.currentPageNumber" class="flex justify-between text-xs opacity-70 mt-1">
+            <span v-if="book?.currentPageNumber">Page {{ book.currentPageNumber }}<span v-if="book?.book?.pageCount"> / {{ book.book.pageCount }}</span></span>
+            <span v-else-if="book?.book?.pageCount">{{ book.book.pageCount }} pages</span>
+          </div>
+        </div>
+        <div v-if="serverPace" class="my-3 p-3 bg-base-200 rounded-lg text-sm">
+          <div class="flex items-center justify-between mb-2">
+            <div class="flex items-center gap-2">
+              <i class="mdi mdi-speedometer mdi-18px" />
+              <span class="font-semibold">Reading Pace</span>
+            </div>
+            <div class="join">
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'day' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('day')" @click="pacePeriod = 'day'">1D</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'week' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('week')" @click="pacePeriod = 'week'">1W</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'month' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('month')" @click="pacePeriod = 'month'">1M</button>
+              <button class="btn btn-xs join-item" :class="pacePeriod === 'since_start' ? 'btn-primary' : 'btn-ghost'" :disabled="!isPaceAvailable('since_start')" @click="pacePeriod = 'since_start'">T0</button>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-x-4 gap-y-1">
+            <span class="opacity-70">Pace:</span>
+            <span class="font-medium">{{ serverPace.pagesPerDay }} pages/day</span>
+            <span class="opacity-70">Window:</span>
+            <span class="font-medium">{{ serverPace.daysInWindow }} days ({{ serverPace.pagesInWindow }} pages)</span>
+            <span class="opacity-70">Pages remaining:</span>
+            <span class="font-medium">{{ serverPace.pagesRemaining ?? '—' }}</span>
+            <template v-if="serverPace.daysRemaining">
+              <span class="opacity-70">Est. finish:</span>
+              <span class="font-medium">{{ serverPace.estimatedFinish }} ({{ serverPace.daysRemaining }} days)</span>
             </template>
-            <template v-else>
-              {{ Math.round(book.percentRead) }}%
-            </template>
-          </p>
+          </div>
+        </div>
+        <!-- Daily reading goal -->
+        <div v-if="book?.lastReadingEvent === 'CURRENTLY_READING' || paceGoal" class="my-3 p-3 bg-base-200 rounded-lg text-sm">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <i class="mdi mdi-target mdi-18px" />
+              <span class="font-semibold">Daily goal</span>
+              <span v-if="paceGoal" class="opacity-80">{{ paceGoal.dailyTargetPages }} pages/day</span>
+              <span v-else class="opacity-50">none set</span>
+            </div>
+            <div class="flex gap-1">
+              <button class="btn btn-xs btn-outline" @click="editPaceGoal">
+                <i class="mdi mdi-pencil mdi-14px mr-1" />{{ paceGoal ? 'Edit' : 'Set goal' }}
+              </button>
+              <button v-if="paceGoal" class="btn btn-xs btn-outline btn-error" @click="removePaceGoal">
+                <i class="mdi mdi-delete mdi-14px" />
+              </button>
+            </div>
+          </div>
         </div>
         <p v-if="book?.book?.publishedDate">
           <span class="font-semibold capitalize">{{ t('book.published_date') }} :</span>
@@ -892,7 +1214,8 @@ getBook()
           <span class="font-semibold capitalize">{{ t('book.price') }} :</span>
           {{ ObjectUtils.amountInLocale(book.price, storedLanguage, currency) }}
         </p>
-        <div v-if="book?.owned || book?.toRead || book?.borrowed">
+        <div class="divider my-1"></div>
+        <div v-if="book?.owned || book?.toRead || book?.borrowed" class="flex gap-2 flex-wrap">
           <span
             v-if="book?.owned"
             class="badge badge-info"
@@ -905,6 +1228,154 @@ getBook()
             v-if="book?.borrowed"
             class="badge badge-info"
           >{{ t('book.borrowed') }}</span>
+        </div>
+        <!-- Borrower info -->
+        <div v-if="book?.borrowed && book?.borrowerName" class="mt-2 p-3 bg-warning/10 rounded-lg border border-warning/30">
+          <div class="flex items-center gap-2 text-sm">
+            <i class="mdi mdi-account-arrow-right mdi-18px text-warning" />
+            <span class="font-medium">Lent to {{ book.borrowerName }}</span>
+          </div>
+          <div v-if="book?.borrowDate" class="text-xs text-base-content/50 mt-1 ml-6">
+            Since {{ dayjs(book.borrowDate).format('DD/MM/YYYY') }}
+          </div>
+          <div v-if="book?.expectedReturnDate" class="text-xs text-base-content/50 ml-6">
+            Expected return: {{ dayjs(book.expectedReturnDate).format('DD/MM/YYYY') }}
+          </div>
+        </div>
+        <!-- Owner name -->
+        <div v-if="book?.ownerName" class="mt-2 text-sm">
+          <i class="mdi mdi-account mdi-18px mr-1 text-info" />
+          <span class="text-base-content/60">Owner:</span> {{ book.ownerName }}
+        </div>
+        <div v-if="shelfLocation" class="mt-4 p-2.5 rounded-lg bg-base-200/50 flex items-center gap-2 text-sm">
+          <i class="mdi mdi-map-marker mdi-18px text-accent" />
+          <span class="font-medium">{{ shelfLocation.bookcaseName }}</span>
+          <span class="opacity-40">·</span>
+          <span>{{ shelfLocation.shelfLabel || 'Shelf ' + shelfLocation.shelfPosition }}</span>
+          <router-link :to="{ name: 'library-map' }" class="btn btn-ghost btn-xs ml-auto">
+            <i class="mdi mdi-arrow-right mdi-14px" />
+          </router-link>
+        </div>
+        <div v-else class="mt-4 p-2.5 rounded-lg bg-base-200/30 flex items-center gap-2 text-sm">
+          <i class="mdi mdi-map-marker-off mdi-18px opacity-40" />
+          <span class="opacity-50 italic">{{ t('library_map.no_location') }}</span>
+          <button class="btn btn-ghost btn-xs ml-auto" @click="$router.push({ name: 'library-map' })">
+            {{ t('library_map.assign_to_shelf') }} <i class="mdi mdi-arrow-right mdi-14px" />
+          </button>
+        </div>
+        <!-- Digital Copy Section -->
+        <div class="mt-4 p-3 rounded-lg bg-base-200 border border-base-300">
+          <div class="flex items-center gap-2 mb-2">
+            <i class="mdi mdi-book-open-page-variant mdi-24px text-primary" />
+            <span class="font-semibold">Digital Copy</span>
+          </div>
+
+          <!-- Has digital file -->
+          <div v-if="book?.digitalFilePath">
+            <div class="flex items-center gap-2 text-sm mb-2">
+              <span class="badge badge-primary badge-sm">{{ book?.digitalFileFormat?.toUpperCase() }}</span>
+              <span class="text-base-content/60">{{ book?.digitalFileSizeBytes ? (book.digitalFileSizeBytes / 1024 / 1024).toFixed(1) + ' MB' : '' }}</span>
+              <span v-if="book?.digitalFileAddedDate" class="text-base-content/60 text-xs">
+                Added {{ dayjs(book.digitalFileAddedDate).format('DD/MM/YYYY') }}
+              </span>
+              <span v-if="book?.lastSentToReaderDate" class="text-base-content/60 text-xs">
+                | Sent {{ dayjs(book.lastSentToReaderDate).format('DD/MM/YYYY') }}
+              </span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-sm" @click="downloadDigital">
+                <i class="mdi mdi-download mdi-18px" />
+                Download
+              </button>
+
+              <button class="btn btn-outline btn-sm btn-error" :disabled="digitalDeleteLoading" @click="deleteDigitalFile">
+                <span v-if="digitalDeleteLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-delete mdi-18px" />
+                Remove
+              </button>
+              <label class="btn btn-outline btn-sm">
+                <i class="mdi mdi-swap-horizontal mdi-18px" /> Replace
+                <input type="file" class="hidden" accept=".epub,.pdf,.mobi,.azw3,.cbz,.cbr" @change="uploadDigitalFile">
+              </label>
+            </div>
+          </div>
+
+          <!-- No digital file -->
+          <div v-else>
+            <div v-if="downloadProgress" class="flex items-center gap-2 text-sm mb-2">
+              <span class="loading loading-spinner loading-sm text-primary"></span>
+              <span>{{ downloadProgress }}</span>
+            </div>
+            <div class="flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-sm" :disabled="digitalSearchLoading || digitalDownloadLoading" @click="searchDigitalCopies">
+                <span v-if="digitalSearchLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-cloud-download mdi-18px" />
+                Download digital copy
+              </button>
+              <label class="btn btn-outline btn-sm" :class="{ 'loading': digitalUploadLoading }">
+                <span v-if="digitalUploadLoading" class="loading loading-spinner loading-xs"></span>
+                <i v-else class="mdi mdi-upload mdi-18px" />
+                Upload manually
+                <input type="file" class="hidden" accept=".epub,.pdf,.mobi,.azw3,.cbz,.cbr" @change="uploadDigitalFile">
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Digital Search Modal -->
+        <dialog v-if="showDigitalSearchModal" class="modal modal-open">
+          <div class="modal-box max-w-2xl">
+            <h3 class="font-bold text-lg mb-3">
+              <i class="mdi mdi-magnify mr-1" /> Select a version to download
+            </h3>
+            <div v-if="digitalSearchResults.length === 0" class="text-center py-4 text-base-content/50">
+              No results found
+            </div>
+            <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+              <div
+                v-for="(release, index) in digitalSearchResults"
+                :key="index"
+                class="flex items-center justify-between p-3 rounded-lg bg-base-200 hover:bg-base-300 cursor-pointer"
+                @click="triggerDownload(release)"
+              >
+                <div class="flex-1 min-w-0">
+                  <div class="font-medium text-sm truncate">{{ release.title }}</div>
+                  <div class="text-xs text-base-content/60 flex gap-2 mt-1">
+                    <span v-if="release.extra?.author">{{ release.extra.author }}</span>
+                    <span v-if="release.extra?.publisher">{{ release.extra.publisher }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-2 ml-3 shrink-0">
+                  <span class="badge badge-sm rounded-md">{{ release.format }}</span>
+                  <span class="badge badge-ghost badge-sm">{{ release.size }}</span>
+                  <span v-if="release.language" class="badge badge-outline badge-sm uppercase">{{ release.language }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="modal-action">
+              <button class="btn btn-sm" @click="showDigitalSearchModal = false">Close</button>
+            </div>
+          </div>
+          <div class="modal-backdrop" @click="showDigitalSearchModal = false"></div>
+        </dialog>
+        <div class="mt-3">
+
+          <dialog id="qr-modal" class="modal">
+            <div class="modal-box max-w-sm">
+              <div class="bg-white text-black p-5 rounded-lg border-2 border-gray-800 text-center mx-auto" style="width: 260px;">
+                <img src="/android-chrome-192x192.png" alt="logo" style="width: 40px; height: 40px; margin: 0 auto 8px auto; display: block; border-radius: 50%;">
+                <img :src="qrCodeUrl" alt="QR Code" class="mx-auto" style="width: 170px; height: 170px;">
+                <div style="border-bottom: 1px solid #ccc; margin: 12px 0;"></div>
+                <div style="font-weight: bold; font-size: 14px; line-height: 1.3; font-family: Georgia, serif;">{{ book?.book?.title }}</div>
+              </div>
+              <div class="flex justify-center gap-2 mt-4">
+                <button class="btn btn-sm btn-primary" @click="printQrLabel"><i class="mdi mdi-printer mdi-18px mr-1" /> Print</button>
+                <button class="btn btn-sm btn-secondary" @click="downloadQrLabel"><i class="mdi mdi-download mdi-18px mr-1" /> Download</button>
+                <button class="btn btn-sm btn-outline" onclick="document.getElementById('qr-modal').close()">Close</button>
+              </div>
+            </div>
+            <form method="dialog" class="modal-backdrop"><button>close</button></form>
+          </dialog>
         </div>
       </div>
     </div>
@@ -1153,12 +1624,22 @@ getBook()
                 {{ eventLabel(event.eventType) }}
               </p>
             </div>
-            <button
-              class="sm:hidden btn btn-xs btn-circle btn-outline mb-0 border-0"
-              @click="toggleReadingEventModal(event, true)"
-            >
-              <i class="mdi mdi-pencil mdi-18px" />
-            </button>
+            <div class="flex gap-1 mt-1">
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0"
+                @click="toggleReadingEventModal(event, true)"
+                title="Edit event"
+              >
+                <i class="mdi mdi-pencil mdi-16px" />
+              </button>
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0 text-error hover:btn-error"
+                @click="deleteReadingEvent(event.id)"
+                title="Delete event"
+              >
+                <i class="mdi mdi-delete mdi-16px" />
+              </button>
+            </div>
           </div>
           <div
             v-if="index % 2 === 0"
@@ -1227,12 +1708,22 @@ getBook()
                 {{ eventLabel(event.eventType) }}
               </p>
             </div>
-            <button
-              class="sm:hidden btn btn-xs btn-circle btn-outline mb-0 border-0"
-              @click="toggleReadingEventModal(event, true)"
-            >
-              <i class="mdi mdi-pencil mdi-18px" />
-            </button>
+            <div class="flex gap-1 mt-1">
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0"
+                @click="toggleReadingEventModal(event, true)"
+                title="Edit event"
+              >
+                <i class="mdi mdi-pencil mdi-16px" />
+              </button>
+              <button
+                class="btn btn-xs btn-circle btn-outline border-0 text-error hover:btn-error"
+                @click="deleteReadingEvent(event.id)"
+                title="Delete event"
+              >
+                <i class="mdi mdi-delete mdi-16px" />
+              </button>
+            </div>
           </div>
         </div>
         <div class="col-start-5 mt-3 p-2 font-semibold timeline-item capitalize">
@@ -1302,6 +1793,25 @@ getBook()
       />
     </label>
   </label>
+    <!-- Lend modal -->
+    <dialog v-if="showLendModal" class="modal modal-open">
+      <div class="modal-box">
+        <h3 class="font-bold text-lg mb-4"><i class="mdi mdi-account-arrow-right mdi-24px mr-2 text-warning" />Lend Book</h3>
+        <fieldset class="fieldset mb-3">
+          <legend class="fieldset-legend">Who are you lending to?</legend>
+          <input v-model="lendForm.borrowerName" type="text" class="input w-full focus:input-accent" placeholder="Borrower name">
+        </fieldset>
+        <fieldset class="fieldset mb-3">
+          <legend class="fieldset-legend">Expected return date (optional)</legend>
+          <input v-model="lendForm.expectedReturnDate" type="date" class="input w-full focus:input-accent">
+        </fieldset>
+        <div class="modal-action">
+          <button class="btn btn-ghost" @click="showLendModal = false">Cancel</button>
+          <button class="btn btn-warning" :disabled="!lendForm.borrowerName" @click="lendBook">Lend</button>
+        </div>
+      </div>
+      <div class="modal-backdrop" @click="showLendModal = false" />
+    </dialog>
 </template>
 
 <style scoped>

@@ -707,4 +707,281 @@
             <column name="user_id" />
         </createIndex>
     </changeSet>
+<changeSet id="create_physical_library" author="byng">
+        <createTable tableName="physical_location">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="varchar(1000)" remarks="Location name">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createTable tableName="physical_bookcase">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="name" type="varchar(1000)" remarks="Bookcase name">
+                <constraints nullable="false" />
+            </column>
+            <column name="location" type="binary(16)" remarks="FK to physical_location">
+                <constraints foreignKeyName="fk_phys_bookcase_location" references="physical_location(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="shelf_count" type="int" remarks="Number of shelves">
+                <constraints nullable="false" />
+            </column>
+            <column name="description" type="varchar(5000)" remarks="Optional notes">
+            </column>
+            <column name="sort_order" type="int" remarks="Display ordering" defaultValueNumeric="0">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createTable tableName="physical_shelf">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="bookcase" type="binary(16)" remarks="FK to physical_bookcase">
+                <constraints foreignKeyName="fk_phys_shelf_bookcase" references="physical_bookcase(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="position" type="int" remarks="Shelf number, 1 = top">
+                <constraints nullable="false" />
+            </column>
+            <column name="label" type="varchar(1000)" remarks="Optional label">
+            </column>
+            <column name="tag" type="binary(16)" remarks="Optional FK to tag">
+                <constraints foreignKeyName="fk_phys_shelf_tag" references="tag(id)" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <sql>
+            CREATE TABLE physical_shelf_book (
+                id BLOB(16) NOT NULL PRIMARY KEY,
+                shelf BLOB(16) NOT NULL,
+                user_book BLOB(16) NOT NULL,
+                position INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (shelf) REFERENCES physical_shelf(id) ON DELETE CASCADE,
+                FOREIGN KEY (user_book) REFERENCES user_book(id) ON DELETE CASCADE
+            );
+            CREATE UNIQUE INDEX uq_phys_shelf_book_user_book ON physical_shelf_book(user_book);
+            CREATE INDEX idx_phys_shelf_book_shelf ON physical_shelf_book(shelf);
+        </sql>
+    </changeSet>
+    <changeSet id="create_wishlist" author="jelu">
+        <createTable tableName="wishlist_item">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of modification">
+                <constraints nullable="false" />
+            </column>
+            <column name="user" type="binary(16)" remarks="Technical ID">
+                <constraints foreignKeyName="fk_wishlist_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="item_type" type="varchar(20)" remarks="BOOK or CONCEPT">
+                <constraints nullable="false" />
+            </column>
+            <column name="title" type="varchar(1000)" remarks="Book title or concept name" />
+            <column name="description" type="varchar(5000)" remarks="Notes or concept description" />
+            <column name="isbn" type="varchar(30)" remarks="ISBN for book items" />
+            <column name="authors" type="varchar(1000)" remarks="Authors for book items" />
+            <column name="image" type="varchar(1000)" remarks="Cover image URL" />
+            <column name="page_count" type="int" remarks="Page count for book items" />
+            <column name="publisher" type="varchar(500)" remarks="Publisher for book items" />
+            <column name="language" type="varchar(50)" remarks="Language for book items" />
+        </createTable>
+    </changeSet>
+    <changeSet id="add_borrow_and_owner_fields" author="jelu">
+        <sql>
+            ALTER TABLE user_book ADD borrower_name varchar(500);
+            ALTER TABLE user_book ADD borrow_date timestamp;
+            ALTER TABLE user_book ADD expected_return_date timestamp;
+            ALTER TABLE user_book ADD owner_name varchar(500);
+        </sql>
+    </changeSet>
+    <changeSet id="add_lending_history" author="jelu">
+        <createTable tableName="lending_history">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="user_book" type="binary(16)" remarks="FK to user_book">
+                <constraints foreignKeyName="fk_lending_history_userbook" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="borrower_name" type="varchar(500)">
+                <constraints nullable="false" />
+            </column>
+            <column name="lend_date" type="timestamp">
+                <constraints nullable="false" />
+            </column>
+            <column name="return_date" type="timestamp" />
+            <column name="notes" type="varchar(5000)" />
+        </createTable>
+    </changeSet>
+    <changeSet id="add_digital_file_fields" author="jelu">
+        <sql>
+            ALTER TABLE user_book ADD digital_file_path varchar(1000);
+            ALTER TABLE user_book ADD digital_file_format varchar(20);
+            ALTER TABLE user_book ADD digital_file_size_bytes bigint;
+            ALTER TABLE user_book ADD digital_file_added_date timestamp;
+            ALTER TABLE user_book ADD last_sent_to_reader_date timestamp;
+        </sql>
+    </changeSet>
+    <changeSet id="add_reading_progress_history" author="jelu">
+        <createTable tableName="reading_progress_history">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_book" type="binary(16)" remarks="FK to user_book">
+                <constraints foreignKeyName="fk_progress_history_userbook" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="page_number" type="int" />
+            <column name="percent_read" type="int" />
+            <column name="recorded_at" type="timestamp">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="reading_progress_history" indexName="idx_progress_history_userbook_date">
+            <column name="user_book" />
+            <column name="recorded_at" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="add_progress_delta" author="jelu">
+        <sql>ALTER TABLE reading_progress_history ADD pages_delta int;</sql>
+    </changeSet>
+    <changeSet id="add_to_read_position" author="jelu">
+        <sql>ALTER TABLE user_book ADD to_read_position int;</sql>
+    </changeSet>
+    <changeSet id="add_up_next_count" author="jelu">
+        <sql>ALTER TABLE "user" ADD up_next_count int;</sql>
+    </changeSet>
+    <changeSet id="add_book_pace_target" author="jelu">
+        <createTable tableName="book_pace_target">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_book_id" type="binary(16)" remarks="UserBook ID">
+                <constraints foreignKeyName="fk_pace_target_userbook_id" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="daily_target_pages" type="int" remarks="Pages per day target">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_date" type="timestamp" remarks="When the target started">
+                <constraints nullable="false" />
+            </column>
+            <column name="planned_finish_date" type="timestamp" remarks="Computed planned finish">
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="book_pace_target" indexName="idx_pace_target_userbook">
+            <column name="user_book_id" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="add_daily_reading_log" author="jelu">
+        <createTable tableName="daily_reading_log">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_id" type="binary(16)" remarks="User ID">
+                <constraints foreignKeyName="fk_daily_log_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="user_book_id" type="binary(16)" remarks="UserBook ID">
+                <constraints foreignKeyName="fk_daily_log_userbook_id" references="user_book(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="log_date" type="date" remarks="The calendar day">
+                <constraints nullable="false" />
+            </column>
+            <column name="pages_read" type="int" remarks="Pages read that day for that book">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="daily_reading_log" indexName="idx_daily_log_user_date">
+            <column name="user_id" />
+            <column name="log_date" />
+        </createIndex>
+        <createIndex tableName="daily_reading_log" indexName="idx_daily_log_userbook_date">
+            <column name="user_book_id" />
+            <column name="log_date" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="add_reading_goal" author="jelu">
+        <createTable tableName="reading_goal">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="user_id" type="binary(16)" remarks="User ID">
+                <constraints foreignKeyName="fk_reading_goal_user_id" references="user(id)" nullable="false" deleteCascade="true" />
+            </column>
+            <column name="year" type="int" remarks="Calendar year">
+                <constraints nullable="false" />
+            </column>
+            <column name="target_books" type="int" remarks="Target number of books">
+                <constraints nullable="false" />
+            </column>
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="reading_goal" indexName="idx_reading_goal_user_year">
+            <column name="user_id" />
+            <column name="year" />
+        </createIndex>
+    </changeSet>
+    <changeSet id="add_reading_goal_period_fields" author="jelu">
+        <addColumn tableName="reading_goal">
+            <column name="period_type" type="varchar(20)" defaultValue="ANNUAL">
+                <constraints nullable="false" />
+            </column>
+            <column name="start_date" type="date" />
+            <column name="end_date" type="date" />
+            <column name="repeating" type="boolean" defaultValueBoolean="false">
+                <constraints nullable="false" />
+            </column>
+        </addColumn>
+    </changeSet>
+    <changeSet id="add_app_settings" author="jelu">
+        <createTable tableName="app_settings">
+            <column name="id" type="binary(16)" remarks="Technical ID">
+                <constraints primaryKey="true" nullable="false" />
+            </column>
+            <column name="setting_key" type="varchar(100)" remarks="Setting key">
+                <constraints nullable="false" unique="true" />
+            </column>
+            <column name="setting_value" type="text" remarks="Setting value (stored as string)" />
+            <column name="creation_date" type="timestamp" remarks="date of creation">
+                <constraints nullable="false" />
+            </column>
+            <column name="modification_date" type="timestamp" remarks="date of last modification">
+                <constraints nullable="false" />
+            </column>
+        </createTable>
+        <createIndex tableName="app_settings" indexName="idx_app_settings_key" unique="true">
+            <column name="setting_key" />
+        </createIndex>
+    </changeSet>
 </databaseChangeLog>

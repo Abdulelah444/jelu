@@ -10,7 +10,7 @@
       "to_read": "to read list",
       "random": "random",
       "add_book" : "add book",
-      "dashboard" : "dashboard",
+      "dashboard" : "settings",
       "login" : "login",
       "logout" : "logout",
       "search": "search",
@@ -131,6 +131,22 @@
       "filter_pattern" : "filter pattern",
       "other_owners" : "Other users who also have this book in their library"
     },
+    "library_map" : {
+        "title" : "Library Map",
+        "add_location" : "Add Location",
+        "location_name" : "Location name",
+        "no_locations" : "No locations yet. Add a room or area to get started.",
+        "add_bookcase" : "Add Bookcase",
+        "bookcase_name" : "Bookcase name",
+        "shelf_count" : "Number of shelves",
+        "unassigned_books" : "Unassigned Books",
+        "physical_location" : "Physical Location",
+        "assign_to_shelf" : "Assign to shelf",
+        "move_book" : "Move",
+        "no_location" : "Not assigned to a shelf",
+        "rediscover" : "Rediscover",
+        "from_your_library" : "From your library"
+    },
     "settings" : {
         "pick_language" : "Pick your language",
         "pick_theme" : "Choose a theme",
@@ -184,11 +200,12 @@
         "name": "name"
     },
     "reading_events" : {
-        "finished" : "finished",
-        "currently_reading" : "Currently reading",
-        "dropped" : "dropped",
+        "finished" : "Finished",
+        "currently_reading" : "Currently Reading",
+        "dropped" : "Dropped",
+        "paused" : "Paused",
         "last_event_type" : "Last event type",
-        "none" : "none",
+        "none" : "None",
         "reading_events" : "reading events",
         "now" : "now",
         "before" : "before",
@@ -196,7 +213,7 @@
         "event_type" : "event type",
         "event_date" : "event date",
         "edit_event" : "edit event",
-        "reading" : "reading",
+        "reading" : "Reading",
         "start_date" : "start date",
         "end_date" : "end date",
         "started" : "started"
@@ -339,8 +356,9 @@
         "yearly_stats" : "Yearly stats",
         "choose_year" : "Choose a year",
         "pages_read" : "pages read",
-        "finished" : "finished",
-        "dropped" : "dropped",
+        "finished" : "Finished",
+        "dropped" : "Dropped",
+        "paused" : "Paused",
         "total": "total",
         "read": "read",
         "unread": "unread",
@@ -364,7 +382,7 @@
         "remove_tag" : "remove tag",
         "reading_status" : "Reading status",
         "finished" : "Finished",
-        "currently_reading" : "Currently reading",
+        "currently_reading" : "Currently Reading",
         "dropped" : "Dropped"
     },
     "reviews" : {

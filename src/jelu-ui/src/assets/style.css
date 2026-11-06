@@ -268,31 +268,46 @@ li.o-pagination__item button.o-pagination__button.o-pagination__button--current 
    ══════════════════════════════════════ */
 
 .edit-modal {
-  margin: 30px;
-  width: min(900px, 88vw);
-  @apply rounded-xl;
+  margin: 12px;
+  width: min(900px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  @apply rounded-xl p-3 sm:p-5;
 }
 
 .event-modal {
-  margin: 30px;
-  height: min(600px, 70vh);
-  width: min(350px, 90vw);
-  @apply rounded-xl;
+  margin: 12px;
+  height: auto;
+  max-height: 85vh;
+  width: min(380px, 94vw);
+  overflow-y: auto;
+  @apply rounded-xl p-4;
 }
 
 .author-modal {
-  @apply m-2 sm:p-5 rounded-xl;
-  width: min(600px, 90vw);
+  margin: 12px;
+  width: min(600px, 94vw);
+  max-height: 90vh;
+  overflow-y: auto;
+  @apply p-3 sm:p-5 rounded-xl;
 }
 
 .quote-modal {
-  @apply m-5 sm:p-5 rounded-xl;
-  height: min(700px, 75vh);
-  width: min(900px, 85vw);
+  margin: 12px;
+  height: auto;
+  max-height: 85vh;
+  width: min(900px, 94vw);
+  overflow-y: auto;
+  @apply p-3 sm:p-5 rounded-xl;
 }
 
 .review-modal {
-  @apply m-5 sm:p-5 rounded-xl;
+  margin: 12px;
+  height: auto;
+  max-height: 85vh;
+  width: min(900px, 94vw);
+  overflow-y: auto;
+  @apply p-3 sm:p-5 rounded-xl;
   height: min(700px, 75vh);
   width: min(900px, 85vw);
 }

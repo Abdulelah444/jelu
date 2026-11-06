@@ -27,10 +27,20 @@ object UserBookTable : UUIDTable("user_book") {
     val personalNotes: Column<String?> = varchar("notes", 5000).nullable()
     val owned: Column<Boolean?> = bool("is_owned").nullable()
     val toRead: Column<Boolean?> = bool("to_read").nullable()
+    val toReadPosition: Column<Int?> = integer("to_read_position").nullable()
     val percentRead: Column<Int?> = integer(name = "percent_read").nullable()
     val currentPageNumber: Column<Int?> = integer(name = "current_page_number").nullable()
     val borrowed: Column<Boolean?> = bool("is_borrowed").nullable()
     val priceInCents: Column<Long?> = long("price_in_cents").nullable()
+    val borrowerName: Column<String?> = varchar("borrower_name", 500).nullable()
+    val borrowDate: Column<java.time.Instant?> = timestamp("borrow_date").nullable()
+    val expectedReturnDate: Column<java.time.Instant?> = timestamp("expected_return_date").nullable()
+    val ownerName: Column<String?> = varchar("owner_name", 500).nullable()
+    val digitalFilePath: Column<String?> = varchar("digital_file_path", 1000).nullable()
+    val digitalFileFormat: Column<String?> = varchar("digital_file_format", 20).nullable()
+    val digitalFileSizeBytes: Column<Long?> = long("digital_file_size_bytes").nullable()
+    val digitalFileAddedDate: Column<java.time.Instant?> = timestamp("digital_file_added_date").nullable()
+    val lastSentToReaderDate: Column<java.time.Instant?> = timestamp("last_sent_to_reader_date").nullable()
 }
 
 class UserBook(
@@ -45,6 +55,7 @@ class UserBook(
     var personalNotes by UserBookTable.personalNotes
     var owned by UserBookTable.owned
     var toRead by UserBookTable.toRead
+    var toReadPosition by UserBookTable.toReadPosition
     val readingEvents by ReadingEvent referrersOn ReadingEventTable.userBook // make sure to use val and referrersOn
     var lastReadingEventDate by UserBookTable.lastReadingEventDate
     var lastReadingEvent by UserBookTable.lastReadingEvent
@@ -54,6 +65,15 @@ class UserBook(
     var avgRating: Double? = null
     var userAvgRating: Double? = null
     var priceInCents by UserBookTable.priceInCents
+    var borrowerName by UserBookTable.borrowerName
+    var borrowDate by UserBookTable.borrowDate
+    var expectedReturnDate by UserBookTable.expectedReturnDate
+    var ownerName by UserBookTable.ownerName
+    var digitalFilePath by UserBookTable.digitalFilePath
+    var digitalFileFormat by UserBookTable.digitalFileFormat
+    var digitalFileSizeBytes by UserBookTable.digitalFileSizeBytes
+    var digitalFileAddedDate by UserBookTable.digitalFileAddedDate
+    var lastSentToReaderDate by UserBookTable.lastSentToReaderDate
 
     fun toUserBookDto(): UserBookDto =
         UserBookDto(
@@ -70,6 +90,15 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -88,6 +117,15 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -105,6 +143,15 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
             price = centsToDouble(this.priceInCents),
         )
@@ -123,6 +170,15 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             avgRating = this.avgRating,
             userAvgRating = this.userAvgRating,
             price = centsToDouble(this.priceInCents),
@@ -141,6 +197,15 @@ class UserBook(
             percentRead = this.percentRead,
             currentPageNumber = this.currentPageNumber,
             borrowed = this.borrowed,
+            borrowerName = this.borrowerName,
+            borrowDate = this.borrowDate,
+            expectedReturnDate = this.expectedReturnDate,
+            ownerName = this.ownerName,
+            digitalFilePath = this.digitalFilePath,
+            digitalFileFormat = this.digitalFileFormat,
+            digitalFileSizeBytes = this.digitalFileSizeBytes,
+            digitalFileAddedDate = this.digitalFileAddedDate,
+            lastSentToReaderDate = this.lastSentToReaderDate,
             price = centsToDouble(this.priceInCents),
         )
 }

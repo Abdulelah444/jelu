@@ -14,6 +14,7 @@ import BookCard from "./BookCard.vue"
 import QuotesDisplay from './QuotesDisplay.vue'
 import ReadingEventModalVue from './ReadingEventModal.vue'
 import ReadProgressModal from './ReadProgressModal.vue'
+import WeeklyReportModal from './WeeklyReportModal.vue'
 import ReviewBookCard from './ReviewBookCard.vue';
 import useTypography from "../composables/typography"
 
@@ -26,6 +27,18 @@ const { t } = useI18n({
       useScope: 'global'
     })
 const { eventClass, eventLabel } = useEvents()
+
+const bannerClass = (type: string) => {
+  if (type === 'FINISHED') {
+    return "bg-success text-success-content";
+  } else if (type === 'DROPPED') {
+    return "bg-error text-error-content";
+  } else if (type === 'CURRENTLY_READING') {
+    return "bg-info text-info-content";
+  } else if (type === 'PAUSED') {
+    return "bg-warning text-warning-content";
+  } else return "bg-base-300";
+}
 
 const isLogged = computed(() => {
     return store != null && store != undefined && store.getters.getLogged
@@ -40,6 +53,32 @@ const currentlyReadingIsLoading: Ref<boolean> = ref(false)
 const recentEventsIsLoading: Ref<boolean> = ref(false)
 
 const books: Ref<Array<UserBook>> = ref([]);
+const pausedBooks: Ref<Array<UserBook>> = ref([]);
+const pausedIsLoading: Ref<boolean> = ref(false);
+
+const randomBooks: Ref<Array<UserBook>> = ref([])
+const upNext: Ref<Array<UserBook>> = ref([])
+const paceByBook: Ref<Record<string, any>> = ref({})
+const loadPaces = async () => {
+  for (const b of books.value) {
+    if (b.id != null) {
+      try {
+        paceByBook.value[b.id] = await dataService.getReadingPace(b.id, '1W')
+      } catch (e) { /* skip */ }
+    }
+  }
+}
+const getUpNext = async () => {
+  try {
+    const res = await dataService.findUserBookByCriteria(
+      null, null, null, true, null, null, 0, 2, undefined)
+    upNext.value = res.content
+  } catch (error) {
+    console.log("failed get up next : " + error)
+  }
+}
+const showRecentEvents: Ref<boolean> = ref(false)
+const showPaused: Ref<boolean> = ref(false)
 
 const events: Ref<Array<ReadingEventWithUserBook>> = ref([]);
 
@@ -58,6 +97,7 @@ const getCurrentlyReading = async () => {
       books.value = res.content.slice(0,6)
     }
     currentlyReadingIsLoading.value = false
+    loadPaces()
   } catch (error) {
     console.log("failed get books : " + error)
     currentlyReadingIsLoading.value = false
@@ -65,6 +105,17 @@ const getCurrentlyReading = async () => {
 
 };
 
+const getPausedBooks = async () => {
+  pausedIsLoading.value = true
+  try {
+    const res = await dataService.findUserBookByCriteria([ReadingEventType.PAUSED], null, null, null)
+    pausedBooks.value = res.content.slice(0, 6)
+    pausedIsLoading.value = false
+  } catch (error) {
+    console.log("failed get paused books : " + error)
+    pausedIsLoading.value = false
+  }
+}
 const nonCurrentlyReadingEvents: Array<ReadingEventType> = [ReadingEventType.DROPPED, ReadingEventType.FINISHED]
 
 const getMyEvents = async () => {
@@ -92,11 +143,57 @@ const getUserReviews = async () => {
   }
 };
 
+const getRandomBook = async () => {
+  try {
+    // Fetch a few random books and pick the first that isn't finished or dropped
+    const res = await dataService.findUserBookByCriteria(
+      null, null, null, null, null, null, 0, 10, 'random,desc')
+    if (res.content.length > 0) {
+      randomBooks.value = res.content.filter(b =>
+        b.lastReadingEvent !== ReadingEventType.FINISHED &&
+        b.lastReadingEvent !== ReadingEventType.DROPPED
+      ).slice(0, 2)
+    }
+  } catch (error) {
+    console.log("failed get random book : " + error)
+  }
+}
+
+function getMonday(d: Date): string {
+  const date = new Date(d)
+  const day = date.getDay()
+  const diff = date.getDate() - day + (day === 0 ? -6 : 1)
+  const monday = new Date(date.setDate(diff))
+  return monday.toISOString().slice(0, 10)
+}
+
+function maybeShowWeeklyReport() {
+  const today = new Date()
+  const dow = today.getDay() // 0 = Sunday
+  // Only prompt on Sunday or later perception: show if it is Sunday
+  if (dow !== 0) return
+  const thisMonday = getMonday(today)
+  const lastSeen = localStorage.getItem('weeklyReportSeenWeek')
+  if (lastSeen === thisMonday) return
+  localStorage.setItem('weeklyReportSeenWeek', thisMonday)
+  oruga.modal.open({
+    component: WeeklyReportModal,
+    trapFocus: true,
+    active: true,
+    canCancel: ['x', 'button', 'outside'],
+    scroll: 'keep',
+  })
+}
+
 if (isLogged.value) {
   try {
       getCurrentlyReading()
+      getUpNext()
+      getPausedBooks()
       getMyEvents()
       getUserReviews()
+      getRandomBook()
+      maybeShowWeeklyReport()
   } catch (error) {
     console.log("failed get books : " + error);
   }
@@ -108,7 +205,10 @@ watch(() => isLogged.value, (newValue, oldValue) => {
     try {
       initialLoad.value = false
       getCurrentlyReading()
+      getUpNext()
       getMyEvents()
+      getPausedBooks()
+      getRandomBook()
   } catch (error) {
     console.log("failed get books : " + error);
   }
@@ -165,177 +265,162 @@ function toggleReadProgressModal(userBookId: string, bookId: string, pageCount: 
 
 const { typographyClasses } = useTypography()
 </script>
-
 <template>
   <div v-if="isLogged">
-    <div v-if="hasBooks">
-      <h2
-        class="text-3xl pb-3"
-        :class="typographyClasses"
-      >
-        {{ t('home.currently_reading') }} :
-      </h2>
-      <div class="flex flex-row flex-wrap justify-center gap-3">
-        <div
-          v-for="book in books"
-          :key="book.id"
-          class="sm:basis-5/12 md:basis-1/3 lg:basis-1/4 xl:basis-1/6 basis-8/12"
-        >
-          <book-card
-            :book="book"
-            :public="false"
-            size="xl"
-            :force-select="false"
-            :show-select="false"
-            :propose-add="true"
-          >
-            <template #icon>
-              <span
-                v-tooltip="t('labels.mark_read_or_drop')"
-                class="icon text-info"
-                @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+    <div v-if="hasBooks || upNext.length > 0 || pausedBooks.length > 0 || randomBooks.length > 0">
+
+      <!-- TOP ROW: Continue reading | Up next -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-2 sm:px-0">
+
+        <!-- Continue reading -->
+        <section v-if="books.length > 0" class="flex flex-col">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-book-open-page-variant text-sky-300" />
+            {{ t('home.currently_reading') }}
+            <span class="badge badge-sm bg-sky-200/70 text-sky-900 border-0">{{ books.length }}</span>
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr flex-grow">
+            <div v-for="book in books" :key="book.id" class="h-full">
+              <book-card
+                :book="book"
+                :show-stats="true"
+                :pace="paceByBook[book.id!!]"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="true"
               >
-                <i class="mdi mdi-check-circle mdi-18px" />
-              </span>
-              <span
-                v-tooltip="t('labels.set_progress')"
-                class="icon text-info"
-                @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
+                <template #icon>
+                  <span
+                    v-tooltip="t('labels.mark_read_or_drop')"
+                    class="icon text-info"
+                    @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+                  >
+                    <i class="mdi mdi-check-circle mdi-18px" />
+                  </span>
+                  <span
+                    v-tooltip="t('labels.set_progress')"
+                    class="icon text-info"
+                    @click.prevent="toggleReadProgressModal(book.id!!, book.book.id!!, book.book.pageCount ?? null, book.percentRead ?? null, book.currentPageNumber ?? null)"
+                  >
+                    <i class="mdi mdi-progress-check mdi-18px" />
+                  </span>
+                </template>
+              </book-card>
+            </div>
+          </div>
+        </section>
+        <section v-else-if="currentlyReadingIsLoading">
+          <h2 class="text-lg sm:text-xl font-bold mb-3">{{ t('home.currently_reading') }}</h2>
+          <div class="grid grid-cols-2 gap-3">
+            <o-skeleton height="250px" :animated="true" />
+            <o-skeleton height="250px" :animated="true" />
+          </div>
+        </section>
+        <section v-else>
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-book-open-page-variant-outline text-base-content/50" />
+            {{ t('home.not_reading') }}
+          </h2>
+        </section>
+
+        <!-- Up next -->
+        <section v-if="upNext.length > 0" class="flex flex-col">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-bookmark-multiple text-violet-300" />
+            Up Next
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr flex-grow">
+            <div
+              v-for="(book, i) in upNext"
+              :key="book.id"
+              class="relative rounded-lg ring-1 ring-violet-300/40 h-full"
+            >
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="false"
+                :band-label="`UP NEXT · ${i + 1}`"
+                band-class="bg-violet-200/70 text-violet-900 dark:bg-violet-900/40 dark:text-violet-100"
+                class="h-full"
+              />
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- BOTTOM ROW: Paused | Rediscover -->
+      <div
+        v-if="pausedBooks.length > 0 || randomBooks.length > 0"
+        class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 px-2 sm:px-0 mt-4 sm:mt-6"
+      >
+
+        <!-- Paused -->
+        <section v-if="pausedBooks.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-pause-circle text-amber-300" />
+            Paused
+            <span class="badge badge-sm bg-amber-200/70 text-amber-900 border-0">{{ pausedBooks.length }}</span>
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr">
+            <div v-for="book in pausedBooks" :key="book.id" class="h-full">
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="true"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="1.5"
-                  stroke="currentColor"
-                  class="w-6 h-6"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="m9 14.25 6-6m4.5-3.493V21.75l-3.75-1.5-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.057 1.907-2.185a48.507 48.507 0 0 1 11.186 0c1.1.128 1.907 1.077 1.907 2.185ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z"
-                  />
-                </svg>
-              </span>
-            </template>
-          </book-card>
-        </div>
+                <template #icon>
+                  <span
+                    v-tooltip="'Resume reading'"
+                    class="icon text-warning"
+                    @click.prevent="toggleReadingEventModal(defaultCreateEvent(book.book.id!!), false)"
+                  >
+                    <i class="mdi mdi-play-circle mdi-18px" />
+                  </span>
+                </template>
+              </book-card>
+            </div>
+          </div>
+        </section>
+
+        <!-- Rediscover -->
+        <section v-if="randomBooks.length > 0">
+          <h2 class="text-lg sm:text-xl font-bold mb-3 flex items-center gap-2">
+            <i class="mdi mdi-shuffle-variant text-violet-300" />
+            Rediscover
+          </h2>
+          <div class="grid grid-cols-2 gap-2 sm:gap-3 items-stretch auto-rows-fr">
+            <div v-for="book in randomBooks" :key="book.id" class="h-full">
+              <book-card
+                :book="book"
+                :public="false"
+                size="xl"
+                :force-select="false"
+                :show-select="false"
+                :propose-add="false"
+                band-label="IN LIBRARY"
+                band-class="bg-slate-200/70 text-slate-700 dark:bg-slate-700/50 dark:text-slate-200"
+                class="h-full"
+              />
+            </div>
+          </div>
+        </section>
+
       </div>
+
     </div>
-    <div
-      v-else-if="currentlyReadingIsLoading"
-      class="flex flex-row justify-center justify-items-center gap-3"
-    >
-      <o-skeleton
-        class="justify-self-center basis-44"
-        height="250px"
-        :animated="true"
-      />
-      <o-skeleton
-        class="justify-self-center basis-44"
-        height="250px"
-        :animated="true"
-      />
-    </div>
-    <!-- logged, no books -->
-    <div v-else>
-      <h2
-        class="text-3xl"
-        :class="typographyClasses"
-      >
-        {{ t('home.not_reading') }}
-      </h2>
-      <span class="icon">
-        <i class="mdi mdi-book-open-page-variant-outline mdi-48px" />
-      </span>
-    </div>
-    <h2
-      v-if="events.length > 0"
-      class="text-3xl py-4"
-      :class="typographyClasses"
-    >
-      {{ t('home.recent_events') }} :
-    </h2>
-    <div
-      v-if="events.length > 0"
-      class="grid grid-cols-3 md:grid-cols-5 xl:grid-cols-7 2xl:grid-cols-9 gap-1"
-    >
-      <div
-        v-for="event in events"
-        :key="event.id"
-        class="m-1 pb-6"
-      >
-        <div class="h-full">
-          <p>
-            <span
-              class="badge mb-1"
-              :class="eventClass(event.eventType)"
-            >{{ eventLabel(event.eventType) }}</span>
-          </p>
-          <book-card
-            :book="event.userBook"
-            :public="false"
-            class="h-full"
-            :force-select="false"
-            :show-select="false"
-            :propose-add="true"
-          />
-        </div>
-      </div>
-    </div>
-    <div
-      v-else-if="recentEventsIsLoading"
-      class="flex flex-row justify-center justify-items-center gap-3"
-    >
-      <o-skeleton
-        class="justify-self-center basis-36"
-        height="250px"
-        :animated="true"
-      />
-      <o-skeleton
-        class="justify-self-center basis-36"
-        height="250px"
-        :animated="true"
-      />
-      <o-skeleton
-        class="justify-self-center basis-36"
-        height="250px"
-        :animated="true"
-      />
-    </div>
-    <h2
-      v-if="userReviews.length > 0"
-      class="text-3xl py-4 capitalize"
-      :class="typographyClasses"
-    >
-      {{ t('reviews.review', 2) }}
-    </h2>
-    <div
-      v-if="userReviews.length > 0"
-      class="flex flex-nowrap overflow-x-auto mb-10"
-    >
-      <div
-        v-for="review in userReviews"
-        :key="review.id"
-        class="m-1 pb-6 shrink-0 grow-0"
-      >
-        <ReviewBookCard
-          :review="review"
-          :book-reviews-link="true"
-          :show-user-name="true"
-        />
-      </div>
-    </div>
-    <quotes-display v-if="isLogged" />
   </div>
-  <!-- not logged -->
   <div v-else>
     <p class="capitalize">
       {{ t('user.log_first') }}
     </p>
   </div>
 </template>
-
-<style lang="scss" scoped>
-
-</style>

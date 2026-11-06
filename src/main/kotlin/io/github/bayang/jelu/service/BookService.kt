@@ -48,6 +48,7 @@ import org.springframework.web.multipart.MultipartFile
 import java.io.File
 import java.nio.file.Files
 import java.nio.file.StandardCopyOption
+import java.time.Instant
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
@@ -62,6 +63,7 @@ class BookService(
     private val shelfService: ShelfService,
     private val searchIndexService: SearchIndexService,
     private val luceneHelper: LuceneHelper,
+    private val bookEnrichmentService: BookEnrichmentService,
 ) {
     @Transactional
     fun findAll(
@@ -118,6 +120,10 @@ class BookService(
         }
 
     @Transactional
+    fun reorderToRead(userId: java.util.UUID, orderedIds: List<java.util.UUID>) =
+        bookRepository.reorderToRead(userId, orderedIds)
+
+    @Transactional
     fun findAllAuthors(
         name: String?,
         role: Role = Role.ANY,
@@ -136,8 +142,9 @@ class BookService(
         userId: UUID?,
         pageable: Pageable,
     ): Page<SeriesDto> = bookRepository.findAllSeries(name, userId, pageable).map { it.toSeriesDto() }
-
     @Transactional
+    fun findBooksMissingPageCount(pageable: Pageable): Page<BookDto> = bookRepository.findBooksMissingPageCount(pageable).map { it.toBookDto() }
+
     fun findBookById(bookId: UUID): BookDto = bookRepository.findBookById(bookId).toBookDto()
 
     @Transactional
@@ -323,6 +330,9 @@ class BookService(
         } else {
             searchIndexService.bookUpdated(book)
         }
+        if (newBook) {
+            bookEnrichmentService.enrichBook(book.toBookDto(), user)
+        }
         return created.toUserBookLightDto()
     }
 
@@ -492,9 +502,11 @@ class BookService(
         toRead: Boolean?,
         owned: Boolean? = null,
         borrowed: Boolean? = null,
+        hasPageCount: Boolean? = null,
+        hasDigitalFile: Boolean? = null,
         pageable: Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> =
-        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, pageable).map {
+        bookRepository.findUserBookByCriteria(userId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable).map {
             it.toUserBookWthoutEventsAndUserDto()
         }
 
@@ -813,4 +825,17 @@ class BookService(
         bookId: UUID,
         pageable: Pageable,
     ): Page<UserDto> = bookRepository.findBookUsersById(bookId, pageable).map { it.toUserDto() }
+
+    @Transactional
+    fun updateDigitalFileFields(
+        userbookId: UUID,
+        filePath: String?,
+        fileFormat: String?,
+        fileSizeBytes: Long?,
+        fileAddedDate: Instant?,
+    ): UserBookLightDto {
+        return bookRepository.updateDigitalFileFields(
+            userbookId, filePath, fileFormat, fileSizeBytes, fileAddedDate
+        ).toUserBookLightDto()
+    }
 }

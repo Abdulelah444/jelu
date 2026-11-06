@@ -4,7 +4,8 @@ export interface User {
     login: string,
     isAdmin: boolean,
     modificationDate?: string,
-    provider?: Provider
+    provider?: Provider,
+    upNextCount?: number
   }
 export interface UserAuthentication {
   user: User,

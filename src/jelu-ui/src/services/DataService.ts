@@ -29,6 +29,7 @@ import urls from "../urls";
 import { OAuth2ClientDto } from "../model/oauth-client-dto";
 import { CustomList, CustomListRemoveDto } from "../model/custom-list";
 import { AdminApiToken, ApiToken, ApiTokenCreated, CreateApiToken, TokenScope, UpdateApiToken } from "../model/ApiToken";
+import { PhysicalLocation, CreatePhysicalLocation, PhysicalBookcase, CreatePhysicalBookcase, UpdatePhysicalBookcase, PhysicalShelf, UpdatePhysicalShelf, PhysicalShelfBook, AssignBookToShelf, BulkAssignBooksToShelf, ShelfLocation } from "../model/PhysicalLibrary";
 
 class DataService {
 
@@ -85,6 +86,7 @@ class DataService {
   private API_BOOK_QUOTES = '/book-quotes';
 
   private API_CUSTOM_LISTS = '/custom-lists';
+  private API_APP_SETTINGS = '/app-settings';
 
   constructor() {
     this.apiClient = axios.create({
@@ -490,7 +492,7 @@ class DataService {
 
   findUserBookByCriteria = async (lastEventTypes?: Array<ReadingEventType> | null, bookId?: string|null,
     userId?: string|null, toRead?: boolean | null, owned?: boolean | null, borrowed?: boolean | null,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserBook>>(`${this.API_USERBOOK}`, {
         params: {
@@ -500,6 +502,8 @@ class DataService {
           toRead: toRead,
           owned: owned,
           borrowed: borrowed,
+          hasPageCount: hasPageCount != null ? hasPageCount : undefined,
+          hasDigitalFile: hasDigitalFile != null ? hasDigitalFile : undefined,
           page: page,
           size: size,
           sort: sort
@@ -856,6 +860,38 @@ class DataService {
     }
   }
 
+
+
+  searchMetadataSource = async (query: string, source: string): Promise<Metadata[]> => {
+    try {
+      const response = await this.apiClient.get<Metadata[]>(`${this.API_METADATA}/search`, {
+        params: { q: query, source }
+      })
+      return response.data
+    } catch (error) {
+      console.log("error metadata search " + source + " " + (error as AxiosError).code)
+      return []
+    }
+  }
+
+  searchMetadata = async (query: string): Promise<Metadata[]> => {
+    try {
+      const response = await this.apiClient.get<Metadata[]>(`${this.API_METADATA}/search`, {
+        params: { q: query }
+      })
+      console.log("called metadata search", response.data)
+      return response.data
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response) {
+        console.log("error metadata search " + error.response.status + " " + error.response.data)
+        throw new Error("Error searching books: " + error.response.data.message)
+      }
+      console.log("error metadata search " + (error as AxiosError).code)
+      throw new Error("error metadata search " + error)
+    }
+  }
+  
+  
   fetchMetadata = async (isbn?: string, title?: string, authors?: string) => {
     try {
       const response = await this.apiClient.get<Metadata>(`${this.API_METADATA}`, {
@@ -1140,7 +1176,7 @@ class DataService {
   myReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}/me`, {
         params: {
@@ -1176,7 +1212,7 @@ class DataService {
   findReadingEvents = async (eventTypes?: Array<ReadingEventType> | null, userId?: string, bookId?: string,
     startedAfter?: string, startedBefore?: string,
     endedAfter?: string, endedBefore?: string,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<ReadingEventWithUserBook>>(`${this.API_READING_EVENTS}`, {
         params: {
@@ -1392,7 +1428,7 @@ class DataService {
   }
 
   messages = async (messageCategories?: Array<MessageCategory> | null, read?: boolean,
-    page?: number, size?: number, sort?: string) => {
+    page?: number, size?: number, sort?: string, hasPageCount?: boolean | null, hasDigitalFile?: boolean | null) => {
     try {
       const response = await this.apiClient.get<Page<UserMessage>>(`${this.API_USER_MESSAGES}`, {
         params: {
@@ -2213,6 +2249,599 @@ class DataService {
     }
   }
 
+// =====================
+  // Physical Library
+  // =====================
+
+  private API_PHYSICAL_LOCATIONS = '/physical-locations';
+  private API_PHYSICAL_BOOKCASES = '/physical-bookcases';
+  private API_PHYSICAL_SHELVES = '/physical-shelves';
+
+  getPhysicalLocations = async () => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalLocation>>(this.API_PHYSICAL_LOCATIONS);
+      return response.data;
+    } catch (error) {
+      console.log("error physical locations " + (error as AxiosError).code)
+      throw new Error("error physical locations " + error)
+    }
+  }
+
+  createPhysicalLocation = async (location: CreatePhysicalLocation) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalLocation>(this.API_PHYSICAL_LOCATIONS, location)
+      return resp.data
+    } catch (error) {
+      console.log("error creating physical location " + (error as AxiosError).code)
+      throw new Error("error creating physical location " + error)
+    }
+  }
+
+  updatePhysicalLocation = async (id: string, location: CreatePhysicalLocation) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalLocation>(`${this.API_PHYSICAL_LOCATIONS}/${id}`, location)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical location " + (error as AxiosError).code)
+      throw new Error("error updating physical location " + error)
+    }
+  }
+
+  deletePhysicalLocation = async (id: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_LOCATIONS}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error deleting physical location " + (error as AxiosError).code)
+      throw new Error("error deleting physical location " + error)
+    }
+  }
+
+  getPhysicalBookcases = async (locationId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalBookcase>>(`${this.API_PHYSICAL_LOCATIONS}/${locationId}/bookcases`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical bookcases " + (error as AxiosError).code)
+      throw new Error("error physical bookcases " + error)
+    }
+  }
+
+  getPhysicalBookcaseById = async (id: string) => {
+    try {
+      const response = await this.apiClient.get<PhysicalBookcase>(`${this.API_PHYSICAL_BOOKCASES}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical bookcase " + (error as AxiosError).code)
+      throw new Error("error physical bookcase " + error)
+    }
+  }
+
+  createPhysicalBookcase = async (locationId: string, bookcase: CreatePhysicalBookcase) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalBookcase>(`${this.API_PHYSICAL_LOCATIONS}/${locationId}/bookcases`, bookcase)
+      return resp.data
+    } catch (error) {
+      console.log("error creating physical bookcase " + (error as AxiosError).code)
+      throw new Error("error creating physical bookcase " + error)
+    }
+  }
+
+  updatePhysicalBookcase = async (id: string, bookcase: UpdatePhysicalBookcase) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalBookcase>(`${this.API_PHYSICAL_BOOKCASES}/${id}`, bookcase)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical bookcase " + (error as AxiosError).code)
+      throw new Error("error updating physical bookcase " + error)
+    }
+  }
+
+  deletePhysicalBookcase = async (id: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_BOOKCASES}/${id}`);
+      return response.data;
+    } catch (error) {
+      console.log("error deleting physical bookcase " + (error as AxiosError).code)
+      throw new Error("error deleting physical bookcase " + error)
+    }
+  }
+
+  getPhysicalShelves = async (bookcaseId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalShelf>>(`${this.API_PHYSICAL_BOOKCASES}/${bookcaseId}/shelves`);
+      return response.data;
+    } catch (error) {
+      console.log("error physical shelves " + (error as AxiosError).code)
+      throw new Error("error physical shelves " + error)
+    }
+  }
+
+  updatePhysicalShelf = async (id: string, shelf: UpdatePhysicalShelf) => {
+    try {
+      const resp = await this.apiClient.put<PhysicalShelf>(`${this.API_PHYSICAL_SHELVES}/${id}`, shelf)
+      return resp.data
+    } catch (error) {
+      console.log("error updating physical shelf " + (error as AxiosError).code)
+      throw new Error("error updating physical shelf " + error)
+    }
+  }
+
+  getBooksOnShelf = async (shelfId: string) => {
+    try {
+      const response = await this.apiClient.get<Array<PhysicalShelfBook>>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books`);
+      return response.data;
+    } catch (error) {
+      console.log("error books on shelf " + (error as AxiosError).code)
+      throw new Error("error books on shelf " + error)
+    }
+  }
+
+  assignBookToShelf = async (shelfId: string, assignment: AssignBookToShelf) => {
+    try {
+      const resp = await this.apiClient.post<PhysicalShelfBook>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books`, assignment)
+      return resp.data
+    } catch (error) {
+      console.log("error assigning book to shelf " + (error as AxiosError).code)
+      throw new Error("error assigning book to shelf " + error)
+    }
+  }
+
+  bulkAssignBooksToShelf = async (shelfId: string, bulk: BulkAssignBooksToShelf) => {
+    try {
+      const resp = await this.apiClient.post<Array<PhysicalShelfBook>>(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books/bulk`, bulk)
+      return resp.data
+    } catch (error) {
+      console.log("error bulk assigning books " + (error as AxiosError).code)
+      throw new Error("error bulk assigning books " + error)
+    }
+  }
+
+  removeBookFromShelf = async (shelfId: string, userBookId: string) => {
+    try {
+      const response = await this.apiClient.delete(`${this.API_PHYSICAL_SHELVES}/${shelfId}/books/${userBookId}`);
+      return response.data;
+    } catch (error) {
+      console.log("error removing book from shelf " + (error as AxiosError).code)
+      throw new Error("error removing book from shelf " + error)
+    }
+  }
+
+  getUnassignedBooks = async (page?: number, size?: number) => {
+    try {
+      const response = await this.apiClient.get<Page<UserBook>>('/userbooks/unassigned', {
+        params: { page: page, size: size }
+      });
+      return response.data;
+    } catch (error) {
+      console.log("error unassigned books " + (error as AxiosError).code)
+      throw new Error("error unassigned books " + error)
+    }
+  }
+
+  getBookPhysicalLocation = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get<ShelfLocation>(`/userbooks/${userBookId}/physical-location`);
+      return response.data;
+    } catch (error) {
+      if (axios.isAxiosError(error) && error.response && error.response.status === 204) {
+        return null;
+      }
+      console.log("error book physical location " + (error as AxiosError).code)
+      throw new Error("error book physical location " + error)
+    }
+  }
+  getWishlistItems = async (itemType?: string) => {
+    try {
+      const response = await this.apiClient.get<Array<any>>("/wishlist", { params: { itemType } })
+      return response.data
+    } catch (error) {
+      console.log("error wishlist " + (error as any).code)
+      throw new Error("error wishlist " + error)
+    }
+  }
+  createWishlistItem = async (item: any) => {
+    try {
+      const response = await this.apiClient.post<any>("/wishlist", item)
+      return response.data
+    } catch (error) {
+      console.log("error create wishlist " + (error as any).code)
+      throw new Error("error create wishlist " + error)
+    }
+  }
+  deleteEbookFile = async (filePath: string) => {
+    try {
+      await this.apiClient.delete('/userbooks/digital/ebooks-file', { params: { path: filePath } })
+    } catch (error) {
+      throw new Error('error deleting ebook file ' + error)
+    }
+  }
+
+  linkDigitalFile = async (userbookId: string, filePath: string) => {
+    try {
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/link`, { filePath })
+      return response.data
+    } catch (error) {
+      throw new Error('error linking digital file ' + error)
+    }
+  }
+
+  listEbooks = async () => {
+    try {
+      const response = await this.apiClient.get<any[]>('/userbooks/digital/ebooks-list')
+      return response.data || []
+    } catch (error) {
+      return []
+    }
+  }
+
+  getWishlistDownloadStatus = async () => {
+    try {
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-status')
+      return response.data
+    } catch (error) {
+      return {}
+    }
+  }
+
+  checkShelfmarkConnection = async (url?: string): Promise<{ ok: boolean, data?: any, reason?: string }> => {
+    try {
+      const params = url ? { url } : undefined
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-status', { params })
+      return { ok: true, data: response.data }
+    } catch (error) {
+      const axiosError = error as any
+      const reason = axiosError?.response?.data?.message || axiosError?.message || 'connection failed'
+      return { ok: false, reason: String(reason) }
+    }
+  }
+
+  getWishlistFileUrl = (filePath: string, inline: boolean = false) => {
+    const encoded = encodeURIComponent(filePath)
+    return `/api/v1/userbooks/digital/wishlist-file?path=${encoded}&inline=${inline}`
+  }
+
+  searchWishlistDigital = async (query: string, lang: string = 'en', ext: string = 'epub') => {
+    try {
+      const response = await this.apiClient.get<any>('/userbooks/digital/wishlist-search', { params: { query, lang, ext } })
+      return response.data
+    } catch (error) {
+      throw new Error('error searching wishlist digital ' + error)
+    }
+  }
+
+  triggerWishlistDownload = async (release: any) => {
+    try {
+      const response = await this.apiClient.post<any>('/userbooks/digital/wishlist-download', release)
+      return response.data
+    } catch (error) {
+      throw new Error('error triggering wishlist download ' + error)
+    }
+  }
+
+  uploadAppLogo = async (file: File): Promise<any> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    const response = await this.apiClient.post('/app-logo', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    })
+    return response.data
+  }
+
+  resetAppLogo = async (): Promise<any> => {
+    const response = await this.apiClient.delete('/app-logo')
+    return response.data
+  }
+
+  getAppSettings = async (): Promise<Record<string, string>> => {
+    try {
+      const response = await this.apiClient.get<Record<string, string>>(this.API_APP_SETTINGS)
+      return response.data || {}
+    } catch (error) {
+      console.log('error fetching app settings ' + (error as any).code)
+      return {}
+    }
+  }
+
+  updateAppSettings = async (settings: Record<string, string | null>): Promise<Record<string, string>> => {
+    try {
+      const response = await this.apiClient.put<Record<string, string>>(this.API_APP_SETTINGS, settings)
+      return response.data || {}
+    } catch (error) {
+      console.log('error updating app settings ' + (error as any).code)
+      throw new Error('error updating app settings ' + error)
+    }
+  }
+
+  updateWishlistItem = async (id: string, item: any) => {
+    try {
+      const response = await this.apiClient.put<any>('/wishlist/' + id, item)
+      return response.data
+    } catch (error) {
+      console.log('error update wishlist ' + (error as any).code)
+      throw new Error('error update wishlist ' + error)
+    }
+  }
+
+  deleteWishlistItem = async (id: string) => {
+    try {
+      await this.apiClient.delete("/wishlist/" + id)
+    } catch (error) {
+      console.log("error delete wishlist " + (error as any).code)
+      throw new Error("error delete wishlist " + error)
+    }
+  }
+
+  // Digital Copy endpoints
+  searchDigitalCandidates = async (userbookId: string, query?: string, lang: string = "en", ext: string = "epub") => {
+    try {
+      const params: any = { lang, ext }
+      if (query) params.query = query
+      const response = await this.apiClient.get<any>(`${this.API_USERBOOK}/${userbookId}/digital/search-candidates`, { params })
+      return response.data
+    } catch (error) {
+      console.log("error searching digital candidates " + (error as any).code)
+      throw new Error("error searching digital candidates " + error)
+    }
+  }
+
+  triggerDigitalDownload = async (userbookId: string, release: any) => {
+    try {
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/download`, release)
+      return response.data
+    } catch (error) {
+      console.log("error triggering download " + (error as any).code)
+      throw new Error("error triggering download " + error)
+    }
+  }
+
+  uploadDigitalFile = async (userbookId: string, file: File) => {
+    try {
+      const formData = new FormData()
+      formData.append('file', file)
+      const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/upload`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      })
+      return response.data
+    } catch (error) {
+      console.log("error uploading digital file " + (error as any).code)
+      throw new Error("error uploading digital file " + error)
+    }
+  }
+
+
+  checkDownloadStatus = async (userbookId: string, sourceId: string) => {
+    try {
+      const response = await this.apiClient.get<any>(`${this.API_USERBOOK}/${userbookId}/digital/download-status`, { params: { sourceId } })
+      return response.data
+    } catch (error) {
+      console.log("error checking download status " + (error as any).code)
+      throw new Error("error checking download status " + error)
+    }
+  }
+
+  downloadDigitalFile = async (userbookId: string) => {
+    try {
+      const response = await this.apiClient.get(`${this.API_USERBOOK}/${userbookId}/digital/download-file`, {
+        responseType: 'blob'
+      })
+      const contentDisposition = response.headers['content-disposition']
+      let filename = 'download'
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?(.+?)"?$/)
+        if (match) filename = match[1]
+      }
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', filename)
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.log("error downloading digital file " + (error as any).code)
+      throw new Error("error downloading digital file " + error)
+    }
+  }
+
+  deleteDigitalFile = async (userbookId: string) => {
+    try {
+      const response = await this.apiClient.delete<any>(`${this.API_USERBOOK}/${userbookId}/digital`)
+      return response.data
+    } catch (error) {
+      console.log("error deleting digital file " + (error as any).code)
+      throw new Error("error deleting digital file " + error)
+    }
+  }
+
+  reorderShelves = async (bookcaseId: string, shelfIds: Array<string>) => {
+    try {
+      await this.apiClient.put('/physical-bookcases/' + bookcaseId + '/shelves/reorder', shelfIds)
+    } catch (error) {
+      console.log("error reorder shelves " + (error as any).code)
+      throw new Error("error reorder shelves " + error)
+    }
+  }
+
+  moveShelfToBookcase = async (shelfId: string, bookcaseId: string) => {
+    try {
+      const response = await this.apiClient.put('/physical-shelves/' + shelfId + '/move', { bookcaseId })
+      return response.data
+    } catch (error) {
+      console.log("error move shelf " + (error as any).code)
+      throw new Error("error move shelf " + error)
+    }
+  }
+
+  getReadingPace = async (userbookId: string, period: string) => {
+    const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace', {
+      params: { period }
+    })
+    return response.data
+  }
+
+  setPaceTarget = async (userBookId: string, dailyTargetPages: number) => {
+    try {
+      const response = await this.apiClient.post(`/userbooks/${userBookId}/pace-target`, { userBookId, dailyTargetPages })
+      return response.data
+    } catch (error) {
+      console.log("error set pace target " + (error as AxiosError).code)
+      throw new Error("error set pace target " + error)
+    }
+  }
+
+  getPaceTarget = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/pace-target`)
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  getTodayPages = async (userBookId: string): Promise<number> => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/today-pages`)
+      return response.data?.pages ?? 0
+    } catch (error) {
+      return 0
+    }
+  }
+
+  getBookDailyStreak = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/daily-streak`)
+      return response.data
+    } catch (error) {
+      return { streak: 0 }
+    }
+  }
+
+  getReadingGoal = async () => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/reading-goal`)
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  setReadingGoal = async (year: number, targetBooks: number) => {
+    try {
+      const response = await this.apiClient.post(`/userbooks/reading-goal`, { year, targetBooks })
+      return response.data
+    } catch (error) {
+      throw new Error("error set reading goal " + error)
+    }
+  }
+
+  setReadingGoal2 = async (payload: any) => {
+    try {
+      const response = await this.apiClient.post(`/userbooks/reading-goal`, payload)
+      return response.data
+    } catch (error) {
+      throw new Error("error set reading goal " + error)
+    }
+  }
+
+  deleteReadingGoal = async () => {
+    try {
+      await this.apiClient.delete(`/userbooks/reading-goal`)
+    } catch (error) { /* ignore */ }
+  }
+
+  getStreaks = async () => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks`)
+      return response.data
+    } catch (error) {
+      return null
+    }
+  }
+
+  getWeeklyReport = async () => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks/weekly-report`)
+      return response.data
+    } catch (error) {
+      return null
+    }
+  }
+
+  getHeatmap = async (from?: string, to?: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/streaks/heatmap`, { params: { from, to } })
+      return response.data
+    } catch (error) {
+      return { entries: [] }
+    }
+  }
+
+  getTimeline = async (from?: string, to?: string) => {
+    try {
+      const response = await this.apiClient.get('/userbooks/streaks/timeline', { params: { from, to } })
+      return response.data
+    } catch (error) {
+      return { books: [] }
+    }
+  }
+
+  rebuildStreaks = async () => {
+    try {
+      await this.apiClient.post(`/userbooks/streaks/rebuild`)
+    } catch (error) { /* ignore */ }
+  }
+
+  getPaceStatus = async (userBookId: string) => {
+    try {
+      const response = await this.apiClient.get(`/userbooks/${userBookId}/pace-status`)
+      return response.data || null
+    } catch (error) {
+      return null
+    }
+  }
+
+  deletePaceTarget = async (userBookId: string) => {
+    try {
+      await this.apiClient.delete(`/userbooks/${userBookId}/pace-target`)
+    } catch (error) {
+      console.log("error delete pace target " + (error as AxiosError).code)
+    }
+  }
+
+  getReadingPaceAll = async (userbookId: string) => {
+    const response = await this.apiClient.get<any>('/userbooks/' + userbookId + '/pace-all')
+    return response.data
+  }
+
+  reorderToRead = async (orderedIds: string[]) => {
+    await this.apiClient.put('/userbooks/to-read/order', { orderedIds })
+  }
+
+  setUpNextCount = async (count: number) => {
+    await this.apiClient.put('/users/me/up-next-count', { count })
+  }
+
+  getProgressHistory = async (userBookId: string) => {
+    const response = await this.apiClient.get<Array<{id: string, pageNumber: number|null, pagesDelta: number|null, recordedAt: string}>>('/userbooks/' + userBookId + '/progress-history')
+    return response.data
+  }
+
+  saveProgressHistory = async (userBookId: string, entries: Array<{pageNumber: number, recordedAt: string}>) => {
+    const response = await this.apiClient.put('/userbooks/' + userBookId + '/progress-history', { entries })
+    return response.data
+  }
+
+  pagesReadSince = async (sinceIso: string) => {
+    const response = await this.apiClient.get<{pages: number}>('/userbooks/pages-read-since', { params: { since: sinceIso } })
+    return response.data.pages
+  }
+
+  pagesReadForBookSince = async (userBookId: string, sinceIso: string) => {
+    const response = await this.apiClient.get<{pages: number}>('/userbooks/' + userBookId + '/pages-read-since', { params: { since: sinceIso } })
+    return response.data.pages
+  }
 }
 
 export default new DataService()

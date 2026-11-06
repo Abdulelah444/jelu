@@ -20,6 +20,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
+import org.springframework.security.core.Authentication
+import org.springframework.http.ResponseEntity
 import org.springframework.web.multipart.MultipartFile
 import reactor.core.publisher.Mono
 
@@ -33,7 +35,29 @@ class MetadataController(
     private val wikipediaService: WikipediaService,
     private val pluginInfoHolder: PluginInfoHolder,
     private val fileMetadataService: FileMetadataService,
+    private val bookEnrichmentService: io.github.bayang.jelu.service.BookEnrichmentService,
 ) {
+
+
+
+    @Operation(description = "search metadata providers and return multiple results")
+    @GetMapping(path = ["/metadata/search"])
+    fun searchMetadata(
+        @RequestParam(name = "q", required = true) query: String,
+        @RequestParam(name = "source", required = false) source: String?,
+    ): List<MetadataDto> {
+        if (pluginInfoHolder.plugins().isEmpty()) {
+            throw JeluException("Automatic fetching of metadata is disabled, install calibre or configure a metadata plugin")
+        }
+        val (title, authors) = if (query.startsWith("author:", ignoreCase = true)) {
+            null to query.removePrefix("author:").removePrefix("Author:").trim()
+        } else {
+            query to null
+        }
+        return metadataService.searchMetadata(MetadataRequestDto(null, title, authors, listOf()), source = source)
+    }
+
+
     @Operation(description = "fetch metadata from the configured providers")
     @GetMapping(path = ["/metadata"])
     fun fetchMetadata(
@@ -90,4 +114,13 @@ class MetadataController(
         @RequestParam(name = "pageTitle", required = true) pageTitle: String,
         @RequestParam(name = "language", defaultValue = "en") language: String,
     ): Mono<WikipediaPageResult> = wikipediaService.fetchPage(pageTitle, language)
+
+    @Operation(description = "enrich all books with missing metadata (page count, summary, publisher)")
+    @PostMapping(path = ["/metadata/enrich-all"])
+    fun enrichAllBooks(
+        principal: Authentication,
+    ): ResponseEntity<String> {
+        bookEnrichmentService.enrichAllBooks((principal.principal as io.github.bayang.jelu.dto.JeluUser).user)
+        return ResponseEntity.ok("Bulk enrichment started in background")
+    }
 }

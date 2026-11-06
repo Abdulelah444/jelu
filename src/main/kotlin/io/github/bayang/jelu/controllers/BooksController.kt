@@ -81,7 +81,12 @@ class BooksController(
         @PathVariable("id") bookId: UUID,
     ) = repository.findBookById(bookId)
 
+    @GetMapping(path = ["/books/missing-pagecount"])
+    fun booksMissingPageCount(
+        @PageableDefault(page = 0, size = 200, direction = Sort.Direction.ASC, sort = ["title"]) @ParameterObject pageable: Pageable,
+    ): Page<BookDto> = repository.findBooksMissingPageCount(pageable)
     @GetMapping(path = ["/books/{id}/users"])
+
     fun bookUsersById(
         @PathVariable("id") bookId: UUID,
         @PageableDefault(page = 0, size = 20, direction = Sort.Direction.ASC, sort = ["login"]) @ParameterObject pageable: Pageable,
@@ -195,13 +200,26 @@ class BooksController(
         @RequestParam(name = "toRead", required = false) toRead: Boolean?,
         @RequestParam(name = "owned", required = false) owned: Boolean?,
         @RequestParam(name = "borrowed", required = false) borrowed: Boolean?,
+        @RequestParam(name = "hasPageCount", required = false) hasPageCount: Boolean?,
+        @RequestParam(name = "hasDigitalFile", required = false) hasDigitalFile: Boolean?,
         @RequestParam(name = "userId", required = false) userId: UUID?,
         @PageableDefault(page = 0, size = 20, direction = Sort.Direction.DESC, sort = ["modificationDate"]) @ParameterObject pageable:
             Pageable,
     ): Page<UserBookWithoutEventsAndUserDto> {
         assertIsJeluUser(principal.principal)
         val finalUserId = userId ?: (principal.principal as JeluUser).user.id!!
-        return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, pageable)
+        return repository.findUserBookByCriteria(finalUserId, bookId, eventTypes, toRead, owned, borrowed, hasPageCount, hasDigitalFile, pageable)
+    }
+
+    @PutMapping(path = ["/userbooks/to-read/order"])
+    fun reorderToRead(
+        principal: Authentication,
+        @RequestBody body: io.github.bayang.jelu.dto.ReorderToReadDto,
+    ): ResponseEntity<Void> {
+        assertIsJeluUser(principal.principal)
+        val userId = (principal.principal as JeluUser).user.id!!
+        repository.reorderToRead(userId, body.orderedIds)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping(path = ["/authors"])

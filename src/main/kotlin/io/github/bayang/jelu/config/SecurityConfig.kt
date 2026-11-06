@@ -74,6 +74,8 @@ class SecurityConfig(
                 it.requestMatchers(HttpMethod.GET, "/api/v1/custom-lists/**").permitAll()
                 // it.requestMatchers(HttpMethod.POST, "/api/v1/custom-lists/remove").permitAll()
                 it.requestMatchers(HttpMethod.GET, "/api/v1/books/**").permitAll()
+                it.requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                it.requestMatchers(HttpMethod.POST, "/api/v1/public/**").permitAll()
                 it.requestMatchers(HttpMethod.POST, "/api/v1/users").hasAnyRole("ADMIN", "INITIAL_SETUP")
                 it.requestMatchers(HttpMethod.PUT, "/api/v1/users/**").hasAnyRole("USER")
                 it

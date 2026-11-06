@@ -52,9 +52,51 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
+            path: '/timeline',
+            component: () => import('./components/ReadingTimeline.vue'),
+            name: 'reading-timeline',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/discover',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/BookSearch.vue'),
+            name: 'discover',
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/login',
             component: () => import(/* webpackChunkName: "recommend" */ './components/Login.vue'),
             name: 'login'
+        },
+	{
+            path: '/book-labels',
+            component: () => import('./components/BookLabels.vue'),
+            name: 'book-labels',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/digital-library',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
+            name: 'digital-library',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/book-labels',
+            component: () => import('./components/BookLabels.vue'),
+            name: 'book-labels',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/digital-library',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
+            name: 'digital-library',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: '/library-map',
+            component: () => import(/* webpackChunkName: "recommend" */ './components/LibraryMap.vue'),
+            name: 'library-map',
+            beforeEnter: [isLogged],
         },
         {
             path: '/add-book',
@@ -66,6 +108,24 @@ const router = createRouter({
             path: '/to-read',
             component: () => import(/* webpackChunkName: "recommend" */ './components/ToReadList.vue'),
             name: 'to-read',
+            beforeEnter: [isLogged],
+        },
+        {
+            path: "/wishlist",
+            component: () => import("./components/Wishlist.vue"),
+            name: "wishlist",
+            beforeEnter: [isLogged],
+        },
+        {
+            path: "/lending-history",
+            component: () => import("./components/LendingHistory.vue"),
+            name: "lending-history",
+            beforeEnter: [isLogged],
+        },
+        {
+            path: "/lending-history",
+            component: () => import("./components/LendingHistory.vue"),
+            name: "lending-history",
             beforeEnter: [isLogged],
         },
         {
@@ -132,6 +192,12 @@ const router = createRouter({
             name: 'list-detail'
         },
         {
+            path: '/dashboard',
+            name: 'reading-dashboard',
+            component: () => import('./components/ReadingDashboard.vue'),
+            beforeEnter: [isLogged],
+        },
+        {
             path: '/profile',
             component: AdminBaseVue,
             name: 'profile-page',
@@ -144,12 +210,15 @@ const router = createRouter({
                 { path : 'users', component: () => import(/* webpackChunkName: "recommend" */ './components/UsersList.vue')},
                 { path: 'imports', component: () => import(/* webpackChunkName: "recommend" */ './components/Imports.vue')},
                 { path: 'settings', component: () => import(/* webpackChunkName: "recommend" */ './components/UserSettings.vue')},
-                { path: 'messages', component: () => import(/* webpackChunkName: "recommend" */ './components/UserMessages.vue')},
-                { path: 'stats', component: () => import(/* webpackChunkName: "recommend" */ './components/UserStats.vue')},
-                { path: 'tags', component: () => import(/* webpackChunkName: "recommend" */ './components/TagsAdmin.vue')},
+                { path: 'preferences', component: () => import(/* webpackChunkName: "recommend" */ './components/Preferences.vue')},
                 { path: 'data', component: () => import(/* webpackChunkName: "recommend" */ './components/DataAdmin.vue')},
                 { path: 'api-tokens', component: () => import(/* webpackChunkName: "recommend" */ './components/ApiTokens.vue')},
             ]
+        },
+        {
+            path: "/public/book/:bookId",
+            component: () => import("./components/PublicBookInfo.vue"),
+            name: "public-book",
         },
     ],
 })

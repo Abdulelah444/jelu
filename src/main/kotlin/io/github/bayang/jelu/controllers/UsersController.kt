@@ -72,6 +72,7 @@ class UsersController(
                         modificationDate = null,
                         creationDate = null,
                         provider = (principal.principal as JeluUser).user.provider,
+                        upNextCount = (principal.principal as JeluUser).user.upNextCount,
                     ),
                     token = session.id,
                 )
@@ -91,6 +92,16 @@ class UsersController(
                 )
             }
         }
+    }
+
+    @PutMapping(path = ["/users/me/up-next-count"])
+    fun updateUpNextCount(
+        principal: Authentication,
+        @RequestBody body: io.github.bayang.jelu.dto.UpNextCountDto,
+    ): ResponseEntity<Void> {
+        val user = (principal.principal as JeluUser).user
+        repository.updateUpNextCount(user.id!!, body.count)
+        return ResponseEntity.noContent().build()
     }
 
     @GetMapping(path = ["/users"])
