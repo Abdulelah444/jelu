@@ -127,6 +127,29 @@ services:
 
 ```
 
+### Whole stack: Jelu + Shelfmark (docker compose)
+
+The repo ships a `docker-compose.yml` that starts **Jelu and the Shelfmark
+book downloader together** — one clone, one `docker compose up`:
+
+```shell
+cp .env.example .env   # optional: set a shared SHELFMARK_API_KEY
+docker compose up -d --build
+```
+
+* Jelu: http://localhost:11111
+* Shelfmark (usually you don't need its UI): http://localhost:8084
+
+The downloader settings — **Anna's Archive / LibGen mirrors, DNS provider,
+DNS-over-HTTPS** — are managed from Jelu itself (`Settings > Preferences >
+Downloads (Shelfmark)`), which reads the current values from Shelfmark and
+pushes your changes back to its settings API. You never have to open
+Shelfmark's own settings page.
+
+Data lives under `./data/` by default; set `JELU_DATA_DIR` in `.env` to move
+it (for example `/opt/jelu-data`). Ebooks downloaded by Shelfmark land in the
+shared ebooks volume and are auto-linked in Jelu.
+
 ### Kubernetes (Helm)
 
 An unofficial Helm-Chart to deploy Jelu to Kubernetes is available here:

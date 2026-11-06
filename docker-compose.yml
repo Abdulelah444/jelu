@@ -1,0 +1,59 @@
+# Jelu + Shelfmark (Calibre-Web-Automated downloader) — the whole stack in one file.
+#
+#   docker compose up -d --build
+#
+#   - Jelu web UI      : http://localhost:11111
+#   - Shelfmark web UI : http://localhost:8084  (usually you don't need it —
+#     mirror / DNS settings are managed from Jelu: Settings > Preferences > Downloads)
+#
+# Data lives under ./data/ by default (override with JELU_DATA_DIR).
+# Set a SHELFMARK_API_KEY in .env to protect the Shelfmark API; Jelu picks it up
+# automatically and uses it for the settings it pushes to Shelfmark.
+
+name: jelu
+
+services:
+  jelu:
+    build: .
+    image: jelu:local
+    container_name: jelu
+    ports:
+      - "11111:11111"
+    volumes:
+      - ${JELU_DATA_DIR:-./data}/config:/config
+      - ${JELU_DATA_DIR:-./data}/database:/database
+      - ${JELU_DATA_DIR:-./data}/files/images:/files/images
+      - ${JELU_DATA_DIR:-./data}/files/imports:/files/imports
+      - ${JELU_DATA_DIR:-./data}/ebooks:/files/ebooks
+    environment:
+      - JELU_DATABASE_PATH=/database/
+      - JELU_FILES_IMAGES=/files/images/
+      - JELU_FILES_IMPORTS=/files/imports/
+      - JELU_EBOOKS_STORAGE_PATH=/files/ebooks
+      - JELU_EBOOKS_DOWNLOADER_URL=http://cwa-downloader:8084
+      # Optional: authenticate Jelu's pushes to Shelfmark with the same key
+      # you set for the Shelfmark service. Leave unset when Shelfmark runs
+      # without authentication (AUTH_METHOD=none).
+      - JELU_EBOOKS_API_KEY=${SHELFMARK_API_KEY:-}
+    restart: unless-stopped
+    depends_on:
+      - cwa-downloader
+
+  cwa-downloader:
+    image: ghcr.io/calibrain/shelfmark:latest
+    container_name: cwa-downloader
+    ports:
+      - "8084:8084"
+    volumes:
+      - ${JELU_DATA_DIR:-./data}/cwa-config:/config
+      - ${JELU_DATA_DIR:-./data}/ebooks:/books
+    environment:
+      # Optional: protects the Shelfmark API. If set, also set JELU_EBOOKS_API_KEY above.
+      - SHELFMARK_API_KEY=${SHELFMARK_API_KEY:-}
+      # Env-backed setting (Shelfmark's settings API cannot change it): keep at 1,
+      # higher values make Shelfmark's internal Cloudflare bypass kill its own
+      # sibling browser workers (upstream calibrain/shelfmark issue #1231).
+      - MAX_CONCURRENT_DOWNLOADS=1
+      - SUPPORTED_FORMATS=epub,pdf,mobi,azw3,cbz,cbr
+      - BOOK_LANGUAGE=en,ar
+    restart: unless-stopped
