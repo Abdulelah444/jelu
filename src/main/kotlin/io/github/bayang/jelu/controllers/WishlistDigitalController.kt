@@ -3,6 +3,7 @@ package io.github.bayang.jelu.controllers
 import io.github.bayang.jelu.service.CwaDownloadRequest
 import io.github.bayang.jelu.service.CwaSearchResponse
 import io.github.bayang.jelu.service.DownloaderService
+import io.github.bayang.jelu.utils.ebookRelativePath
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.core.io.FileSystemResource
 import org.springframework.http.ContentDisposition
@@ -115,7 +116,7 @@ class WishlistDigitalController(
     fun deleteEbookFile(
         @RequestParam("path") filePath: String,
     ): Map<String, String> {
-        val cleanPath = filePath.removePrefix("/cwa-book-ingest/")
+        val cleanPath = ebookRelativePath(filePath)
         val candidates =
             listOf(
                 File("/files/ebooks/$cleanPath"),
@@ -140,7 +141,9 @@ class WishlistDigitalController(
             ?.map {
                 mapOf(
                     "filename" to it.name,
-                    "path" to "/cwa-book-ingest/${it.name}",
+                    // Report the prefix Shelfmark currently writes to; both are accepted on the
+                    // way back in, so either works for older and newer downloads.
+                    "path" to "/books/${it.name}",
                     "serverPath" to it.absolutePath,
                     "format" to it.extension.lowercase(),
                     "size" to "${it.length() / 1024}KB",
@@ -154,10 +157,10 @@ class WishlistDigitalController(
         @RequestParam("path") filePath: String,
         @RequestParam("inline", required = false, defaultValue = "false") inline: Boolean,
     ): ResponseEntity<FileSystemResource> {
-        // The path from CWA is /cwa-book-ingest/filename
-        // On the host it maps to /opt/jelu-data/ebooks/filename
-        // Inside the Jelu container it should be mounted at the same path or we strip prefix
-        val cleanPath = filePath.removePrefix("/cwa-book-ingest/")
+        // The path from Shelfmark is <ingest dir>/filename, historically /cwa-book-ingest/ and
+        // now /books/. On the host it maps to /opt/jelu-data/ebooks/filename; inside this
+        // container that folder is /files/ebooks.
+        val cleanPath = ebookRelativePath(filePath)
         // Try common mount locations
         val candidates =
             listOf(

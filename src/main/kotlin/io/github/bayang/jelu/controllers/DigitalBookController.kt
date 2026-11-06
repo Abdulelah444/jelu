@@ -5,6 +5,7 @@ import io.github.bayang.jelu.service.CwaDownloadRequest
 import io.github.bayang.jelu.service.CwaSearchResponse
 import io.github.bayang.jelu.service.DownloaderService
 import io.github.bayang.jelu.service.EbookStorageService
+import io.github.bayang.jelu.utils.ebookPathInsideJelu
 import io.github.oshai.kotlinlogging.KotlinLogging
 import org.springframework.core.io.FileSystemResource
 import org.springframework.core.io.Resource
@@ -173,8 +174,9 @@ class DigitalBookController(
             if (itemStatus == "complete") {
                 val downloadPath = item["download_path"]?.toString()
                 if (downloadPath != null) {
-                    // Convert CWA path to Jelu path
-                    val jeluPath = downloadPath.replace("/cwa-book-ingest", "/files/ebooks")
+                    // Shelfmark reports the path inside its own container; map it to the path
+                    // this container sees (see ebookPathInsideJelu).
+                    val jeluPath = ebookPathInsideJelu(downloadPath)
                     val path =
                         java.nio.file.Paths
                             .get(jeluPath)
