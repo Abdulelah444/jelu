@@ -37,7 +37,7 @@ jobs:
       - name: Confirm the unpacked jar layout is present
         run: |
           docker run --rm --entrypoint sh jelu:local -c \
-            'set -e; echo "--- app root ---"; ls app; echo "--- application/ ---"; ls app/application | head -5; test -n "$(ls -A app/application)"'
+            'set -e; echo "--- /app ---"; ls /app; echo "--- /app/application ---"; ls /app/application | head -5; test -n "$(ls -A /app/application)"; test -f /app/org/springframework/boot/loader/launch/JarLauncher.class'
 
   compose-smoke:
     runs-on: ubuntu-latest
