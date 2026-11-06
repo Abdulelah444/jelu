@@ -48,17 +48,22 @@ class AppSettingsService {
         AppSettings.find { AppSettingsTable.settingKey eq key }.forEach { it.delete() }
     }
 
-    // Typed convenience getters with defaults (default = the previously-hardcoded value)
+    // Typed convenience getters with defaults (default = the previously-hardcoded value).
+    // These must be @Transactional: they call getRaw() as a self-invocation, so Spring's
+    // proxy is bypassed and no transaction would otherwise be opened for the Exposed read.
+    @Transactional
     fun getString(
         key: String,
         default: String,
     ): String = getRaw(key) ?: default
 
+    @Transactional
     fun getInt(
         key: String,
         default: Int,
     ): Int = getRaw(key)?.toIntOrNull() ?: default
 
+    @Transactional
     fun getBool(
         key: String,
         default: Boolean,
