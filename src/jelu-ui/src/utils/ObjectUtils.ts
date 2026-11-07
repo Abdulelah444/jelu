@@ -142,14 +142,6 @@ export class ObjectUtils {
     return {"label": object.name, "value": object}
   }
 
-  public static wrapAsAuthor(a: Author|Tag|string) {
-      if (typeof a === 'string') {
-        return {"name": a}
-      } else {
-        return a
-      }
-  }
-
   public static createNamedItem(item: Author | Tag | string) {
   console.log("create")
   console.log(item)
