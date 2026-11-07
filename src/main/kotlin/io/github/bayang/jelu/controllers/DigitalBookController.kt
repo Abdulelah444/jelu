@@ -3,6 +3,7 @@ package io.github.bayang.jelu.controllers
 import io.github.bayang.jelu.service.BookService
 import io.github.bayang.jelu.service.CwaDownloadRequest
 import io.github.bayang.jelu.service.CwaSearchResponse
+import io.github.bayang.jelu.service.CwaStreamEvent
 import io.github.bayang.jelu.service.DownloaderService
 import io.github.bayang.jelu.service.EbookStorageService
 import io.github.bayang.jelu.utils.ebookPathInsideJelu
@@ -24,6 +25,9 @@ import org.springframework.web.bind.annotation.RequestPart
 import org.springframework.web.bind.annotation.RestController
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.server.ResponseStatusException
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter
+import reactor.core.scheduler.Schedulers
+import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Paths
 import java.time.Instant
@@ -225,6 +229,77 @@ class DigitalBookController(
         } catch (e: Exception) {
             logger.error(e) { "CWA search failed for query: $searchQuery" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Downloader search failed: ${e.message}")
+        }
+    }
+
+    /**
+     * Stream the downloadable candidates for a book as Server-Sent Events, one release
+     * per event, so the client can show options as they arrive rather than after the
+     * whole search settles.
+     *
+     * Runs on the servlet stack, so an [SseEmitter] is used and the reactive stream is
+     * subscribed on a bounded-elastic thread rather than blocking the request thread.
+     */
+    @GetMapping(value = ["/search-candidates/stream"], produces = [MediaType.TEXT_EVENT_STREAM_VALUE])
+    fun streamSearchCandidates(
+        @PathVariable("userbookId") userbookId: UUID,
+        @RequestParam("query", required = false) query: String?,
+        @RequestParam("lang", required = false, defaultValue = "en") lang: String,
+        @RequestParam("ext", required = false, defaultValue = "epub") ext: String,
+    ): SseEmitter {
+        val emitter = SseEmitter(0L)
+        val searchQuery =
+            try {
+                val userBook = bookService.findUserBookById(userbookId)
+                query ?: buildSearchQuery(userBook)
+            } catch (e: Exception) {
+                sendError(emitter, "UserBook not found")
+                return emitter
+            }
+
+        val subscription =
+            downloaderService
+                .searchStream(searchQuery, lang, ext)
+                .publishOn(Schedulers.boundedElastic())
+                .subscribe(
+                    { event -> sendEvent(emitter, event) },
+                    { error ->
+                        logger.error(error) { "Candidate stream failed for query: $searchQuery" }
+                        sendError(emitter, error.message ?: "Search stream failed")
+                    },
+                    { emitter.complete() },
+                )
+        emitter.onCompletion { subscription.dispose() }
+        emitter.onTimeout {
+            subscription.dispose()
+            emitter.complete()
+        }
+        emitter.onError { subscription.dispose() }
+        return emitter
+    }
+
+    private fun sendEvent(
+        emitter: SseEmitter,
+        event: CwaStreamEvent,
+    ) {
+        try {
+            emitter.send(SseEmitter.event().name(event.type).data(event))
+        } catch (e: IOException) {
+            // Client disconnected (e.g. closed the modal); nothing more to write to.
+            logger.debug { "SSE send aborted: ${e.message}" }
+            emitter.completeWithError(e)
+        }
+    }
+
+    private fun sendError(
+        emitter: SseEmitter,
+        message: String,
+    ) {
+        try {
+            emitter.send(SseEmitter.event().name("error").data(CwaStreamEvent("error", null, message)))
+            emitter.complete()
+        } catch (e: IOException) {
+            emitter.completeWithError(e)
         }
     }
 

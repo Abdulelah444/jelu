@@ -107,18 +107,56 @@ const getShelfLocation = async () => {
   }
 }
 
+const digitalSearchStream: Ref<AbortController | null> = ref(null)
+// Bumped on every new search so callbacks from a superseded/aborted stream are ignored.
+let digitalSearchGeneration = 0
+
+const cancelDigitalSearch = () => {
+  digitalSearchGeneration++
+  digitalSearchStream.value?.abort()
+  digitalSearchStream.value = null
+  digitalSearchLoading.value = false
+}
+
 const searchDigitalCopies = async () => {
   if (!book.value?.id) return
+  // Supersede any in-flight search before starting a new one.
+  digitalSearchStream.value?.abort()
+  const generation = ++digitalSearchGeneration
+  const isCurrent = () => generation === digitalSearchGeneration
+
+  digitalSearchResults.value = []
   digitalSearchLoading.value = true
-  try {
-    const result = await dataService.searchDigitalCandidates(book.value.id)
-    digitalSearchResults.value = result.releases || []
-    showDigitalSearchModal.value = true
-  } catch (error) {
-    oruga.notification.open({ message: "Search failed: " + error, variant: "danger", duration: 4000 })
-  } finally {
-    digitalSearchLoading.value = false
+  showDigitalSearchModal.value = true
+  const started = Date.now()
+  const onRelease = (release: any) => {
+    if (!isCurrent()) return
+    const key = release.source_id || release.sourceId
+    if (!digitalSearchResults.value.some((r: any) => (r.source_id || r.sourceId) === key)) {
+      digitalSearchResults.value.push(release)
+    }
   }
+  const onDone = () => {
+    if (!isCurrent()) return
+    digitalSearchStream.value = null
+    // Keep the "Searching..." state visible for at least a moment so the
+    // progressive reveal doesn't flicker when results arrive in one batch.
+    const remaining = 300 - (Date.now() - started)
+    if (remaining > 0 && digitalSearchResults.value.length > 0) {
+      setTimeout(() => { if (isCurrent()) digitalSearchLoading.value = false }, remaining)
+    } else {
+      digitalSearchLoading.value = false
+    }
+  }
+  const onError = (message: string) => {
+    if (!isCurrent()) return
+    digitalSearchStream.value = null
+    digitalSearchLoading.value = false
+    oruga.notification.open({ message, variant: "danger", duration: 4000 })
+  }
+  digitalSearchStream.value = dataService.streamDigitalCandidates(
+    book.value.id, onRelease, onDone, undefined, "en", "epub", onError,
+  )
 }
 
 const triggerDownload = async (release: any) => {
@@ -1328,10 +1366,18 @@ getBook()
             <h3 class="font-bold text-lg mb-3">
               <i class="mdi mdi-magnify mr-1" /> Select a version to download
             </h3>
-            <div v-if="digitalSearchResults.length === 0" class="text-center py-4 text-base-content/50">
+            <div v-if="digitalSearchLoading && digitalSearchResults.length === 0" class="flex flex-col items-center justify-center py-6 gap-2 text-base-content/50">
+              <span class="loading loading-spinner loading-md" />
+              <span class="text-sm">Searching for digital copies…</span>
+            </div>
+            <div v-else-if="digitalSearchResults.length === 0" class="text-center py-4 text-base-content/50">
               No results found
             </div>
             <div v-else class="space-y-2 max-h-96 overflow-y-auto">
+              <div v-if="digitalSearchLoading" class="text-xs text-base-content/50 flex items-center gap-2 px-1">
+                <span class="loading loading-spinner loading-xs" />
+                <span>More options may still be arriving…</span>
+              </div>
               <div
                 v-for="(release, index) in digitalSearchResults"
                 :key="index"
@@ -1353,10 +1399,10 @@ getBook()
               </div>
             </div>
             <div class="modal-action">
-              <button class="btn btn-sm" @click="showDigitalSearchModal = false">Close</button>
+              <button class="btn btn-sm" @click="showDigitalSearchModal = false; cancelDigitalSearch()">Close</button>
             </div>
           </div>
-          <div class="modal-backdrop" @click="showDigitalSearchModal = false"></div>
+          <div class="modal-backdrop" @click="showDigitalSearchModal = false; cancelDigitalSearch()"></div>
         </dialog>
         <div class="mt-3">
 

@@ -2646,6 +2646,83 @@ class DataService {
     }
   }
 
+  /**
+   * Open an SSE stream of downloadable candidates for a book. Each `release` event
+   * carries one option; a `done` event marks the end of the search. The caller should
+   * render options as they arrive rather than waiting for the whole set.
+   *
+   * Returns an AbortController; call `abort()` to stop reading. Resolves when the
+   * stream finishes (done) or rejects with an Error.
+   */
+  streamDigitalCandidates = (
+    userbookId: string,
+    onRelease: (release: any) => void,
+    onDone: () => void,
+    query?: string,
+    lang: string = "en",
+    ext: string = "epub",
+    onError?: (message: string) => void,
+  ): AbortController => {
+    const controller = new AbortController();
+    const params = new URLSearchParams({ lang, ext });
+    if (query) params.set("query", query);
+    const url = `${urls.API_URL}${this.API_USERBOOK}/${userbookId}/digital/search-candidates/stream?${params.toString()}`;
+
+    fetch(url, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Requested-With": "XMLHttpRequest",
+        "X-Auth-Token": this.getToken() || "",
+      },
+      signal: controller.signal,
+    })
+      .then(async (response) => {
+        if (!response.ok || !response.body) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        let finished = false;
+        let failed = false;
+        while (!finished) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true }).replace(/\r\n/g, "\n");
+          // SSE events are separated by a blank line.
+          const chunks = buffer.split("\n\n");
+          buffer = chunks.pop() || "";
+          for (const chunk of chunks) {
+            const evt = parseSseEvent(chunk);
+            if (!evt) continue;
+            if (evt.name === "release" && evt.data?.release) {
+              onRelease(evt.data.release);
+            } else if (evt.name === "done") {
+              finished = true;
+              break;
+            } else if (evt.name === "error") {
+              failed = true;
+              if (onError) onError(evt.data?.message || evt.data?.messageText || "Search failed");
+            }
+          }
+        }
+        if (!failed) onDone();
+      })
+      .catch((error) => {
+        if (error.name === "AbortError") {
+          // Caller aborted; no-op
+          return;
+        }
+        console.log("error streaming digital candidates " + error);
+        if (onError) onError("Search stream failed: " + error);
+        else throw new Error("error streaming digital candidates " + error);
+      });
+
+    return controller;
+  }
+
   triggerDigitalDownload = async (userbookId: string, release: any) => {
     try {
       const response = await this.apiClient.post<any>(`${this.API_USERBOOK}/${userbookId}/digital/download`, release)
@@ -2902,6 +2979,26 @@ class DataService {
   pagesReadForBookSince = async (userBookId: string, sinceIso: string) => {
     const response = await this.apiClient.get<{pages: number}>('/userbooks/' + userBookId + '/pages-read-since', { params: { since: sinceIso } })
     return response.data.pages
+  }
+}
+
+/** Parse a single Server-Sent-Event chunk ("event:"/"data:" lines) into its parts. */
+function parseSseEvent(chunk: string): { name: string; data: any } | null {
+  let name = "message";
+  const dataLines: string[] = [];
+  for (const line of chunk.split("\n")) {
+    if (line.startsWith("event:")) {
+      name = line.slice(6).trim();
+    } else if (line.startsWith("data:")) {
+      dataLines.push(line.slice(5).trimStart());
+    }
+  }
+  if (dataLines.length === 0) return null;
+  const raw = dataLines.join("\n");
+  try {
+    return { name, data: JSON.parse(raw) };
+  } catch {
+    return { name, data: raw };
   }
 }
 

@@ -8,6 +8,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
+import reactor.core.publisher.Flux
 import java.io.File
 import java.time.Duration
 
@@ -50,6 +51,40 @@ class DownloaderService(
             .bodyToMono<CwaSearchResponse>()
             .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
             ?: throw RuntimeException("CWA search returned null")
+    }
+
+    /**
+     * Stream release candidates one at a time.
+     *
+     * Shelfmark's `/api/releases` answers with a single buffered JSON body containing
+     * all releases, so the search itself still resolves in one call. Each candidate is
+     * then re-emitted as its own event, spaced slightly apart, so the UI can render
+     * options as they "arrive" instead of waiting for the whole batch. A final event
+     * with type `"done"` tells the client the stream is finished; `"error"` carries a
+     * [CwaStreamEvent.message].
+     */
+    fun searchStream(
+        query: String,
+        lang: String = "en",
+        ext: String = "epub",
+    ): Flux<CwaStreamEvent> {
+        logger.info { "Streaming CWA search for: $query (lang=$lang, ext=$ext)" }
+        val response =
+            try {
+                search(query, lang, ext)
+            } catch (e: Exception) {
+                return Flux.just(CwaStreamEvent("error", null, e.message))
+            }
+        val releases = response.releases
+        if (releases.isEmpty()) {
+            return Flux.just(CwaStreamEvent("done", null, "No releases found"))
+        }
+        val releaseEvents =
+            Flux
+                .fromIterable(releases)
+                .map { release -> CwaStreamEvent("release", release, null) }
+                .delayElements(Duration.ofMillis(120))
+        return releaseEvents.concatWith(Flux.just(CwaStreamEvent("done", null, null)))
     }
 
     fun triggerDownload(release: CwaDownloadRequest) {
@@ -140,6 +175,16 @@ class DownloaderService(
             .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
             ?: emptyMap()
 }
+
+/**
+ * One Server-Sent-Event payload from the candidate search stream. `type` is either
+ * `"release"`, `"done"` or `"error"`; [release] is populated only for `"release"` events.
+ */
+data class CwaStreamEvent(
+    val type: String,
+    val release: CwaRelease? = null,
+    val message: String? = null,
+)
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 data class CwaSearchResponse(
