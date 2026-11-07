@@ -160,6 +160,9 @@ val buildTaskUsingNpm =
         args.set(listOf("--", "--out-dir", "${layout.buildDirectory.get()}/npm-output"))
         inputs.dir("src")
         outputs.dir("${layout.buildDirectory.get()}/npm-output")
+        doFirst {
+            delete("${layout.buildDirectory.get()}/npm-output")
+        }
     }
 
 tasks.register<Sync>("copyWebDist") {

@@ -53,7 +53,7 @@ export default defineConfig({
     }
   },
   build: {
-    // emptyOutDir: true,
+    emptyOutDir: true,
     // rollupOptions: {
     //   external: [
     //     /files/
