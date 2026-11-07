@@ -28,6 +28,9 @@ const dl = reactive({
   customDnsManual: '',
   useDoh: true,
   maxConcurrent: 1,
+  // Download destination Shelfmark writes books into (the shared ebooks volume).
+  destination: '',
+  destinationCheck: null as null | { writable: boolean, reason?: string, checkedPath?: string, note?: string },
 })
 
 // Local editable copy
@@ -80,6 +83,8 @@ const loadShelfmarkSettings = async () => {
     dl.customDnsManual = fieldValue(network, 'CUSTOM_DNS_MANUAL') || ''
     dl.useDoh = fieldValue(network, 'USE_DOH') !== false
     dl.maxConcurrent = Number(fieldValue(downloads, 'MAX_CONCURRENT_DOWNLOADS') || 1)
+    dl.destination = String(fieldValue(downloads, 'DESTINATION') ?? '')
+    dl.destinationCheck = downloads?.destination ?? null
     shelfmarkSettingsLoaded.value = true
   } catch (e) {
     shelfmarkSettingsError.value = String(e)
@@ -99,6 +104,12 @@ const applyShelfmarkSettings = async () => {
       CUSTOM_DNS_MANUAL: dl.customDnsManual,
       USE_DOH: dl.useDoh,
     })
+    if (dl.destination.trim()) {
+      await dataService.updateShelfmarkSettings('downloads', {
+        DESTINATION: dl.destination.trim(),
+      })
+    }
+    await loadShelfmarkSettings()
     ObjectUtils.toast(oruga, 'success', 'Shelfmark downloader settings applied', 2000)
   } catch (e) {
     ObjectUtils.toast(oruga, 'danger', 'Could not apply: ' + e, 3000)
@@ -214,6 +225,22 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
           </div>
 
           <div class="divider my-0 text-xs opacity-50">Shelfmark settings (applied to the downloader)</div>
+          <div class="flex flex-col gap-2">
+            <label class="flex flex-col gap-1">
+              <span class="text-sm font-medium">Download destination (Shelfmark DESTINATION)</span>
+              <input v-model="dl.destination" type="text" class="input input-sm input-bordered w-full" placeholder="/books">
+              <span class="text-xs opacity-60">The folder Shelfmark writes completed books into (inside its container). Must point at the shared ebooks volume — see README.</span>
+            </label>
+            <div v-if="dl.destinationCheck && !dl.destinationCheck.writable" class="flex items-start gap-2 text-sm text-error rounded-lg bg-base-200 p-2">
+              <i class="mdi mdi-alert-circle mdi-18px mt-0.5 shrink-0" />
+              <span><strong>Destination is not writable.</strong> {{ dl.destinationCheck.reason }} Fix it here and press “Apply to Shelfmark”, or change it in Shelfmark's own Settings → Downloads.</span>
+            </div>
+            <div v-else-if="dl.destinationCheck && dl.destinationCheck.writable" class="flex items-start gap-2 text-sm text-success rounded-lg bg-base-200 p-2">
+              <i class="mdi mdi-check-circle mdi-18px mt-0.5 shrink-0" />
+              <span>Destination resolves to a writable path{{ dl.destinationCheck.checkedPath ? ` (${dl.destinationCheck.checkedPath})` : '' }}.</span>
+            </div>
+            <div v-if="dl.destinationCheck?.note" class="text-xs opacity-60">Note: {{ dl.destinationCheck.note }}</div>
+          </div>
           <label class="flex flex-col gap-1">
             <span class="text-sm">Anna's Archive mirrors — tried in order</span>
             <input v-model="dl.aaMirrors" type="text" class="input input-sm input-bordered w-full" placeholder="https://annas-archive.gd, https://annas-archive.org">

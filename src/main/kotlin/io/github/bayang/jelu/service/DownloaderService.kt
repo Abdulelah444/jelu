@@ -8,6 +8,7 @@ import org.springframework.http.MediaType
 import org.springframework.stereotype.Service
 import org.springframework.web.reactive.function.client.WebClient
 import org.springframework.web.reactive.function.client.bodyToMono
+import java.io.File
 import java.time.Duration
 
 private val logger = KotlinLogging.logger {}
@@ -79,6 +80,51 @@ class DownloaderService(
             .bodyToMono<Map<String, Any?>>()
             .block(Duration.ofSeconds(properties.ebooks.downloaderTimeoutSeconds.toLong()))
             ?: emptyMap()
+
+    /**
+     * Validate Shelfmark's download destination as seen from this (Jelu) container.
+     *
+     * Shelfmark writes downloaded books to its `DESTINATION` (the shared ebooks volume,
+     * mounted inside Jelu at [JeluProperties.Ebooks.storagePath]). Jelu cannot see the
+     * path names Shelfmark uses inside its own container, so a true filesystem check of
+     * the Shelfmark string is impossible here. What Jelu *can* verify is that the shared
+     * ebooks volume it mounts is writable — the exact condition that makes downloads fail
+     * with "Cannot create destination (Permission denied)". When the destination path is
+     * also visible inside Jelu (same mount), it is checked directly as the stricter signal.
+     */
+    fun checkDestination(destination: String?): Map<String, Any> {
+        if (destination.isNullOrBlank()) {
+            return mapOf(
+                "writable" to false,
+                "reason" to "No download destination is set in Shelfmark.",
+            )
+        }
+        // If Jelu sees the same path (identical mounts), validate it directly.
+        val direct = File(destination)
+        if (direct.exists() && direct.isDirectory) {
+            if (direct.canWrite()) {
+                return mapOf("writable" to true, "checkedPath" to destination)
+            }
+            return mapOf(
+                "writable" to false,
+                "reason" to "The destination $destination is not writable by this container.",
+            )
+        }
+        // Otherwise fall back to the shared ebooks volume Jelu mounts for Shelfmark.
+        val storage = File(properties.ebooks.storagePath)
+        val sharedWritable = storage.isDirectory && storage.canWrite()
+        if (sharedWritable) {
+            return mapOf(
+                "writable" to true,
+                "checkedPath" to properties.ebooks.storagePath,
+                "note" to "Validated the shared ebooks volume ${properties.ebooks.storagePath} that Shelfmark writes into; the Shelfmark-side path $destination itself is only checkable inside the Shelfmark container.",
+            )
+        }
+        return mapOf(
+            "writable" to false,
+            "reason" to "The shared ebooks folder ${properties.ebooks.storagePath} is not writable by this container; downloads to $destination will fail with permission denied.",
+        )
+    }
 
     fun updateSettings(
         tab: String,

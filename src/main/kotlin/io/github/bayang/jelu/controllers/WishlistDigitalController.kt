@@ -81,11 +81,29 @@ class WishlistDigitalController(
             throw ResponseStatusException(HttpStatus.BAD_REQUEST, "Unsupported Shelfmark settings tab: $tab")
         }
         return try {
-            downloaderService.getSettings(tab)
+            val settings = downloaderService.getSettings(tab)
+            if (tab == "downloads") enrichDownloadsDestination(settings) else settings
         } catch (e: Exception) {
             logger.error(e) { "CWA settings read failed (tab=$tab)" }
             throw ResponseStatusException(HttpStatus.BAD_GATEWAY, "Downloader settings read failed: ${e.message}")
         }
+    }
+
+    /**
+     * Add a `destination` object to the downloads tab payload: the Shelfmark DESTINATION
+     * value plus a writability verdict (see [DownloaderService.checkDestination]). Kept on
+     * the existing downloads settings flow — no new endpoint.
+     */
+    @Suppress("UNCHECKED_CAST")
+    private fun enrichDownloadsDestination(settings: Map<String, Any?>): Map<String, Any?> {
+        val destination = (settings["fields"] as? List<*>)
+            ?.filterIsInstance<Map<String, Any?>>()
+            ?.firstOrNull { it["key"] == "DESTINATION" }
+            ?.get("value")
+            ?.toString()
+            ?.trim()
+            ?.takeIf { it.isNotEmpty() }
+        return settings + ("destination" to downloaderService.checkDestination(destination))
     }
 
     @PutMapping("/shelfmark-settings")

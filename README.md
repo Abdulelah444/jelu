@@ -164,10 +164,73 @@ SHELFMARK_DNS=cloudflare ./scripts/bootstrap-shelfmark.sh
 
 Do **not** run it on an existing install unless downloads are broken: it
 overwrites your current mirror and DNS settings with its own defaults.
-Afterwards the downloader settings — **mirrors, DNS provider, DNS-over-HTTPS** —
-are managed from Jelu itself (`Settings > Preferences > Downloads (Shelfmark)`),
-which reads the current values from Shelfmark and pushes changes back. You
-never have to open Shelfmark's own settings page.
+Afterwards the downloader settings — **mirrors, DNS provider, DNS-over-HTTPS,
+and the download destination** — are managed from Jelu itself
+(`Settings > Preferences > Downloads (Shelfmark)`), which reads the current
+values from Shelfmark and pushes changes back. You never have to open
+Shelfmark's own settings page.
+
+**Download destination (Shelfmark `DESTINATION`).** The destination is the
+folder inside Shelfmark's container where completed books land. It must point
+at the shared ebooks volume (default `/books` in Shelfmark). Jelu shows the
+current value in Preferences and lets you edit and apply it through the same
+"Apply to Shelfmark" button, so a stale path left over from an upgrade can be
+fixed without opening Shelfmark's UI. When Jelu cannot confirm the destination
+resolves to a writable path it shows a clear warning. Because Jelu and
+Shelfmark are separate containers, Jelu validates what it can see: the shared
+ebooks volume it mounts (and the destination itself when the two containers
+share the same path). The path as Shelfmark sees it inside *its* container can
+only be fully checked by Shelfmark — if Jelu's check passes but downloads still
+fail with `Cannot create destination ... (Permission denied)`, confirm the
+container volume and `PUID`/`PGID` map to the same host directory (see Shelfmark
+docs) and that Shelfmark can write it.
+
+### Upgrading Shelfmark
+
+Moving from **Shelfmark 1.3.x to 1.6.x** (or to `latest`) usually looks like a
+smooth container swap — the data folder and the Jelu image do not change — but
+two Shelfmark-side facts survive the image change and silently break downloads.
+Check them after any upgrade before assuming everything works.
+
+**1. The stored download destination is not migrated.** Shelfmark keeps its
+settings (including `DESTINATION`) in its config, which the upgrade preserves.
+On 1.3.x that destination defaults to `/cwa-book-ingest`; the 1.6.x container
+mounts the ebooks volume at `/books` instead. If `DESTINATION` still reads
+`/cwa-book-ingest`, every download fails with:
+
+```
+Cannot create destination ... (Permission denied)
+```
+
+because Shelfmark tries to write a folder that does not exist in its new mount.
+Fix it to `/books`:
+
+* In **Jelu**: `Settings > Preferences > Downloads (Shelfmark)`, edit the
+  *Download destination* field and press **Apply to Shelfmark** (the warning
+  box, if shown, points at this directly), or
+* Directly against Shelfmark's API:
+  `curl -X PUT http://localhost:8084/api/settings/downloads -H "Content-Type: application/json" -d '{"DESTINATION":"/books"}'`
+
+  (add the `-H "Authorization: Bearer $SHELFMARK_API_KEY"` header if you set
+  one).
+
+**2. The ingest directory changed from `/cwa-book-ingest` (1.3.x) to `/books`
+(1.6.x).** Jelu links downloads through `utils/ebookRelativePath`, which strips
+either prefix, so books reported under the old or the new path both auto-link
+and older downloads keep working. Do not introduce a hardcoded assumption of
+one prefix anywhere — that is exactly what silently breaks auto-linking after
+an upgrade.
+
+**3. Verify the app after upgrading.** Log in, confirm your book count is
+unchanged and covers render, then run one download end to end and confirm the
+UI reports **"Downloaded and linked!"** (if it instead reports "Download
+complete but could not auto-link", the path mapping is off).
+
+**4. Pin the Shelfmark version if you want deliberate upgrades.** The compose
+file pulls `ghcr.io/calibrain/shelfmark:${SHELFMARK_TAG:-latest}`, so every
+`docker compose pull`/`up -d` tracks `latest`. Set `SHELFMARK_TAG` in `.env` to
+a specific tag (e.g. `SHELFMARK_TAG=1.6.0`) to make upgrades a deliberate,
+visible step instead of an automatic one.
 
 ### Updating an existing install
 
