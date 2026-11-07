@@ -343,7 +343,7 @@ function scanModalClosed() {
         </router-link>
         <div
           v-if="isLogged && showSearchInput"
-          class="dropdown"
+          class="dropdown lg:hidden"
         >
           <label
             tabindex="0"
@@ -487,12 +487,50 @@ function scanModalClosed() {
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'search' }"><i class="mdi mdi-magnify mdi-18px mr-2" />{{ t('nav.search') }}</router-link></li>
           </ul>
         </div>
-        <div v-if="isLogged && showSearchInput" class="form-control ml-2">
+        <div v-if="isLogged && showSearchInput" class="form-control ml-2 relative">
           <div class="join">
-            <input v-model="searchQuery" type="text" :placeholder="t('labels.search_query')" class="input input-accent input-sm join-item w-40" @focus="showAdvanced = true" @blur="hideAdvanced" @keyup.enter="search">
+            <input
+              v-model="searchQuery"
+              type="text"
+              :placeholder="t('labels.search_query')"
+              class="input input-accent input-sm join-item w-40"
+              @focus="showAdvanced = true"
+              @blur="hideAdvanced(); hideSuggestions()"
+              @input="fetchSuggestions"
+              @keydown="onSearchKeydown"
+              @keyup.enter="onSearchEnter"
+            >
             <button class="btn btn-sm btn-square btn-outline join-item" @click="search">
               <i class="mdi mdi-magnify mdi-18px" />
             </button>
+          </div>
+          <!-- Typeahead suggestions dropdown (desktop) -->
+          <div
+            v-if="showSuggestions"
+            class="absolute left-0 right-0 top-full mt-1 bg-base-100 border border-base-content/20 rounded-box shadow-xl z-[60] max-h-96 overflow-y-auto"
+          >
+            <div
+              v-for="(ub, idx) in suggestions"
+              :key="ub.id"
+              class="flex items-center gap-3 px-3 py-2 cursor-pointer hover:bg-base-200"
+              :class="{ 'bg-base-200': idx === activeSuggestionIndex }"
+              @mousedown.prevent="selectSuggestion(ub)"
+              @mouseenter="activeSuggestionIndex = idx"
+            >
+              <img
+                v-if="suggestionCover(ub)"
+                :src="suggestionCover(ub)"
+                class="w-8 h-12 object-cover rounded flex-shrink-0"
+                alt="cover"
+              >
+              <div v-else class="w-8 h-12 bg-base-300 rounded flex items-center justify-center flex-shrink-0">
+                <i class="mdi mdi-book-outline text-base-content/30" />
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="text-sm font-medium truncate">{{ ub.title }}</div>
+                <div v-if="suggestionAuthors(ub)" class="text-xs text-base-content/60 truncate">{{ suggestionAuthors(ub) }}</div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
