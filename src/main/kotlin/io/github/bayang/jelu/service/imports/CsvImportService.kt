@@ -560,7 +560,6 @@ class CsvImportService(
         book.publishedDate = testValues(importEntity.publishedDate, metadata.publishedDate)
         book.publisher = testValues(importEntity.publisher, metadata.publisher)
         book.summary = metadata.summary
-        // book.seriesBak = metadata.series
         book.image = metadata.image
         val authorsStrings = mutableSetOf<String>()
         authorsStrings.addAll(metadata.authors)

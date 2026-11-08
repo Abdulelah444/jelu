@@ -57,7 +57,6 @@ dependencies {
     implementation("org.springframework.session:spring-session-core")
     implementation("org.springframework.session:spring-session-jdbc")
     implementation("org.springframework.security:spring-security-ldap")
-    // implementation("com.unboundid:unboundid-ldapsdk:6.0.5")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
 
     implementation("org.apache.httpcomponents.client5:httpclient5")
@@ -78,7 +77,6 @@ dependencies {
     val exposedVersion = "0.61.0"
     implementation("org.jetbrains.exposed:exposed-spring-boot-starter:$exposedVersion")
     implementation("org.jetbrains.exposed:exposed-java-time:$exposedVersion")
-// 	implementation("org.nuvito.spring.data:sqlite-dialect:1.0-SNAPSHOT")
 
     implementation("io.github.oshai:kotlin-logging-jvm:7.0.3")
     implementation("com.github.slugify:slugify:3.0.7")
@@ -111,16 +109,6 @@ tasks.withType<Test> {
     useJUnitPlatform()
     systemProperty("spring.profiles.active", "test")
 }
-
-// tasks.withType<KotlinCompile> {
-//     kotlinOptions {
-//         freeCompilerArgs = listOf(
-//             "-Xjsr305=strict",
-//             "-opt-in=kotlin.time.ExperimentalTime",
-//         )
-//         jvmTarget = "17"
-//     }
-// }
 
 tasks.getByName<BootJar>("bootJar") {
     manifest {

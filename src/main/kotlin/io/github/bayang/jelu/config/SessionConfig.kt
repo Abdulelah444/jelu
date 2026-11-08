@@ -70,12 +70,6 @@ class SessionConfig : BeanClassLoaderAware {
             it.setDeleteSessionsByExpiryTimeQuery(DELETE_SESSIONS_BY_EXPIRY_TIME_QUERY)
         }
 
-    // https://github.com/spring-projects/spring-session/issues/1011#issuecomment-919639470
-    // @Bean("springSessionTransactionOperations")
-    // fun springSessionTransactionOperations(): TransactionOperations {
-    //     return TransactionOperations.withoutTransaction()
-    // }
-
     private var classLoader: ClassLoader? = null
 
     @Bean("springSessionConversionService")
