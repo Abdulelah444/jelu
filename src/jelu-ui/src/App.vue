@@ -9,7 +9,6 @@ import { useI18n } from 'vue-i18n';
 import { useRoute, useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import ScanModal from "./components/ScanModal.vue";
-import UserShelvesModal from './components/UserShelvesModal.vue';
 import dataService from "./services/DataService";
 import { key } from './store';
 import { StringUtils } from './utils/StringUtils';
@@ -30,7 +29,7 @@ const close = async() => {
 const store = useStore(key)
 const router = useRouter()
 const route = useRoute()
-const { t, locale } = useI18n({
+const { t } = useI18n({
       inheritLocale: true,
       useScope: 'global'
     })
@@ -93,17 +92,11 @@ const logout = () => {
 
 const searchQuery = ref('')
 
-const showAdvanced = ref(false)
-const hideAdvanced = () => {
-  setTimeout(() => showAdvanced.value = false, 1000)
-}
-
 const showSearchInput = ref(true)
 
 const search = () => {
   console.log(searchQuery.value)
   if (StringUtils.isNotBlank(searchQuery.value)) {
-    showAdvanced.value = false
     showSuggestions.value = false
     router.push({ path: '/search', query: { q: searchQuery.value } })
   }
@@ -200,7 +193,7 @@ const suggestionAuthors = (ub: any): string => {
 }
 
 // hide the search input if current view is the search page
-watch(() => route.name, (newVal, oldVal) => {
+watch(() => route.name, () => {
   if (route.name === 'search') {
     showSearchInput.value = false
   } else {
@@ -222,8 +215,6 @@ const logoSrc = computed(() => {
     : defaultLogo
 })
 
-let barcodeReader: any = null
-
 function toggleScanModal() {
     oruga.modal.open({
       component: ScanModal,
@@ -241,28 +232,9 @@ function toggleScanModal() {
             searchQuery.value = barcode
             search()
           }
-      },
-      barcodeLoaded: (reader: any) => {
-        barcodeReader = reader
+        },
       }
-    },
-      onClose: scanModalClosed
     });
-}
-
-function toggleShelvesModal() {
-  oruga.modal.open({
-      component: UserShelvesModal,
-      trapFocus: true,
-      active: true,
-      canCancel: ['x', 'button', 'outside'],
-      scroll: 'keep',
-      onClose: scanModalClosed,
-    });
-}
-
-function scanModalClosed() {
-  console.log("scan modal closed")
 }
 
 </script>
@@ -374,8 +346,7 @@ function scanModalClosed() {
                   type="text"
                   :placeholder="t('labels.search_query')"
                   class="input input-accent join-item w-1/2"
-                  @focus="showAdvanced = true"
-                  @blur="hideAdvanced(); hideSuggestions()"
+                  @blur="hideSuggestions()"
                   @input="fetchSuggestions"
                   @keydown="onSearchKeydown"
                   @keyup.enter="onSearchEnter"
@@ -494,8 +465,7 @@ function scanModalClosed() {
               type="text"
               :placeholder="t('labels.search_query')"
               class="input input-accent input-sm join-item w-40"
-              @focus="showAdvanced = true"
-              @blur="hideAdvanced(); hideSuggestions()"
+              @blur="hideSuggestions()"
               @input="fetchSuggestions"
               @keydown="onSearchKeydown"
               @keyup.enter="onSearchEnter"

@@ -2,7 +2,6 @@ import { RouteLocationNormalized } from 'vue-router';
 import { Store } from 'vuex';
 import { ServerSettings } from './src/model/ServerSettings';
 import { User } from './src/model/User';
-import { Shelf } from './src/model/Shelf'
 
 declare module '@vue/runtime-core' {
   // declare your own store states
@@ -11,8 +10,7 @@ interface State {
     isInitialSetup : boolean,
     user : User| null,
     serverSettings: ServerSettings,
-    route: RouteLocationNormalized | null,
-    shelves: Array<Shelf>
+    route: RouteLocationNormalized | null
   }
 
   // provide typings for `this.$store`

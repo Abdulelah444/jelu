@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import store from './store'
+import store, { setNavigationResult } from './store'
 import AdminBaseVue from './components/AdminBase.vue'
 import urls from './urls'
 
@@ -81,18 +81,6 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
-            path: '/book-labels',
-            component: () => import('./components/BookLabels.vue'),
-            name: 'book-labels',
-            beforeEnter: [isLogged],
-        },
-        {
-            path: '/digital-library',
-            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
-            name: 'digital-library',
-            beforeEnter: [isLogged],
-        },
-        {
             path: '/library-map',
             component: () => import(/* webpackChunkName: "recommend" */ './components/LibraryMap.vue'),
             name: 'library-map',
@@ -114,12 +102,6 @@ const router = createRouter({
             path: "/wishlist",
             component: () => import("./components/Wishlist.vue"),
             name: "wishlist",
-            beforeEnter: [isLogged],
-        },
-        {
-            path: "/lending-history",
-            component: () => import("./components/LendingHistory.vue"),
-            name: "lending-history",
             beforeEnter: [isLogged],
         },
         {
@@ -264,5 +246,7 @@ router.beforeEach((to, from, next) => {
     next()
 }
 )
+
+setNavigationResult(router)
 
 export default router

@@ -1,10 +1,20 @@
 import { InjectionKey } from 'vue';
-import { RouteLocationNormalized } from 'vue-router';
+import { RouteLocationNormalized, RouteLocationRaw } from 'vue-router';
 import { createLogger, createStore, Store } from 'vuex';
 import { ServerSettings } from './model/ServerSettings';
 import { User, UserAuthentication } from './model/User';
-import router from './router';
 import dataService from './services/DataService';
+
+type RouteNavigator = {
+  push(to: RouteLocationNormalized | RouteLocationRaw): Promise<unknown>
+}
+
+let navigator: RouteNavigator | null = null
+
+// Avoids a circular import with router.ts, which imports this store.
+export const setNavigationResult = (router: RouteNavigator | null) => {
+  navigator = router
+}
 
 export interface State {
   isLogged: boolean,
@@ -79,7 +89,7 @@ const store = createStore<State>({
           commit('user', user)
           dispatch('getServerSettings')
           if (state.route != null) {
-            await router.push(state.route)
+            await navigator?.push(state.route)
           }
           else {
             console.log("route is null")
@@ -99,7 +109,7 @@ const store = createStore<State>({
       logout({dispatch, commit, state}) {
         commit('login', false)
         commit('user', null)
-        router.push({name: 'login'})
+        navigator?.push({name: 'login'})
       },
       async getServerSettings({commit}) {
         dataService.serverSettings()
@@ -129,20 +139,14 @@ const store = createStore<State>({
     getMetadataFetchEnabled(state): boolean {
       return state.serverSettings.metadataFetchEnabled
     },
-    getLdapEnabled(state): boolean {
-      return state.serverSettings.ldapEnabled
-    },
     getLogged(state): boolean {
       return state.isLogged
     },
     getAppVersion(state): string {
       return state.serverSettings.appVersion
     },
-    getInitialSetup(state): boolean {
-      return state.isInitialSetup
-    },
-    getDisplayInitialSetup(state, getters): boolean {
-      return (getters.getInitialSetup && !getters.getLdapEnabled)
+    getDisplayInitialSetup(state): boolean {
+      return (state.isInitialSetup && !state.serverSettings.ldapEnabled)
     },
   },
   plugins : [createLogger()],
