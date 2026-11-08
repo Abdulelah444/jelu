@@ -62,3 +62,8 @@ write.lock
 
 # OpenChamber session state
 .openchamber/
+
+# Scratch: Rust/React rebuild exploration and code-map output
+/jelu-rust-rebuild/
+/jelu-rust-rebuild-bundle.html
+/graphify-out/

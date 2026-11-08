@@ -57,11 +57,13 @@ import org.springframework.data.domain.Pageable
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Repository
 import java.math.BigDecimal
+import java.nio.BufferUnderflowException
 import java.time.Instant
 import java.util.UUID
 
 private val logger = KotlinLogging.logger {}
 public val ONE_HUNDRED = BigDecimal(100)
+private val UUID_REGEXP = Regex("[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}")
 
 fun parseSorts(
     sort: Sort,
@@ -331,7 +333,7 @@ class BookRepository(
             parseSorts(pageable.sort, Pair(BookTable.title, SortOrder.ASC_NULLS_LAST), BookTable)
         query.orderBy(*orders)
         return PageImpl(
-            query.map { resultRow -> wrapRow(resultRow) },
+            query.mapNotNull { resultRow -> wrapRowOrSkipMalformedId(resultRow) },
             pageable,
             total,
         )
@@ -996,6 +998,38 @@ class BookRepository(
 
     fun wrapRow(resultRow: ResultRow): Book = Book.wrapRow(resultRow)
 
+    /**
+     * Wraps a row into a [Book] unless its id is not a valid 16-byte UUID.
+     *
+     * [BookTable.id] is a binary(16) UUID column, but SQLite does not enforce that length, so a
+     * row can hold a shorter blob (e.g. written out of band). Exposed's UUIDColumnType then throws
+     * a [java.nio.BufferUnderflowException] while decoding it, which would take down the whole page
+     * — and therefore the startup index rebuild. Reading the id would already throw, so the title
+     * is read first (a plain varchar column, safe to decode) to name the offending row in the log.
+     */
+    fun wrapRowOrSkipMalformedId(resultRow: ResultRow): Book? {
+        val title: String? = resultRow.getOrNull(BookTable.title)
+        return try {
+            Book.wrapRow(resultRow)
+        } catch (e: BufferUnderflowException) {
+            logger.warn {
+                "Skipping book with a malformed id (not a 16-byte UUID), title '$title': ${e.message}"
+            }
+            null
+        }
+    }
+
+    /**
+     * Rejects a book id that is not a canonical 16-byte UUID before it can be written, so a
+     * malformed id never reaches the database (where it would later break reads and the index
+     * rebuild). Keep this guard at every entry point that persists a book.
+     */
+    fun requireValidBookId(id: UUID) {
+        require(id.toString().matches(UUID_REGEXP)) {
+            "Invalid book id '$id': expected a 16-byte UUID"
+        }
+    }
+
     fun wrapTagRow(resultRow: ResultRow): Tag = Tag.wrapRow(resultRow)
 
     fun filterRow(resultRow: ResultRow): Boolean {
@@ -1420,6 +1454,7 @@ class BookRepository(
     }
 
     fun save(book: BookCreateDto): Book {
+        book.id?.let { requireValidBookId(it) }
         val authorsList = mutableListOf<Author>()
         book.authors?.forEach { authorDto ->
             val authorEntity: Author? = findAuthorsByName(authorDto.name.trim()).firstOrNull()
