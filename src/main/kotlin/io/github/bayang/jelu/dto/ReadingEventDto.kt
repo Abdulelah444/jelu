@@ -34,12 +34,6 @@ data class ReadingEventWithoutUserBookDto(
     val endDate: OffsetDateTime?,
 )
 
-data class CreateReadingEventWithUserInfoDto(
-    val eventType: ReadingEventType,
-    val bookId: UUID,
-    val userId: UUID?,
-)
-
 data class CreateReadingEventDto(
     val eventType: ReadingEventType,
     val bookId: UUID?,

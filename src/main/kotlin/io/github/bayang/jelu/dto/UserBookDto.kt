@@ -5,33 +5,6 @@ import java.time.Instant
 import java.time.OffsetDateTime
 import java.util.UUID
 
-data class UserBookDto(
-    val id: UUID?,
-    val creationDate: Instant?,
-    val modificationDate: Instant?,
-    val user: UserDto,
-    val book: BookDto,
-    val readingEvents: List<ReadingEventWithoutUserBookDto>?,
-    val lastReadingEventDate: OffsetDateTime?,
-    val lastReadingEvent: ReadingEventType?,
-    val personalNotes: String?,
-    val owned: Boolean?,
-    val toRead: Boolean?,
-    val percentRead: Int?,
-    val currentPageNumber: Int?,
-    val borrowed: Boolean?,
-    val borrowerName: String? = null,
-    val borrowDate: Instant? = null,
-    val expectedReturnDate: Instant? = null,
-    val ownerName: String? = null,
-    val digitalFilePath: String? = null,
-    val digitalFileFormat: String? = null,
-    val digitalFileSizeBytes: Long? = null,
-    val digitalFileAddedDate: Instant? = null,
-    val lastSentToReaderDate: Instant? = null,
-    val price: Double?,
-)
-
 data class UserBookLightDto(
     val id: UUID?,
     val creationDate: Instant?,

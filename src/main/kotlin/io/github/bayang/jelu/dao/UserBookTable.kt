@@ -1,6 +1,5 @@
 package io.github.bayang.jelu.dao
 
-import io.github.bayang.jelu.dto.UserBookDto
 import io.github.bayang.jelu.dto.UserBookLightDto
 import io.github.bayang.jelu.dto.UserBookLightWithoutBookDto
 import io.github.bayang.jelu.dto.UserBookWithoutEventsAndUserDto
@@ -74,34 +73,6 @@ class UserBook(
     var digitalFileSizeBytes by UserBookTable.digitalFileSizeBytes
     var digitalFileAddedDate by UserBookTable.digitalFileAddedDate
     var lastSentToReaderDate by UserBookTable.lastSentToReaderDate
-
-    fun toUserBookDto(): UserBookDto =
-        UserBookDto(
-            id = this.id.value,
-            creationDate = this.creationDate,
-            modificationDate = this.modificationDate,
-            user = this.user.toUserDto(),
-            book = this.book.toBookDto(),
-            lastReadingEvent = this.lastReadingEvent,
-            lastReadingEventDate = this.lastReadingEventDate,
-            owned = this.owned,
-            toRead = this.toRead,
-            personalNotes = this.personalNotes,
-            percentRead = this.percentRead,
-            currentPageNumber = this.currentPageNumber,
-            borrowed = this.borrowed,
-            borrowerName = this.borrowerName,
-            borrowDate = this.borrowDate,
-            expectedReturnDate = this.expectedReturnDate,
-            ownerName = this.ownerName,
-            digitalFilePath = this.digitalFilePath,
-            digitalFileFormat = this.digitalFileFormat,
-            digitalFileSizeBytes = this.digitalFileSizeBytes,
-            digitalFileAddedDate = this.digitalFileAddedDate,
-            lastSentToReaderDate = this.lastSentToReaderDate,
-            readingEvents = this.readingEvents.map { it.toReadingEventWithoutUserBookDto() },
-            price = centsToDouble(this.priceInCents),
-        )
 
     fun toUserBookLightDto(): UserBookLightDto =
         UserBookLightDto(

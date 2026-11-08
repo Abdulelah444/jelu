@@ -1,20 +1,10 @@
 package io.github.bayang.jelu.service
 
-import io.github.bayang.jelu.dao.MessageCategory
-import io.github.bayang.jelu.dto.BookDto
-import io.github.bayang.jelu.dto.CreateUserMessageDto
-import io.github.bayang.jelu.dto.UserDto
 import io.github.oshai.kotlinlogging.KotlinLogging
-import org.springframework.scheduling.annotation.Async
-import org.springframework.stereotype.Component
-import org.springframework.transaction.annotation.Transactional
 
 private val logger = KotlinLogging.logger {}
 
-@Component
-class SeriesDetectionService(
-    private val userMessageService: UserMessageService,
-) {
+class SeriesDetectionService {
     companion object {
         private val ENGLISH_SERIES_PATTERNS =
             listOf(
@@ -114,73 +104,5 @@ class SeriesDetectionService(
     enum class HintReason {
         TITLE_PATTERN,
         SAME_AUTHOR_HAS_SERIES,
-    }
-
-    fun detectSeries(book: BookDto): List<SeriesHint> {
-        if (!book.series.isNullOrEmpty()) {
-            return emptyList()
-        }
-        val hints = mutableListOf<SeriesHint>()
-        val titleHint = detectFromTitle(book.title)
-        if (titleHint != null) {
-            hints.add(titleHint)
-        }
-        return hints
-    }
-
-    @Async
-    @Transactional
-    fun detectAndNotify(
-        book: BookDto,
-        user: UserDto,
-    ) {
-        try {
-            val hints = detectSeries(book)
-            if (hints.isEmpty()) {
-                logger.debug { "No series hints found for book \"${book.title}\"" }
-                return
-            }
-            logger.info { "Found ${hints.size} series hint(s) for book \"${book.title}\"" }
-            val message = buildNotificationMessage(book, hints)
-            val link = "/book/${book.id}"
-            userMessageService.save(
-                CreateUserMessageDto(
-                    message = message,
-                    link = link,
-                    category = MessageCategory.INFO,
-                ),
-                user,
-            )
-        } catch (e: Exception) {
-            logger.error(e) { "Failed to run series detection for book \"${book.title}\"" }
-        }
-    }
-
-    fun buildNotificationMessage(
-        book: BookDto,
-        hints: List<SeriesHint>,
-    ): String {
-        val sb = StringBuilder()
-        sb.append("\"${book.title}\" may be part of a series. ")
-        val titleHints = hints.filter { it.reason == HintReason.TITLE_PATTERN }
-        val authorHints = hints.filter { it.reason == HintReason.SAME_AUTHOR_HAS_SERIES }
-        if (titleHints.isNotEmpty()) {
-            val hint = titleHints.first()
-            sb.append(hint.detail)
-            if (hint.suggestedPosition != null) {
-                sb.append(" (position ${hint.suggestedPosition.toInt()})")
-            }
-            sb.append(". ")
-        }
-        if (authorHints.isNotEmpty()) {
-            val seriesNames = authorHints.mapNotNull { it.suggestedSeriesName }.distinct()
-            if (seriesNames.size == 1) {
-                sb.append("The same author has other books in \"${seriesNames.first()}\". ")
-            } else if (seriesNames.size > 1) {
-                sb.append("The same author has books in: ${seriesNames.joinToString(", ") { "\"$it\"" }}. ")
-            }
-        }
-        sb.append("Check and assign the series if appropriate.")
-        return sb.toString().trim()
     }
 }
