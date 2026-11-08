@@ -38,7 +38,7 @@ const form = ref<Record<string, string>>({})
 
 // Which sections are expanded
 const open = ref<Record<string, boolean>>({
-  reading: false, downloads: false, search: false, notifications: false,
+  reading: false, downloads: false, search: false,
 })
 
 const initForm = () => {
@@ -164,36 +164,7 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
             <span class="text-sm">Auto-prompt for a goal when I start a book</span>
             <input v-model="form.autoprompt_goal_on_reading" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
           </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Default pace window</span>
-            <select v-model="form.default_pace_window" class="select select-sm select-bordered w-40">
-              <option value="day">1 Day</option>
-              <option value="week">1 Week</option>
-              <option value="month">1 Month</option>
-              <option value="since_start">Since start</option>
-            </select>
-          </label>
-          <div class="divider my-0 text-xs opacity-50">Streaks</div>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Allow weekly make-up (recover a missed day)</span>
-            <input v-model="form.weekly_makeup_rule" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Auto-rebuild daily log after editing history</span>
-            <input v-model="form.autorebuild_on_history_edit" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Minimum pages to count a day as read</span>
-            <input v-model="form.min_pages_per_day" type="number" min="1" class="input input-sm input-bordered w-24">
-          </label>
-          <div class="divider my-0 text-xs opacity-50">Challenge &amp; timeline</div>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Default challenge period</span>
-            <select v-model="form.default_goal_period" class="select select-sm select-bordered w-40">
-              <option value="ANNUAL">Annual</option>
-              <option value="MONTHLY">Monthly</option>
-            </select>
-          </label>
+          <div class="divider my-0 text-xs opacity-50">Challenge</div>
           <label class="flex items-center justify-between gap-4">
             <span class="text-sm">Show weekly report popup on Sundays</span>
             <input v-model="form.weekly_report_popup" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
@@ -284,18 +255,6 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
             <span v-if="shelfmarkSettingsLoaded" class="text-xs opacity-60">Current settings loaded from Shelfmark</span>
           </div>
 
-          <label class="flex flex-col gap-1">
-            <span class="text-sm">Ebooks folder path (in container)</span>
-            <input v-model="form.ebooks_path" type="text" class="input input-sm input-bordered w-full" placeholder="/files/ebooks">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Default format priority</span>
-            <input v-model="form.download_format_priority" type="text" class="input input-sm input-bordered w-40" placeholder="epub,pdf,mobi">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Default language filter</span>
-            <input v-model="form.download_language" type="text" class="input input-sm input-bordered w-24" placeholder="en">
-          </label>
           <label class="flex items-center justify-between gap-4">
             <span class="text-sm">File-match strictness (%)</span>
             <input v-model="form.match_threshold" type="number" min="0" max="100" class="input input-sm input-bordered w-24">
@@ -329,32 +288,6 @@ const toggle = (k: string) => { open.value[k] = !open.value[k] }
           <label class="flex items-center justify-between gap-4">
             <span class="text-sm">Enter opens top suggestion (instead of full search)</span>
             <input v-model="form.typeahead_enter_top_hit" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-        </div>
-      </div>
-
-      <!-- NOTIFICATIONS -->
-      <div class="border border-base-300 rounded-xl overflow-hidden">
-        <button class="w-full flex items-center justify-between px-4 py-3 bg-base-200 hover:bg-base-300" @click="toggle('notifications')">
-          <span class="font-medium flex items-center gap-2"><i class="mdi mdi-bell-outline" /> Notifications</span>
-          <i class="mdi" :class="open.notifications ? 'mdi-chevron-up' : 'mdi-chevron-down'" />
-        </button>
-        <div v-show="open.notifications" class="p-4 flex flex-col gap-4">
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Goal milestones</span>
-            <input v-model="form.notify_goal_milestones" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Streak at risk</span>
-            <input v-model="form.notify_streak_at_risk" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Download complete</span>
-            <input v-model="form.notify_download_complete" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
-          </label>
-          <label class="flex items-center justify-between gap-4">
-            <span class="text-sm">Weekly report ready</span>
-            <input v-model="form.notify_weekly_report" type="checkbox" class="toggle toggle-sm" :true-value="'true'" :false-value="'false'">
           </label>
         </div>
       </div>

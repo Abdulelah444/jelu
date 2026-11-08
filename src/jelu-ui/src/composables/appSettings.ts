@@ -7,22 +7,10 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   // Reading goals & pace
   default_daily_goal: '20',
   autoprompt_goal_on_reading: 'true',
-  default_pace_window: 'since_start',
-  // Streaks
-  weekly_makeup_rule: 'true',
-  autorebuild_on_history_edit: 'true',
-  min_pages_per_day: '1',
   // Reading challenge
-  default_goal_period: 'ANNUAL',
   weekly_report_popup: 'true',
-  // Timeline
-  timeline_default_zoom: '2',
-  timeline_bar_scheme: 'status',
   // Wishlist / Shelfmark downloads
   shelfmark_url: 'http://192.168.88.20:8084',
-  ebooks_path: '/files/ebooks',
-  download_format_priority: 'epub,pdf,mobi',
-  download_language: 'en',
   match_threshold: '70',
   autolink_on_add: 'true',
   // Search typeahead
@@ -30,14 +18,28 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   typeahead_count: '6',
   typeahead_debounce: '250',
   typeahead_enter_top_hit: 'false',
-  // Notifications
-  notify_goal_milestones: 'true',
-  notify_streak_at_risk: 'true',
-  notify_download_complete: 'true',
-  notify_weekly_report: 'true',
   // Appearance
   custom_logo_enabled: 'false',
 }
+
+// Keys that used to be persisted but are not read anywhere. A null value on
+// save deletes the row, so stale rows are removed the next time settings save.
+const OBSOLETE_KEYS = [
+  'default_pace_window',
+  'weekly_makeup_rule',
+  'autorebuild_on_history_edit',
+  'min_pages_per_day',
+  'default_goal_period',
+  'timeline_default_zoom',
+  'timeline_bar_scheme',
+  'ebooks_path',
+  'download_format_priority',
+  'download_language',
+  'notify_goal_milestones',
+  'notify_streak_at_risk',
+  'notify_download_complete',
+  'notify_weekly_report',
+]
 
 const state = reactive<{ values: Record<string, string>, loaded: boolean }>({
   values: { ...SETTINGS_DEFAULTS },
@@ -75,7 +77,8 @@ function getBool(key: string): boolean {
 }
 
 async function save(updates: Record<string, string | null>): Promise<void> {
-  const result = await dataService.updateAppSettings(updates)
+  const obsolete = Object.fromEntries(OBSOLETE_KEYS.map(key => [key, null]))
+  const result = await dataService.updateAppSettings({ ...obsolete, ...updates })
   state.values = { ...SETTINGS_DEFAULTS, ...result }
 }
 
