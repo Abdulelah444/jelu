@@ -1505,22 +1505,6 @@ class DataService {
     }
   }
 
-  yearsWithStats = async () => {
-    try {
-      const response = await this.apiClient.get<Array<number>>(`${this.API_STATS}/years`);
-      console.log("called stats years")
-      console.log(response)
-      return response.data;
-    }
-    catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.log("error axios " + error.response.status + " " + error.response.data.error)
-      }
-      console.log("error stats years " + (error as AxiosError).code)
-      throw new Error("error stats years " + error)
-    }
-  }
-
   totalsStats = async () => {
     try {
       const response = await this.apiClient.get<TotalsStats>(`${this.API_STATS}/total`);

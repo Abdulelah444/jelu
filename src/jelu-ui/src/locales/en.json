@@ -364,9 +364,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history" : {
-        "years" : "years"
-    },
     "bulk" : {
         "bulk_edit_books" : "Bulk edit books",
         "owned" : "Mark/unmark all as owned",

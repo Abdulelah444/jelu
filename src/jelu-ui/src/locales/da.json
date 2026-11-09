@@ -346,9 +346,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "år"
-    },
     "bulk": {
         "bulk_edit_books": "Masseredigering af bøger",
         "owned": "Markér/afmarkér alle som ejede",

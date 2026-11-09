@@ -346,9 +346,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "évek"
-    },
     "bulk": {
         "bulk_edit_books": "Könyvek módosítása csoportban",
         "owned": "Nem/jelöli az összes sajátot",

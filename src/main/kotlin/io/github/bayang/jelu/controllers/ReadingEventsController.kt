@@ -257,20 +257,4 @@ class ReadingEventsController(
         } while (!events.isEmpty)
         return ResponseEntity.ok(monthStats.values.map { it.toMonthStatsDto() }.sortedBy { it.month })
     }
-
-    @ApiResponse(description = "Return a list of years for which there are reading events")
-    @GetMapping(path = ["/stats/years"])
-    fun years(principal: Authentication): ResponseEntity<List<Int>> {
-        val years =
-            repository.findYears(
-                listOf(ReadingEventType.FINISHED, ReadingEventType.DROPPED),
-                (principal.principal as JeluUser).user.id,
-                null,
-            )
-        return if (years != null && years.isNotEmpty()) {
-            ResponseEntity.ok(years.sorted())
-        } else {
-            ResponseEntity.ok(emptyList())
-        }
-    }
 }

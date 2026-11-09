@@ -346,9 +346,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "yıllar"
-    },
     "bulk": {
         "bulk_edit_books": "Kitapları toplu düzenle",
         "owned": "Tümünü sahiplenildi işaretle/işareti kaldır",

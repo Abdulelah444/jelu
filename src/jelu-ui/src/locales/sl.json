@@ -346,9 +346,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "let"
-    },
     "bulk": {
         "bulk_edit_books": "Masovno urejanje knjig",
         "owned": "Označi/odznači vse kot v lasti",

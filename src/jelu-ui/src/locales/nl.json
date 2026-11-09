@@ -346,9 +346,6 @@
         "unread": "ongelezen",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "jaren"
-    },
     "bulk": {
         "bulk_edit_books": "Meerdere boeken tegelijk bewerken",
         "owned": "Markeer/onmarkeer alles als eigendom",

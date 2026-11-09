@@ -13,7 +13,6 @@ import org.jetbrains.exposed.sql.JoinType
 import org.jetbrains.exposed.sql.SortOrder
 import org.jetbrains.exposed.sql.and
 import org.jetbrains.exposed.sql.andWhere
-import org.jetbrains.exposed.sql.javatime.year
 import org.jetbrains.exposed.sql.selectAll
 import org.springframework.data.domain.Page
 import org.springframework.data.domain.PageImpl
@@ -80,29 +79,6 @@ class ReadingEventRepository {
             pageable,
             total,
         )
-    }
-
-    fun findYears(
-        eventTypes: List<ReadingEventType>?,
-        userId: UUID?,
-        bookId: UUID?,
-    ): List<Int> {
-        val query =
-            ReadingEventTable
-                .join(UserBookTable, JoinType.LEFT)
-                .select(ReadingEventTable.endDate.year())
-        if (eventTypes != null && eventTypes.isNotEmpty()) {
-            query.andWhere { ReadingEventTable.eventType inList eventTypes }
-        }
-        if (userId != null) {
-            query.andWhere { UserBookTable.user eq userId }
-        }
-        if (bookId != null) {
-            query.andWhere { UserBookTable.book eq bookId }
-        }
-        query.withDistinct(true)
-        // FIXME
-        return query.map { resultRow -> resultRow[ReadingEventTable.endDate.year()] }.toList()
     }
 
     fun save(

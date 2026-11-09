@@ -346,9 +346,6 @@
         "unread": "ungelesen",
         "prices_sum": "Gesamtpreis"
     },
-    "history": {
-        "years": "Jahre"
-    },
     "bulk": {
         "bulk_edit_books": "Bücher-Massenbearbeitung",
         "owned": "Alle als \"Im Besitz\" markieren/Markierung entfernen",

@@ -291,14 +291,11 @@ function toggleScanModal() {
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'my-books' }"><i class="mdi mdi-book-multiple mdi-18px mr-2" />{{ t('nav.my_books') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'add-book' }"><i class="mdi mdi-plus-circle mdi-18px mr-2" />{{ t('nav.add_book') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
-            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'digital-library' }"><i class="mdi mdi-book-open-page-variant mdi-18px mr-2" />Digital Library</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'book-labels' }"><i class="mdi mdi-qrcode mdi-18px mr-2" />Book Labels</router-link></li>
 	    <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'discover' }"><i class="mdi mdi-compass mdi-18px mr-2" />Discover</router-link></li>
-            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'reading-timeline' }"><i class="mdi mdi-chart-gantt mdi-18px mr-2" />Timeline</router-link></li>
 	    <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-eye mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart mdi-18px mr-2" />Wishlist</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
-            <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'history' }"><i class="mdi mdi-history mdi-18px mr-2" />{{ t('nav.history') }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'reading-dashboard' }"><i class="mdi mdi-chart-bar mdi-18px mr-2" />Stats</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'authors' }"><i class="mdi mdi-account-group mdi-18px mr-2" />{{ t('book.author', 2) }}</router-link></li>
             <li @click="collapseDropdown()"><router-link v-if="isLogged" class="font-sans text-base capitalize" :to="{ name: 'search' }"><i class="mdi mdi-magnify mdi-18px mr-2" />{{ t('nav.search') }}</router-link></li>
@@ -445,14 +442,11 @@ function toggleScanModal() {
           </label>
           <ul tabindex="0" class="dropdown-content z-50 menu menu-sm p-2 shadow-lg bg-base-200 rounded-box w-52 mt-2 border border-base-content/20">
             <li><router-link v-if="isLogged" class="font-sans text-sm capitalize" :to="{ name: 'discover' }"><i class="mdi mdi-compass mdi-18px mr-2" />Discover</router-link></li>
-            <li><router-link v-if="isLogged" class="font-sans text-sm capitalize" :to="{ name: 'reading-timeline' }"><i class="mdi mdi-chart-gantt mdi-18px mr-2" />Timeline</router-link></li>
 	    <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'to-read' }"><i class="mdi mdi-bookmark-outline mdi-18px mr-2" />{{ t('nav.to_read') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'wishlist' }"><i class="mdi mdi-heart-outline mdi-18px mr-2" />Wishlist</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'lending-history' }"><i class="mdi mdi-book-arrow-right mdi-18px mr-2" />Lending History</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'library-map' }"><i class="mdi mdi-bookshelf mdi-18px mr-2" />{{ t('library_map.title') }}</router-link></li>
-            <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'digital-library' }"><i class="mdi mdi-book-open-page-variant mdi-18px mr-2" />Digital Library</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'book-labels' }"><i class="mdi mdi-qrcode mdi-18px mr-2" />Book Labels</router-link></li>
-            <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'history' }"><i class="mdi mdi-history mdi-18px mr-2" />{{ t('nav.history') }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'reading-dashboard' }"><i class="mdi mdi-chart-bar mdi-18px mr-2" />Stats</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'authors' }"><i class="mdi mdi-account-group mdi-18px mr-2" />{{ t('book.author', 2) }}</router-link></li>
             <li><router-link class="font-sans text-sm capitalize" :to="{ name: 'search' }"><i class="mdi mdi-magnify mdi-18px mr-2" />{{ t('nav.search') }}</router-link></li>

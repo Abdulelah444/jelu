@@ -346,9 +346,6 @@
         "unread": "unread",
         "prices_sum": "prices sum"
     },
-    "history": {
-        "years": "tahun"
-    },
     "bulk": {
         "bulk_edit_books": "Ubah buku borongan",
         "owned": "Tandai/tidak tandai semua sebagai dimiliki",

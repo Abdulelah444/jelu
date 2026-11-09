@@ -45,13 +45,6 @@ class ReadingEventService(
     }
 
     @Transactional
-    fun findYears(
-        eventTypes: List<ReadingEventType>?,
-        userId: UUID?,
-        bookId: UUID?,
-    ) = readingEventRepository.findYears(eventTypes, userId, bookId)
-
-    @Transactional
     fun save(
         createReadingEventDto: CreateReadingEventDto,
         user: UserDto,

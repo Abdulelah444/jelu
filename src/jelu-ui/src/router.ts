@@ -52,12 +52,6 @@ const router = createRouter({
             beforeEnter: [isLogged],
         },
         {
-            path: '/timeline',
-            component: () => import('./components/ReadingTimeline.vue'),
-            name: 'reading-timeline',
-            beforeEnter: [isLogged],
-        },
-        {
             path: '/discover',
             component: () => import(/* webpackChunkName: "recommend" */ './components/BookSearch.vue'),
             name: 'discover',
@@ -72,12 +66,6 @@ const router = createRouter({
             path: '/book-labels',
             component: () => import('./components/BookLabels.vue'),
             name: 'book-labels',
-            beforeEnter: [isLogged],
-        },
-        {
-            path: '/digital-library',
-            component: () => import(/* webpackChunkName: "recommend" */ './components/DigitalLibrary.vue'),
-            name: 'digital-library',
             beforeEnter: [isLogged],
         },
         {
@@ -114,12 +102,6 @@ const router = createRouter({
             path: '/random',
             component: () => import(/* webpackChunkName: "recommend" */ './components/RandomList.vue'),
             name: 'random',
-            beforeEnter: [isLogged],
-        },
-        {
-            path: '/history',
-            component: () => import(/* webpackChunkName: "recommend" */ './components/History.vue'),
-            name: 'history',
             beforeEnter: [isLogged],
         },
         {
